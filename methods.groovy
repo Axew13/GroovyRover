@@ -98,7 +98,7 @@ Role.metaClass.edit={Map data->
 	  delegate.manager.role
 }
 Role.metaClass.isColour={(delegate.name==~/#?[A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9]/)&&!delegate.name.toLowerCase().containsAny('g'..'z')}
-Role.metaClass.isConfig={delegate.name in["Bot Commander","Assist Owner","Trainer","Literally Hitler","spoo.py colorful","Spectra","spoo.py admin","spoo.py mod","Nadeko","Baka","regall commander","Ender","KOSMOS","Discoid Admin","Watchr Commander","Discone Admin","Living Meme","Bot Pony Commander","Beemo Music"]}
+Role.metaClass.isConfig={delegate.name in["Bot Commander","Assist Owner","Trainer","Literally Hitler","spoo.py colorful","Spectra","spoo.py admin","spoo.py mod","Nadeko","Baka","regall commander","Ender","KOSMOS","Discoid Admin","Watchr Commander","Discone Admin","Living Meme","Bot Pony Commander","Beemo Music","Mop Staff"]}
 
 Emote.metaClass.getCreateTimeMillis={((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long}
 Emote.metaClass.getCreateTime={new Date(((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long)}
@@ -147,10 +147,10 @@ String.metaClass.cut={int at->
 }
 String.metaClass.rawBirthday={delegate.replaceAll(/\b(\d+)(?:th|st|nd|rd)\b/){all,number->number}}
 String.metaClass.formatBirthday={delegate.replace('11 ','11th ').replace('12 ','12th ').replace('13 ','13th ').replace('1 ','1st ').replace('2 ','2nd ').replace('3 ','3rd ').replace('4 ','4th ').replace('5 ','5th ').replace('6 ','6th ').replace('7 ','7th ').replace('8 ','8th ').replace('9 ','9th ').replace('0 ','0th ')}
-OffsetDateTime.metaClass.toDate={Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSSXXX",delegate.toString())}
+OffsetDateTime.metaClass.toDate={Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSSS",delegate.toString())}
 String.metaClass.abbreviate={delegate.replaceAll(['\'','"','(',')','[',']','{','}','|','.'],'').split(/(-|_| )/)*.capitalize().join().findAll{it.isUpperCase()}.join()}
 String.metaClass.formatTime={
-	  String taimu=delegate.toLowerCase().replaceAll(['.','/',':','-'],'')
+	  String taimu=delegate.replaceAll(/\W+/,'').toLowerCase()
 	  int seconds=(taimu.findAll(/(\d+)s/){full,num->num.toInteger()})[0]?:0
 	  int minutes=(taimu.findAll(/(\d+)m/){full,num->num.toInteger()})[0]?:0
 	  int hours=(taimu.findAll(/(\d+)h/){full,num->num.toInteger()})[0]?:0
@@ -159,7 +159,7 @@ String.metaClass.formatTime={
 	  int months=(taimu.findAll(/(\d+)n/){full,num->num.toInteger()})[0]?:0
 	  int years=(taimu.findAll(/(\d+)y/){full,num->num.toInteger()})[0]?:0
 	  long time=System.currentTimeMillis()
-	  if(seconds)for(sec in 0..seconds)time+=1000
+	  seconds.times{time+=1000}
 	  minutes.times{time+=60000}
 	  hours.times{time+=3600000}
 	  days.times{time+=86400000}
@@ -256,6 +256,7 @@ String.metaClass.addVariables={GenericGuildMemberEvent e,String args->
 
 String.metaClass.strip={delegate.replaceAll(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}
 ArrayList.metaClass.randomItem={delegate[(Math.floor((Math.random()*delegate.size())+1)-1)as int]}
+IntRange.metaClass.randomItem={delegate.toList()[(Math.floor((Math.random()*delegate.size())+1)-1)as int]}
 String.metaClass.addImports={"""import net.dv8tion.jda.JDA
 import net.dv8tion.jda.JDABuilder
 import net.dv8tion.jda.MessageHistory

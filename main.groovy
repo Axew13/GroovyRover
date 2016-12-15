@@ -57,7 +57,7 @@ class Bot{
 		new MemberCommand(),new MuteCommand(),new KickCommand(),new LogCommand(),new ScopeCommand(),
 		new FeedCommand(),new ClearCommand(),new SetChannelCommand(),new SetRoleCommand(),new VotePinCommand(),
 		new RadioCommand(),new ConfigCommand(),new SingCommand(),new BanCommand(),new SmiliesCommand(),
-		new CloneCommand(),new AccessCommand(),new TrackerCommand()
+		new CloneCommand(),new AccessCommand(),new TrackerCommand(),new IsupCommand()
 	]
 	List ignored=[]
 	String oauth="https://discordapp.com/oauth2/authorize?client_id=170646931641466882&scope=bot&permissions=268443670"
@@ -67,7 +67,6 @@ class Bot{
 
 
 class Command{
-	Command(){}
 	List aliases=[]
 	boolean dev=false
 	String category="Uncategorized"
@@ -77,14 +76,16 @@ class Command{
 
 
 class Radio{
-	Radio(){}
 	Map now=[:]
 	Map pause=[:]
+	Map key=[:]
 	void play(MusicPlayer player,Playlist playlist,VoiceChannel channel){
 		Guild guild=channel.guild
+		key[guild.id]=(1..9999).randomItem()
 		List sources=new LinkedList(playlist.sources)
 		Iterator it=sources.iterator()
-		while(it.hasNext()){
+		int sample=key.clone()[guild.id]
+		while(it.hasNext()&&(key[guild.id]==sample)){
 			AudioSource source=it.next()
 			now[guild.id]=source.source
 			AudioInfo info=source.info
@@ -111,24 +112,23 @@ class Radio{
 
 
 class JSON{
-	JSON(){}
 	String root="data/"
-	Closure load={String donkey->new JsonSlurper().parse(new File(root+donkey),"UTF-8")}
-	Closure save={Map diddy,String dixie->new File(root+dixie).write(JsonOutput.prettyPrint(JsonOutput.toJson(diddy)))}
-	Closure database={load("database.json")}
-	Closure tags={load("tags.json")}
-	Closure lastseen={load("lastseen.json")}
-	Closure channels={load("channels.json")}
-	Closure roles={load("roles.json")}
-	Closure properties={load("properties.json")}
-	Closure colours={load("colours.json")}
-	Closure misc={load("misc.json")}
-	Closure conversative={load("conversative.json")}
-	Closure feeds={load("feeds.json")}
-	Closure settings={load("settings.json")}
-	Closure temp={load("temp.json")}
-	Closure audio={load("audio.json")}
-	Closure tracker={load("tracker.json")}
+	Map load(String donkey){new JsonSlurper().parse(new File(root+donkey),"UTF-8")}
+	Object save={Map diddy,String dixie->new File(root+dixie).write(JsonOutput.prettyPrint(JsonOutput.toJson(diddy)))}
+	Map database(){load("database.json")}
+	Map tags(){load("tags.json")}
+	Map lastseen(){load("lastseen.json")}
+	Map channels(){load("channels.json")}
+	Map roles(){load("roles.json")}
+	Map properties(){load("properties.json")}
+	Map colours(){load("colours.json")}
+	Map misc(){load("misc.json")}
+	Map conversative(){load("conversative.json")}
+	Map feeds(){load("feeds.json")}
+	Map settings(){load("settings.json")}
+	Map temp(){load("temp.json")}
+	Map audio(){load("audio.json")}
+	Map tracker(){load("tracker.json")}
 }
 
 
@@ -156,6 +156,7 @@ class GRover extends ListenerAdapter{
 	String lastReply
 	boolean tableTimeout
 	long started=System.currentTimeMillis()
+	List messages=[]
 	Closure errorMessage={["**Let's try that again.**\n","**Bots aren't your strong point. I can tell.**\n","**Watch how an expert does it.**\n","**You're doing it wrong.**\n","**Nah, it's more like this.**\n","**She wants to know if you're really a tech person.**\n","**Consider the following:**\n"].randomItem()}
 	Closure permissionMessage={["**The desire for something becomes stronger when you can't have it.**\n","**You may look, but don't touch.**\n","**What could go wrong in allowing that for everyone?**\n","**Access is denied to that.**\n","**I can't exploit your bot, therefore it sucks.**\n","**I can't let you do that, Star Fox.**\n","**There are function keys beyond F12. You are not ready for them.**\n"].randomItem()}
 	Closure failMessage={["**JDA, why you no user friendly?!**\n","**I have succeeded in my failure. Proud of me?**\n","**What on earth was that?**\n","**Hey, that was supposed to work. No fair.**\n","**LOSE LOSE LOSE LOSE LOSE LOSE!**\n","**I thought I fixed that.**\n","**It's java again isn't it?**\n"].randomItem()}
@@ -165,8 +166,8 @@ class GRover extends ListenerAdapter{
 	GRover(){
 		new GroovyShell().evaluate(new File("../Libraries/MichaelsUtil.groovy"))
 		new GroovyShell().evaluate(new File("methods.groovy"))
-		User.metaClass.getIdentity={db[delegate.id]?db[delegate.id]["name"]:delegate.name}
-		User.metaClass.getRawIdentity={db[delegate.id]?db[delegate.id]["name"]:null}
+		User.metaClass.getIdentity={db[delegate.id]?.name?:delegate.name}
+		User.metaClass.getRawIdentity={db[delegate.id]?.name}
 		Channel.metaClass.isSpam={channels.spam[delegate.id]||(channels.spam[delegate.id]==null)&&delegate.name.toLowerCase().containsAny(['spam','testing','shitpost'])}
 		Channel.metaClass.isLog={channels.log[delegate.id]||(channels.log[delegate.id]==null)&&delegate.name.toLowerCase().endsWithAny(['-log','logs'])}
 		Channel.metaClass.isNsfw={channels.nsfw[delegate.id]||(channels.nsfw[delegate.id]==null)&&delegate.name.toLowerCase().containsAny(['nsfw','porn','hentai'])}
@@ -196,22 +197,22 @@ class GRover extends ListenerAdapter{
 			while(true){
 				if(info.game){
 					e.jda.play(info.game)
-					Thread.sleep(40000)
+					Thread.sleep(80000)
 				}
 				e.jda.play("levelpalace.com")
-				Thread.sleep(20000)
+				Thread.sleep(40000)
 				if(info.game){
 					e.jda.play(info.game)
-					Thread.sleep(40000)
+					Thread.sleep(80000)
 				}
 				e.jda.play("with ${db*.key.size()} DB entries")
-				Thread.sleep(20000)
+				Thread.sleep(40000)
 				if(info.game){
 					e.jda.play(info.game)
-					Thread.sleep(40000)
+					Thread.sleep(80000)
 				}
 				e.jda.play("${bot.prefixes.randomItem()}${bot.commands.findAll{!it.dev}.randomItem().aliases[0]}")
-				Thread.sleep(20000)
+				Thread.sleep(40000)
 			}
 		}
 		Thread.start{
@@ -340,126 +341,146 @@ class GRover extends ListenerAdapter{
 	// Message Create Event
 	void onMessageReceived(MessageReceivedEvent e){
 		def args=e.message.rawContent
-		if(!(e.author.bot||(e.author.id in bot.ignored)||e.channel.ignored)){
-			String prefix=args.startsWithAny(e.guild?(settings.prefix[e.guild.id]?:bot.prefixes)+bot.mention:bot.prefixes)
-			if(prefix!=null){
-				args=args.substring(prefix.size())
-				Thread.start{
-					
-					Closure command={List aliases->(args.toLowerCase()+" ").startsWithAny(aliases*.plus(' '))?.trim()}
-					Command cmd=bot.commands.find{command(it.aliases)}
-					if(cmd){
-						try{
-							args=args.substring(command(cmd.aliases).length()).trim()
-							Map binding=[bot:bot,radio:radio,json:json,prefix:prefix,args:args,db:db,tags:tags,seen:seen,channels:channels,roles:roles,info:info,colours:colours,misc:misc,conversative:conversative,feeds:feeds,settings:settings,temp:temp,audio:audio,tracker:tracker,lastReply:lastReply,tableTimeout:tableTimeout,started:started,errorMessage:errorMessage,permissionMessage:permissionMessage,failMessage:failMessage]
-							cmd.run(binding,e)
-						}catch(ex){
-							e.sendMessage(failMessage()+"Error: `$ex.message`")
-							ex.printStackTrace()
-						}
-					}else if(command(tags*.key)){
-						args=args.tokenize()
-						if(e.guild.id in tags[args[0].toLowerCase()]["command"]){
-							tags[args[0].toLowerCase()]["history"][-1]["content"].addVariables(e,args.join(' ').substring(args[0].length()).trim()).split(1999).each{
-								e.sendMessage(it)
-								Thread.sleep(500)
-							}
-							tags[args[0].toLowerCase()]["uses"]+=1
-							json.save(tags,"tags.json")
-						}
-					}
-					
-				}
-			}else{
-				
-				// DM Conversative
-				if(!e.guild){
-					String chat=" "+e.message.content.toLowerCase().replaceAll(['.',',','!','?','\'',':',';','(',')','"','-'],'')+" "
-					if(e.message.attachment)chat+="$e.message.attachment.url "
-					if(chat.contains('discordgg')){
-						e.sendMessage("I can't accept this. Please use this instead:\n$bot.oauth")
-					}else{
-						List entry=conversative.findAll{chat.contains(' '+it.key+' ')}*.key
-						if(lastReply?.length()>1){
-							User client=e.jda.users.find{it.id==bot.id}
-							String add=e.message.content.capitalize().replaceAll([client.name,client.id,client.identity],['[name]','[id]','[identity]'])
-							if(!add.endsWithAny(['.','!','?',')']))add+=['.','!','?','...'].randomItem()
-							if(!conversative[lastReply])conversative[lastReply]=[]
-							conversative[lastReply]+=add
-							json.save(conversative,"conversative.json")
-						}
-						if(entry){
-							String response=conversative[entry.randomItem()].randomItem().replaceAll(['[name]','[id]','[identity]'],[e.author.name,e.author.id,e.author.identity])
-							lastReply=response.toLowerCase().replaceAll(['.',',','!','?','\'',':',';','(',')','"','-'],'').trim()
-							e.sendMessage(response)
-						}else{
-							String response=conversative*.value.randomItem().randomItem().replaceAll(['[name]','[id]','[identity]'],[e.author.name,e.author.id,e.author.identity])
-							lastReply=response.toLowerCase().replaceAll(['.',',','!','?','\'',':',';','(',')','"','-'],'').trim()
-							e.sendMessage(response)
-						}
-					}
-				}else if(modder){
-					if(e.author.isStaff(e.guild)&&(e.guild.id in modder*.guild*.id)){
-						modder*.edit("**${e.author.identity.capitalize()}**: Banned $banneer.identity forever.\nReason: $e.message.content")
-						modder=null
-						banneer=null
-						e.sendMessage("Job's done.")
-					}
-				}else if(e.channel.spam){
+		if(e.author){
+			if(!(e.author.bot||(e.author.id in bot.ignored)||e.channel.ignored)){
+				String prefix=args.startsWithAny(e.guild?(settings.prefix[e.guild.id]?:bot.prefixes)+bot.mention:bot.prefixes)
+				if(prefix!=null){
+					args=args.substring(prefix.size())
 					Thread.start{
-						if(e.message.content=="(\u256f\u00b0\u25a1\u00b0\uff09\u256f\ufe35 \u253b\u2501\u253b"){
-							if(!tableTimeout){
-								e.sendMessage(["(\u256f\u00b0\u2302\u00b0)\u256f\ufe35 \u253b\u2501\u2501\u253b","(~\u00b0 \u00b7\u00b0)~  \u252c\u2500\u2500\u252c"].randomItem())
+						
+						Closure command={List aliases->(args.toLowerCase()+" ").startsWithAny(aliases*.plus(' '))?.trim()}
+						Command cmd=bot.commands.find{command(it.aliases)}
+						if(cmd){
+							try{
+								args=args.substring(command(cmd.aliases).length()).trim()
+								Map binding=[bot:bot,radio:radio,json:json,prefix:prefix,args:args,db:db,tags:tags,seen:seen,channels:channels,roles:roles,info:info,colours:colours,misc:misc,conversative:conversative,feeds:feeds,settings:settings,temp:temp,audio:audio,tracker:tracker,lastReply:lastReply,tableTimeout:tableTimeout,started:started,errorMessage:errorMessage,permissionMessage:permissionMessage,failMessage:failMessage,messages:messages]
+								cmd.run(binding,e)
+							}catch(ex){
+								e.sendMessage(failMessage()+"Error: `$ex.message`")
+								ex.printStackTrace()
+							}
+							messages+=e.message
+						}else if(command(tags*.key)){
+							if(e.guild){
+								args=args.tokenize()
+								if(e.guild.id in tags[args[0].toLowerCase()]["command"]){
+									tags[args[0].toLowerCase()]["history"][-1]["content"].addVariables(e,args.join(' ').substring(args[0].length()).trim()).split(1999).each{
+										e.sendMessage(it)
+										Thread.sleep(500)
+									}
+									tags[args[0].toLowerCase()]["uses"]+=1
+									json.save(tags,"tags.json")
+									messages+=e.message
+								}
+							}
+						}
+						
+					}
+				}else{
+					
+					// DM Conversative
+					if(!e.guild){
+						String chat=" "+e.message.content.toLowerCase().replaceAll(['.',',','!','?','\'',':',';','(',')','"','-'],'')+" "
+						if(e.message.attachment)chat+="$e.message.attachment.url "
+						if(chat.contains('discordgg')){
+							e.sendMessage("I can't accept this. Please use this instead:\n$bot.oauth")
+						}else{
+							List entry=conversative.findAll{chat.contains(' '+it.key+' ')}*.key
+							if(lastReply?.length()>1){
+								User client=e.jda.users.find{it.id==bot.id}
+								String add=e.message.content.capitalize().replaceAll([client.name,client.id,client.identity],['[name]','[id]','[identity]'])
+								if(!add.endsWithAny(['.','!','?',')']))add+=['.','!','?','...'].randomItem()
+								if(!conversative[lastReply])conversative[lastReply]=[]
+								conversative[lastReply]+=add
+								json.save(conversative,"conversative.json")
+							}
+							if(entry){
+								String response=conversative[entry.randomItem()].randomItem().replaceAll(['[name]','[id]','[identity]'],[e.author.name,e.author.id,e.author.identity])
+								lastReply=response.toLowerCase().replaceAll(['.',',','!','?','\'',':',';','(',')','"','-'],'').trim()
+								e.sendMessage(response)
+							}else{
+								String response=conversative*.value.randomItem().randomItem().replaceAll(['[name]','[id]','[identity]'],[e.author.name,e.author.id,e.author.identity])
+								lastReply=response.toLowerCase().replaceAll(['.',',','!','?','\'',':',';','(',')','"','-'],'').trim()
+								e.sendMessage(response)
+							}
+						}
+					}else if(modder){
+						if(e.author.isStaff(e.guild)&&(e.guild.id in modder*.guild*.id)){
+							modder*.edit("**${e.author.identity.capitalize()}**: Banned $banneer.identity forever.\nReason: $e.message.content")
+							modder=null
+							banneer=null
+							e.sendMessage("Job's done.")
+						}
+					}else if(e.channel.spam){
+						Thread.start{
+							if(e.message.content=="(\u256f\u00b0\u25a1\u00b0\uff09\u256f\ufe35 \u253b\u2501\u253b"){
+								if(!tableTimeout){
+									e.sendMessage(["(\u256f\u00b0\u2302\u00b0)\u256f\ufe35 \u253b\u2501\u2501\u253b","(~\u00b0 \u00b7\u00b0)~  \u252c\u2500\u2500\u252c"].randomItem())
+									tableTimeout=1
+									Thread.sleep(8000)
+									tableTimeout=0
+								}else{
+									e.sendMessage("(-\u00b0 \u00b7\u00b0)-  \u252c\u2500\u2500\u252c\nHow do you think the table feels?")
+								}
+							}else if(e.message.content=="\u252c\u2500\u252c\ufeff \u30ce( \u309c-\u309c\u30ce)"){
+								e.sendMessage("-\u252c\u2500\u2500\u252c\u256f\u30ce( o\u200b_o\u30ce)")
 								tableTimeout=1
 								Thread.sleep(8000)
 								tableTimeout=0
-							}else{
-								e.sendMessage("(-\u00b0 \u00b7\u00b0)-  \u252c\u2500\u2500\u252c\nHow do you think the table feels?")
-							}
-						}else if(e.message.content=="\u252c\u2500\u252c\ufeff \u30ce( \u309c-\u309c\u30ce)"){
-							e.sendMessage("-\u252c\u2500\u2500\u252c\u256f\u30ce( o\u200b_o\u30ce)")
-							tableTimeout=1
-							Thread.sleep(8000)
-							tableTimeout=0
-						}else if(e.message.content=="ayy"){
-							e.sendMessage("le mayo")
-						}else if(e.message.content=="wew"){
-							e.sendMessage("lad")
-						}
-					}
-				}
-				
-				// Smilies
-				if(e.message.rawContent.containsAll(['(',')'])){
-					Thread.start{
-						String tag=e.message.rawContent.lastRange('(',')')
-						if(tag==~/\w+/){
-							File image=new File("images/xat/${tag}_xat.png")
-							if(image.exists()&&(!e.guild||settings.smilies[e.guild.id])){
-								e.sendFile(image)
-							}else if(e.guild){
-								image=new File("images/cs/${tag}_${e.guild.id}.png")
-								if(image.exists())e.sendFile(image)
+							}else if(e.message.content=="ayy"){
+								e.sendMessage("le mayo")
+							}else if(e.message.content=="wew"){
+								e.sendMessage("lad")
 							}
 						}
 					}
+					
+					// Smilies
+					if(e.message.rawContent.containsAll(['(',')'])){
+						Thread.start{
+							String tag=e.message.rawContent.lastRange('(',')')
+							if(tag==~/\w+/){
+								File image=new File("images/xat/${tag}_xat.png")
+								if(image.exists()&&(!e.guild||settings.smilies[e.guild.id])){
+									e.sendFile(image)
+								}else if(e.guild){
+									image=new File("images/cs/${tag}_${e.guild.id}.png")
+									if(image.exists())e.sendFile(image)
+								}
+							}
+						}
+					}
+					
+					seen[e.author.id]=[
+						time:System.currentTimeMillis(),
+						game:e.author.game?.name
+					]
+					
 				}
-				
-				seen[e.author.id]=[
-					time:System.currentTimeMillis(),
-					game:e.author.game?.name
-				]
-				
+			}
+/*			String log="${e.message.createTime.format('HH:mm')} "
+			if(e.guild){
+			  log+=("[$e.guild.name] [${e.channel.name.capitalize()}] <$e.author.identity>:\n$e.message.content")
+			}else{
+			  log+=("[Direct Messages] [${e.channel.user.identity.capitalize()}] <$e.author.identity>:\n$e.message.content")
+			}
+			if(e.message.attachment)log+="${if(e.message.content){"\n"}else{""}}[$e.message.attachment.name]"
+			println(log)*/
+		}
+	}
+	
+	
+	// Message Delete Event
+	void onMessageDelete(MessageDeleteEvent e){
+		if(e.guild){
+			Message message=messages.find{it.id==e.messageId}
+			if(message){
+				String addresser="his"
+				if(db[message.author.id]?.gender=="Female")addresser="her"
+				e.channel.sendMessage("**$message.author.identity** deleted $addresser command message.")
+				messages-=message
 			}
 		}
-/*		String log="${e.message.createTime.format('HH:mm')} "
-		if(e.guild){
-		  log+=("[$e.guild.name] [${e.channel.name.capitalize()}] <$e.author.identity>:\n$e.message.content")
-		}else{
-		  log+=("[Direct Messages] [${e.channel.user.identity.capitalize()}] <$e.author.identity>:\n$e.message.content")
-		}
-		if(e.message.attachment)log+="${if(e.message.content){"\n"}else{""}}[$e.message.attachment.name]"
-		println(log)*/
 	}
 	
 	
@@ -527,24 +548,12 @@ class UserinfoCommand extends Command{
 	void run(Map d,Event e){
 		String area=d.db[e.author.id]?d.db[e.author.id]["area"]:"United States"
 		String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-		int zone=d.misc.time[key]?:d.misc.time["United States"]
+		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
 		if(e.guild){
-			if(d.args.containsAny(['@everyone','@here'])){
-				e.sendMessage("""**${e.guild.name.capitalize()}**, owned by $e.guild.owner.identity: ```css
-ID: $e.guild.id
-Icon: $e.guild.icon
-Region: $e.guild.region
-Opened: ${new Date(e.guild.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy')} (${key.abbreviate()})
-AFK: ${e.guild.afkChannel?e.guild.afkChannel.name+", ":""}${e.guild.afkTimeout/60} minute${if((e.guild.afkTimeout/60)==1){""}else{"s"}}
-Roles: ${e.guild.roles.size()}
-Users: ${e.guild.users.size()}
-Emotes: ${e.guild.emotes.size()}
-Channels: ${e.guild.textChannels.size()}, ${e.guild.voiceChannels.size()}
-${if(e.guild.users.size()>249){"Large"}else{"Small"}}```""")
-			}else if(e.message.mentions.size()>1){
+			if(e.message.mentions.size()>1){
 				List mens=e.message.mentions
 				if(mens.size()>5)mens=mens[0..4]
-				List shared=e.jda.guilds.findAll{List ass=it.users;mens.every{it in ass}}*.name
+				List shared=e.jda.guilds.findAll{List ass=it.users*.id;mens.every{it.id in ass}}*.name
 				List joined=[]
 				List avatar=[]
 				List created=[]
@@ -559,7 +568,7 @@ Names: ${mens*.identity.join(', ')}
 Avatars: ${avatar.join(', ')}
 Created: ${created.join(', ')} (${key.abbreviate()})
 Joined: ${joined.join(', ')} (${key.abbreviate()})
-Shared: ${if(shared.size()>15){shared[0..15].join(', ')}else{shared.join(', ')}} (${shared.size()})
+Shared: ${if(shared.size()>9){shared[0..9].join(', ')+"..."}else{shared.join(', ')}} (${shared.size()})
 ${if(mens.every{!e.guild.userRoles[it]}){"Guests"}else if(mens.every{it.bot}){"Bots"}else if(mens.every{e.guild.userRoles[it]}){"Members"}else{"Multiple values"}}```""")
 			}else{
 				User user=e.author
@@ -572,7 +581,7 @@ Name: $user.identity
 Avatar: ${user.avatar?:user.defaultAvatarUrl}
 Created: ${new Date(user.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy')} (${key.abbreviate()})
 Joined: ${new Date(e.guild.joinedAtMap[e.author].toDate().time+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy')} (${key.abbreviate()})
-Shared: ${if(shared.size()>15){shared[0..15].join(', ')}else{shared.join(', ')}} (${shared.size()})
+Shared: ${if(shared.size()>9){shared[0..9].join(', ')+"..."}else{shared.join(', ')}} (${shared.size()})
 Seen: ${d.seen[user.id]?new Date(d.seen[user.id]["time"]+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy'):"???"} (${key.abbreviate()})
 ${if(!e.guild.userRoles[user]){"Guest"}else if(user.bot){"Bot"}else if(user==e.guild.owner){"Owner"}else{"Member"}}```""")
 				}else{
@@ -587,7 +596,7 @@ ID: $user.id
 Name: $user.identity
 Avatar: ${user.avatar?:user.defaultAvatarUrl}
 Created: ${new Date(user.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy')} (${key.abbreviate()})
-Shared: ${if(shared.size()>15){shared[0..15].join(', ')}else{shared.join(', ')}} (${shared.size()})
+Shared: ${if(shared.size()>9){shared[0..9].join(', ')+"..."}else{shared.join(', ')}} (${shared.size()})
 Seen: ${d.seen[user.id]?new Date(d.seen[user.id]["time"]+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy'):"???"} (${key.abbreviate()})```""")
 		}
 	}
@@ -602,7 +611,7 @@ class ServerinfoCommand extends Command{
 	void run(Map d,Event e){
 		String area=d.db[e.author.id]?d.db[e.author.id]["area"]:"United States"
 		String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-		int zone=d.misc.time[key]?:d.misc.time["United States"]
+		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
 		if(e.guild||d.args){
 			Guild guild=e.guild
 			if(d.args)guild=e.jda.findGuild(d.args)
@@ -613,10 +622,10 @@ Icon: $guild.icon
 Region: $guild.region
 Opened: ${new Date(guild.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy')} (${key.abbreviate()})
 AFK: ${guild.afkChannel?guild.afkChannel.name+", ":""}${guild.afkTimeout/60} minute${if((guild.afkTimeout/60)==1){""}else{"s"}}
-Roles: ${guild.roles.size()}
-Users: ${guild.users.size()}
-Emotes: ${guild.emotes.size()}
-Channels: ${guild.textChannels.size()}, ${guild.voiceChannels.size()}
+Roles: ${if(guild.roles.size()>4){guild.roles[0..4]*.name.join(', ')+"..."}else{guild.roles*.name.join(', ')}} (${guild.roles.size()})
+Users: ${if(guild.users.size()>4){guild.users[0..4]*.identity.join(', ')+"..."}else{guild.users*.identity.join(', ')}} (${guild.users.size()})
+Emotes: ${if(guild.emotes.size()>4){guild.emotes[0..4]*.name.join(', ')+"..."}else{guild.emotes*.name.join(', ')}} (${guild.emotes.size()})
+Channels: ${if(guild.textChannels.size()>1){guild.textChannels[0..1]*.name.join(', ')+"..."}else{guild.textChannels*.name.join(', ')}}${if(guild.voiceChannels){", ${if(guild.voiceChannels.size()>1){guild.voiceChannels[0..1]*.name.join(', ')+'...'}else{guild.voiceChannels*.name.join(', ')}}"}else{""}} (${guild.textChannels.size()}, ${guild.voiceChannels.size()})
 ${if(guild.users.size()>249){"Large"}else{"Small"}}```""")
 			}else{
 				e.sendMessage("I couldn't find a server matching '$d.args.'")
@@ -628,10 +637,10 @@ ID: $user.id
 Icon: $user.avatar
 Region: London
 Opened: ${new Date(user.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy')} (${key.abbreviate()})
-Roles: 0
-Users: ${e.jda.privateChannels.size()+1}
-Emotes: 0
-Channels: ${e.jda.privateChannels.size()}, 0
+Roles: (0)
+Users: $e.jda.selfInfo.identity, ${if(e.jda.privateChannels.size()>3){e.jda.privateChannels[0..3]*.user*.identity.join(', ')+"..."}else{e.jda.privateChannels*.user*.identity.join(', ')}} (${e.jda.privateChannels.size()+1})
+Emotes: (0)
+Channels: ${if(e.jda.privateChannels.size()>1){e.jda.privateChannels[0..1]*.user*.identity.join(', ')+"..."}else{e.jda.privateChannels*.user*.identity.join(', ')}} (${e.jda.privateChannels.size()}, 0)
 ${if(e.jda.privateChannels.size()>249){"Large"}else{"Small"}}```""")
 		}
 	}
@@ -646,7 +655,7 @@ class ChannelinfoCommand extends Command{
 	void run(Map d,Event e){
 		String area=d.db[e.author.id]?d.db[e.author.id]["area"]:"United States"
 		String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-		int zone=d.misc.time[key]?:d.misc.time["United States"]
+		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
 		def channel=e.channel
 		if(d.args&&e.guild)channel=e.message.mentionedChannels?e.message.mentionedChannels[-1]:e.guild.findChannel(d.args)
 		if(channel){
@@ -660,6 +669,7 @@ class ChannelinfoCommand extends Command{
 				e.sendMessage("""**${channel.name.capitalize()}** in $channel.guild.name: ```css
 ID: $channel.id
 Created: ${new Date(channel.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy')} (${key.abbreviate()})
+Users: ${if(channel.users.size()>4){channel.users[0..4]*.identity.join(', ')+"..."}else{channel.users*.identity.join(', ')}} (${channel.users.size()})
 ${if(channel.class==TextChannelImpl){"Last Activity: ${try{"${channel.history.retrieve(1)[0].createTime.format('HH:mm:ss, d MMMM yyyy')}"}catch(CantView){"???"}}"}else{"Bit Rate: ${channel.bitrate/1000} kbps"}}
 ${if(props){"Properties: ${props.join(', ')}"}else{"No special properties"}}
 ${if(channel.guild.defaultChannel==channel){"Default "}else if(channel.guild.afkChannel==channel){"AFK "}else{""}}${channel.class.simpleName-"ChannelImpl"}```""")
@@ -667,6 +677,7 @@ ${if(channel.guild.defaultChannel==channel){"Default "}else if(channel.guild.afk
 				e.sendMessage("""**${channel.user.name.capitalize()}** in Direct Messages: ```css
 ID: $channel.id
 Created: ${new Date(channel.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy')} (${key.abbreviate()})
+Users: $e.jda.selfInfo.identity, $e.author.identity (2)
 Last Activity: ${channel.history.retrieve(1)[0].createTime.format('HH:mm:ss, d MMMM yyyy')}
 Properties: NSFW, Song
 Direct Text```""")
@@ -686,18 +697,18 @@ class RoleinfoCommand extends Command{
 	void run(Map d,Event e){
 		String area=d.db[e.author.id]?d.db[e.author.id]["area"]:"United States"
 		String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-		int zone=d.misc.time[key]?:d.misc.time["United States"]
+		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
 		if(e.guild){
 			Role role
 			if(d.args&&e.guild)role=e.message.mentionedRoles?e.message.mentionedRoles[-1]:e.guild.findRole(d.args)
 			if(role){
-				List collection=role.guild.users.findAll{role in role.guild.userRoles[it]}*.identity
+				List collection=role.guild.users.findAll{role.id in role.guild.userRoles[it]*.id}*.identity
 				e.sendMessage("""**${role.name.capitalize()}** in $role.guild.name: ```css
 ID: $role.id
 Colour: ${if(role.color){role.color}else{"Default"}}
 Created: ${new Date(role.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy')} (${key.abbreviate()})
-Members: ${if(collection.size()>15){"${collection[0..15].join(', ')} ($collection.size)"}else if(collection){"${collection.join(', ')} ($collection.size)"}else{"None"}}
-${if(role.managed){"Integrated"}else if(role.config){"Config"}else if(role.id==d.roles["mute"][role.guild.id]){"Mute"}else if(role.id==d.roles["member"][role.guild.id]){"Member"}else if(role.colour){"Colour"}else if(role==role.guild.defaultRole){"Default"}else{"Regular"}}```""")
+Users: ${if(collection.size()>9){collection[0..9].join(', ')+"..."}else{collection.join(', ')}} (${collection.size()})
+${if(role.managed){"Integrated"}else if(role.config){"Config"}else if(role.id==d.roles.mute[role.guild.id]){"Mute"}else if(role.id==d.roles.member[role.guild.id]){"Member"}else if(role.colour){"Colour"}else if(role==role.guild.defaultRole){"Default"}else{"Regular"}}```""")
 			}else{
 				e.sendMessage("I couldn't find a role matching '$d.args.'")
 			}
@@ -707,7 +718,7 @@ ${if(role.managed){"Integrated"}else if(role.config){"Config"}else if(role.id==d
 ID: $user.id
 Colour: Default
 Created: ${new Date(user.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy')} (${key.abbreviate()})
-Members: ${try{(e.jda.privateChannels*.user*.identity+user.identity)[0..14].join(', ')}catch(NotThatMany){(e.jda.privateChannels*.user*.identity+user.identity).join(', ')}} (${e.jda.privateChannels.size()+1})
+Users: ${try{(e.jda.privateChannels*.user*.identity+user.identity)[0..14].join(', ')+"..."}catch(NotThatMany){(e.jda.privateChannels*.user*.identity+user.identity).join(', ')}} (${e.jda.privateChannels.size()+1})
 Default Role```""")
 		}
 	}
@@ -726,7 +737,7 @@ class EmoteinfoCommand extends Command{
 		if(emote){
 			String area=d.db[e.author.id]?d.db[e.author.id]["area"]:"United States"
 			String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-			int zone=d.misc.time[key]?:d.misc.time["United States"]
+			int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
 			if(emote.guilds)guild=emote.guilds[0]
 			e.sendMessage("""**${emote.name.capitalize()}** in ${if(guild){emote.guilds[0].name}else{"???"}}: ```css
 ID: $emote.id
@@ -1317,7 +1328,7 @@ class UrbanCommand extends Command{
 					Element worddef=de.getElementsByClass("word")[0]
 					Element meaning=de.getElementsByClass("meaning")[0]
 					Element example=de.getElementsByClass("example")[0]
-					String definition=("**${worddef.text().replace('_','\\_').replace('*','\\*').replace('`','\\`').replace('~','\\~').capitalize()}**:\n${meaning.text().replace('_','\\_').replace('*','\\*').replace('`','\\`').replace('~','\\~')}\n*${example.text()}*\n\n")
+					String definition=("**${worddef.text().replace('_','\\_').replace('*','\\*').replace('`','\\`').replace('~','\\~').capitalize()}**:\n${meaning.text().replace('_','\\_').replace('*','\\*').replace('`','\\`').replace('~','\\~')}\n_${example.text()}_\n\n")
 					if(definition.length>1500)definition=definition.substring(0,1500)+"..."
 					e.sendMessage("${definition.replace('\n**','')}<$link>")
 				}else{
@@ -1356,7 +1367,7 @@ class TagCommand extends Command{
 					e.sendMessage("You can't create an invite tag without an invite.")
 				}else{
 					d.tags[d.args[1]]=[
-						server:e.message.guild?.id,
+						server:e.guild?.id,
 						history:[[
 							content:d.args[2..-1].join(' '),
 							author:e.author.id
@@ -1465,7 +1476,9 @@ class TagCommand extends Command{
 				String server="Direct Messages"
 				String author=e.jda.users.find{it.id==d.tags[d.args[1]]["history"][0]["author"]}?.identity?:d.tags[d.args[1]]["history"][0]["author"]
 				if(d.tags[d.args[1]]["server"])server=e.jda.guilds.find{it.id==d.tags[d.args[1]]["server"]}?.name?:d.tags[d.args[1]]["server"]
-				e.sendMessage("Created by $author in $server.\n\n${d.tags[d.args[1]]["history"][-1]["content"]}\n\nThis tag has ${d.tags[d.args[1]]["uses"]} use${if(d.tags[d.args[1]]["uses"]==1){""}else{"s"}} and ${d.tags[d.args[1]]["history"]*.key.size()} history.".split(1950))
+				"Created by $author in $server.\n\n${d.tags[d.args[1]]["history"][-1]["content"]}\n\nThis tag has ${d.tags[d.args[1]]["uses"]} use${if(d.tags[d.args[1]]["uses"]==1){""}else{"s"}} and ${d.tags[d.args[1]]["history"]*.key.size()} history.".split(1999).each{
+					e.sendMessage(it)
+				}
 			}catch(ex){
 				ex.printStackTrace()
 				try{
@@ -1534,6 +1547,17 @@ class TagCommand extends Command{
 				e.sendMessage(top10)
 			}else{
 				e.sendMessage("That user doesn't seem to have any tags.")
+			}
+		}else if(d.args[0]=="search"){
+			if(d.args[1]){
+				String search=d.args[1..-1].join().toLowerCase()
+				List tags=d.tags*.key.findAll{it.contains(search)}
+				String result=tags.join(', ').replace('lb','**lb**')
+				if(result.length()>1000)result=result.substring(0,1000)+"..."
+				else if(!result)result="No matching tags found."
+				e.sendMessage("**__Tag Results (${tags.size()})__:**\n$result")
+			}else{
+				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag search [search term]`.")
 			}
 		}else if(d.args[0]=="command"){
 			if(e.guild){
@@ -1683,7 +1707,7 @@ class MiscCommand extends Command{
 			if(d.args[1]){
 				Object thing=e.jda.users.find{it.id==d.args[1]}
 				if(!thing)thing=e.jda.guilds.find{it.id==d.args[1]}
-				if(!thing)thing=e.jda.channels*.find{it.id==d.args[1]}
+				if(!thing)thing=e.jda.channels.find{it.id==d.args[1]}
 				if(!thing)thing=e.jda.channels*.roles.flatten().find{it.id==d.args[1]}
 				if(!thing)thing=e.jda.guilds*.emojis.flatten().find{it.id==d.args[1]}
 				if(thing){
@@ -1779,13 +1803,17 @@ class ChatBoxCommand extends Command{
 			String channelInfo="#$channel.name | ${if(channel.topic){channel.topic}else{""}}".cut(40+offset)
 			p+=" $guildName${" "*(14-guildName.length)} | $channelInfo${" "*((40+offset)-channelInfo.length)} \ud83d\udd14 \ud83d\udccc\n----------------|------------------------------------------------${"-"*offset}\n"
 			List channels=["TEXT CHANNELS "]
-			guild.textChannels.toList().sort{it.position}.each{
+			List tc=guild.textChannels.toList().sort{it.position}
+			if(tc.size()>25)tc=tc[0..24]
+			tc.each{
 				String channelName="#$it.name".cut(14)
 				channels+="$channelName${" "*(14-channelName.length)}"
 			}
 			channels+="              "
 			channels+="VOICE CHANNELS"
-			guild.voiceChannels.toList().sort{it.position}.each{
+			List vc=guild.voiceChannels.toList().sort{it.position}
+			if(vc.size()>15)vc=vc[0..14]
+			vc.each{
 				String channelName="#$it.name".cut(14)
 				if(it.userLimit){
 					String limit="${it.users.size()}/$it.userLimit"
@@ -1838,7 +1866,9 @@ class ChatBoxCommand extends Command{
 			String channelInfo="@$channel.user.name | ${if(aka){"AKA ${aka.join(', ')}"}else{""}}".cut(40+offset)
 			p+=" Find or start\u2026 | $channelInfo${" "*((40+offset)-channelInfo.length)} \ud83d\udcde \ud83d\udccc\n----------------|------------------------------------------------${"-"*offset}\n"
 			List channels=["Friends       ","              ","DIRECT MESSAGE"]
-			e.jda.privateChannels.each{
+			List pc=e.jda.privateChannels.toList()
+			if(pc.size()>30)pc=pc[0..29]
+			pc.each{
 				String channelName=it.user.name.cut(14)
 				channels+="$channelName${" "*(14-channelName.length)}"
 			}
@@ -1941,7 +1971,7 @@ class IrlCommand extends Command{
 			for(m in mens){
 				try{
 					ass+="**${m.identity.capitalize()}**: ${String irl=d.db[m.id]["irl"];if(irl in["unknown","private"]){"Real name $irl."}else{irl}}.\n"
-				}catch(no){
+				}catch(ex){
 					ass+="**${m.identity.capitalize()}**: No information in my database.\n"
 				}
 			}
@@ -1958,7 +1988,7 @@ class IrlCommand extends Command{
 			if(user){
 				try{
 					e.sendMessage("**${user.identity.capitalize()}**'s real name is ${String irl=d.db[user.id]["irl"];if(irl!="unknown"){irl}else{"not in my database"}}.")
-				}catch(no){
+				}catch(ex){
 					e.sendMessage("There is no information in my database for $user.name.")
 					ex.printStackTrace()
 				}
@@ -2034,7 +2064,7 @@ class AreaCommand extends Command{
 			if(user){
 				try{
 					e.sendMessage("**${user.identity.capitalize()}**'s location is ${String area=d.db[user.id]["area"];if(area!="unknown"){area}else{"not in my database"}}.")
-				}catch(no){
+				}catch(ex){
 					e.sendMessage("There is no information in my database for $user.name.")
 					ex.printStackTrace()
 				}
@@ -2133,8 +2163,11 @@ Beaconville functionality."""
 class TimeCommand extends Command{
 	List aliases=['time']
 	void run(Map d,Event e){
+		User ass
+		if(d.args)ass=e.guild.findUser(d.args)
 		if(!d.args||e.message.mentions){
 			User user=e.message.mentions?e.message.mentions[-1]:e.author
+			if(ass)user=ass
 			if(d.db[user.id]){
 				if(d.db[user.id]["area"]=="private"){
 					e.sendMessage("${user.identity.capitalize()}'s location is private.")
@@ -2184,7 +2217,7 @@ class SeenCommand extends Command{
 			if(d.seen[user.id]){
 				String area=d.db[e.author.id]?d.db[e.author.id]["area"]:"United States"
 				String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-				int zone=d.misc.time[key]?:d.misc.time["United States"]
+				int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
 				if(d.seen[user.id]["game"]){
 					e.sendMessage("**${user.identity.capitalize()}** was last seen online at ${new Date(d.seen[user.id]["time"]+(zone*3600000)).format('HH:mm:ss, d MMMM YYYY').formatBirthday()} (${key.abbreviate()} time) playing ${d.seen[user.id]["game"]}.\nCurrently, $address $user.status.")
 				}else{
@@ -2197,7 +2230,7 @@ class SeenCommand extends Command{
 			e.sendMessage("I couldn't find a user matching '$d.args.'")
 		}
 	}
-	String category="Database"
+	String category="General"
 	String help="""`seen [user]` will make me tell you when I last saw them, and what they were doing.
 But where are they now?"""
 }
@@ -2205,10 +2238,9 @@ But where are they now?"""
 
 class EventsCommand extends Command{
 	List aliases=['events']
+	Map specials=["25 December":"Christmas","31 October":"Halloween","1 January":"New Year","26 December":"Boxing Day"]
 	void run(Map d,Event e){
-		d.args=d.args.replaceAll(['@','#'],'')
 		List eventsToday=[]
-		Map specials=["25 December":"Christmas","24 December":"Christmas Eve","31 October":"Halloween","1 January":"New Year","26 December":"Boxing Day"]
 		if(d.args){
 			try{
 				int numberOfDays=d.args.toInteger()
@@ -2315,7 +2347,7 @@ class EventsCommand extends Command{
 			e.sendMessage("**__Events for ${todaysDate.formatBirthday()} (Today) ($eventsToday.size)__:**\n${if(eventsToday){eventsToday.join('\n')}else{"Nothing interesting today."}}\n**__Upcoming Events (7 Days) ($eventsUpcoming.size)__:**\n${if(eventsUpcoming){eventsUpcoming.join('\n')}else{"Sure is boring around here."}}")
 		}
 	}
-	String category="General"
+	String category="Database"
 	String help="""`events` will make me tell you today's and upcoming events.
 `events [number]` will make me tell you the events upcoming in those days.
 `events [date]` will make me tell you the events for that day.
@@ -2326,9 +2358,9 @@ No-one ever remembers my birthday..."""
 class ColourCommand extends Command{
 	List aliases=['colour','color']
 	void run(Map d,Event e){
-		List colourdone=["Enjoy your new colour! It looks good on you!","Done! How's it look?"]
-		if(d.args){
-			if(e.guild){
+		if(e.guild){
+			List colourdone=["Enjoy your new colour! It looks good on you!","Done! How's it look?"]
+			if(d.args){
 				if(e.guild.userRoles[e.jda.selfInfo].any{"MANAGE_ROLES"in it.permissions*.toString()}){
 					e.startTyping()
 					try{
@@ -2364,19 +2396,20 @@ class ColourCommand extends Command{
 								role=manager.role
 							}
 							List old=e.guild.userRoles[user].findAll{it.colour}
+							List failed=[]
 							old.each{
 								try{
 									e.guild.manager.removeRoleFromUser(user,it)
 								}catch(persimmons){
-									
+									failed+=it
 								}
 							}
 							e.guild.manager.addRoleToUser(user,role)
 							e.guild.manager.update()
 							if(old.size()>1){
-								e.sendMessage("${colourdone.randomItem()}\n(Your previous colours were `${old*.name.join('`, `')}`.)")
+								e.sendMessage("${colourdone.randomItem()}\n(Your previous colours were ${old*.asMention.join(' ')}.)${if(failed){"(Due to permissions, I couldn't remove ${failed*.asMention.join(' ')})"}else{""}}")
 							}else if(old){
-								e.sendMessage("${colourdone.randomItem()}\n(Your previous colour was `${old[0].name}`.)")
+								e.sendMessage("${colourdone.randomItem()}\n(Your previous colour was ${old[0].asMention}.)${if(failed){"(Due to permissions, I couldn't remove ${failed*.asMention.join(' ')})"}else{""}}")
 							}else{
 								e.sendMessage(colourdone.randomItem())
 							}
@@ -2393,10 +2426,10 @@ class ColourCommand extends Command{
 					e.sendMessage("I need to be able to manage roles to do that...")
 				}
 			}else{
-				e.sendMessage("Colours cannot be given in Direct Messages.")
+				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}colour [hex/svg/random]`.")
 			}
 		}else{
-			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}colour [hex/svg/random]`.")
+			e.sendMessage("Colours cannot be given in Direct Messages.")
 		}
 	}
 	String category="General"
@@ -2473,22 +2506,22 @@ class SetAvatarCommand extends Command{
 	List aliases=['setavatar']
 	void run(Map d,Event e){
 		d.args=d.args.toLowerCase()
-		if(d.args=="random")d.args=(0..40).toList().randomItem()
-		try{
+		if((d.args=="random")||(d.args in(1..9)*.toString())){
+			if(d.args=="random")d.args=(1..9).randomItem()
+			else d.args=d.args.toInteger()
 			int old=d.info.avatar
-			d.info.avatar=d.args.toInteger()
+			d.info.avatar=d.args
 			d.json.save(d.info,"properties.json")
-			e.jda.accountManager.setAvatar(AvatarUtil.getAvatar(new File("images/avatars/"+d.args+".jpg")))
+			e.jda.accountManager.setAvatar(AvatarUtil.getAvatar(new File("images/avatars/${d.args}.jpg")))
 			e.jda.accountManager.update()
 			e.sendMessage("My avatar has been changed to $d.args. My previous one was $old.")
-		}catch(ex){
-			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}setavatar [0..40]/random`.")
-			ex.printStackTrace()
+		}else{
+			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}setavatar [1..9]/random`.")
 		}
 	}
 	String category="General"
-	String help="""`setavatar [number]/random` will make me change my avatar.
-41 to choose from (starts at 0)! Wow!"""
+	String help="""`setavatar [1..9]/random` will make me change my avatar.
+Just 9 to choose from now."""
 }
 
 
@@ -2539,11 +2572,9 @@ class EvalCommand extends Command{
 				long startTime2=System.currentTimeMillis()
 				Message message=e.sendMessage(eval)
 				long stopTime2=System.currentTimeMillis()
-				long elapsedTime=stopTime-startTime
-				long elapsedTime2=stopTime2-startTime2
-				message.edit("$message.rawContent\n`${elapsedTime}ms`, `${elapsedTime2}ms`")
+				message.edit("$message.rawContent\n`${stopTime-startTime}ms`, `${stopTime2-startTime2}ms`")
 			}catch(ex){
-				e.sendMessage(ex.message)
+				e.sendMessage("$ex")
 				ex.printStackTrace()
 			}
 		}
@@ -2600,6 +2631,7 @@ Ignored Channels: ${ass.channels.findAll{it.ignored}*.name.join(', ')}
 Member Role: ${ass.roles.find{it.id==d.roles.member[ass.id]}?.name?:d.roles.member[ass.id]}
 Mute Role: ${ass.roles.find{it.id==d.roles.mute[ass.id]}?.name?:d.roles.mute[ass.id]}```""")
 			e.sendMessage("""```css
+Prefix: ${d.settings.prefix[ass.id]?.join(' ')}
 Command Tags: ${d.tags.findAll{ass.id in it.value.command}*.key.join(', ')}
 Join: ${d.tracker.join[ass.id]}
 Leave: ${d.tracker.leave[ass.id]}
@@ -2607,7 +2639,7 @@ xat Smilies: ${d.settings.smilies[ass.id]as boolean}
 Vote Pin: ${d.settings.votepin[ass.id]?:3}
 Radio Toggle: ${d.audio.toggle[ass.id]as boolean}
 Radio Channel: ${ass.voiceChannels.find{it.id==d.audio.channel[ass.id]}?.name?:d.audio.channel[ass.id]}
-Radio Station: ${d.audio.toggle[ass.id]}```""")
+Radio Station: ${d.audio.station[ass.id]}```""")
 			e.sendMessage("""```css
 ${ass.textChannels.findAll{it.id in d.feeds*.value.flatten()*.channel}.collect{Channel mom->"Feeds (#$mom.name): ${d.feeds*.value.flatten().findAll{it.channel==mom.id}*.link.join(', ')}"}.join('\n')}```""")
 		}
@@ -2834,11 +2866,8 @@ class LogCommand extends Command{
 	void run(Map d,Event e){
 		e.startTyping()
 		int size=50
-		try{
-			size=d.args.tokenize()[-1].toInteger()
-		}catch(NoNumberArgument){
-			
-		}
+		String arg=d.args.tokenize()[-1]
+		if(arg==~/\d+/)size=arg.toInteger()
 		if(size>5000)size=5000
 		if(size<2)size=2
 		String log="${new Date().format('d MMMM YYYY').formatBirthday()}, #${if(e.guild){e.channel.name}else{e.author.name}} in ${try{e.guild.name}catch(DM){"Direct Messages"}}:\r\n"
@@ -2862,14 +2891,15 @@ It's too late to take back what you said."""
 class ScopeCommand extends Command{
 	List aliases=['scope','online']
 	void run(Map d,Event e){
-		Map emotes=[online:":vpOnline:212789758110334977",away:":vpAway:212789859071426561",do_not_disturb:":vpDnD:236744731088912384"]
+		Map emotes=[online:":o:212789758110334977",away:":i:212789859071426561",do_not_disturb:":d:236744731088912384"]
 		if(e.guild){
 			try{
 				List used=[]
-				List roles=e.guild.roles.findAll{it.grouped}
 				String ass=""
+				List roles=e.guild.roles.findAll{it.grouped}
+				List base=e.guild.users.findAll{it.status!="offline"}.findAll{!it.bot}.findAll{it.rawIdentity}
 				roles.each{Role r->
-					List users=e.guild.users.findAll{it.status!="offline"}.findAll{!it.bot}.findAll{r in e.guild.userRoles[it]}.findAll{it.rawIdentity}.findAll{!(it.id in used)}.toList().sort{e.guild.nickMap[it]?:it.name}
+					List users=base.findAll{r in e.guild.userRoles[it]}.findAll{!(it.id in used)}.toList().sort{e.guild.nickMap[it]?:it.name}
 					if(users){
 						ass+="**$r.name**:\n"
 						int pos=0
@@ -3059,8 +3089,8 @@ You can feed into YouTube, MyAnimeList, Level Palace and Twitter. Isn't that nea
 class ClearCommand extends Command{
 	List aliases=['clear','delete']
 	void run(Map d,Event e){
-		if(!e.guild||e.author.isStaff(e.guild)){
-			List users=e.message.mentions
+		List users=e.message.mentions
+		if(!e.guild||e.author.isStaff(e.guild)||((users*.id==[e.author.id])&&e.author.isMember(e.guild))){
 			if(!e.guild||e.guild.userRoles[e.jda.selfInfo].any{"MESSAGE_MANAGE"in it.permissions*.toString()||(users==[e.jda.selfInfo])}){
 				e.startTyping()
 				d.args=d.args.toLowerCase().tokenize()
@@ -3081,10 +3111,12 @@ class ClearCommand extends Command{
 						messages*.delete()
 					}
 					Message message=e.sendMessage("Cleared ${messages.size()} messages.")
-					e.guild.textChannels.findAll{it.log}*.sendMessage("**${e.author.identity.capitalize()}**: Cleared ${messages.size()} messages by ${if(users){users*.identity.join(', ')}else{"everyone"}} in the last ${amount-1} message${if((amount-1)==1){""}else{"s"}} in #$e.channel.name.")
-					Thread.sleep(3000)
-					e.message.delete()
-					message.delete()
+					if(e.author.isStaff(e.guild)){
+						e.guild.textChannels.findAll{it.log}*.sendMessage("**${e.author.identity.capitalize()}**: Cleared ${messages.size()} messages by ${if(users){users*.identity.join(', ')}else{"everyone"}} in the last ${amount-1} message${if((amount-1)==1){""}else{"s"}} in #$e.channel.name.")
+						Thread.sleep(3000)
+						e.message.delete()
+						message.delete()
+					}
 				}else{
 					messages.findAll{it.author.id==d.bot.id}*.delete()
 				}
@@ -3092,11 +3124,11 @@ class ClearCommand extends Command{
 				e.sendMessage("I need to be able to manage messages to do that...")
 			}
 		}else{
-			e.sendMessage(d.permissionMessage()+"Required: `Staff (Trainer/MANAGE_MESSAGES)`.")
+			e.sendMessage(d.permissionMessage()+"Required: `Staff (Trainer/MANAGE_MESSAGES)`, `Use on self with Member (any role)`.")
 		}
 	}
 	String category="Moderation"
-	String help="""`clear [users] [amount]` will make me clear out chat.
+	String help="""`clear [users] [amount]` will make me clear the chat.
 It was all just a bad dream."""
 }
 
@@ -3202,9 +3234,10 @@ class VotePinCommand extends Command{
 		if(d.args){
 			e.startTyping()
 			if(e.guild){
+				String arg=d.args.tokenize()[0]
 				if(e.author.isMember(e.guild)){
-					if(!e.guild||e.guild.userRoles[e.jda.selfInfo].any{"MESSAGE_MANAGE"in it.permissions*.toString()}){
-						if(e.author.isOwner(e.guild)&&d.args.tokenize()[0]=="max"){
+					if(!e.guild||e.guild.userRoles[e.jda.selfInfo].any{"MESSAGE_MANAGE"in it.permissions*.toString()}||e.author.isOwner(e.guild)&&(arg=="max")){
+						if(e.author.isOwner(e.guild)&&(arg=="max")){
 							try{
 								int max=d.args.substring(4).toInteger()
 								if(max<1)max=1
@@ -3215,7 +3248,7 @@ class VotePinCommand extends Command{
 								e.sendMessage("Please enter a number.")
 							}
 						}else{
-							if(e.message.channel.pinnedMessages.size()==50){
+							if(e.channel.pinnedMessages.size()==50){
 								e.sendMessage("Your channel has 50 pins. I am unable to pin a message now.")
 							}else{
 								Message message
@@ -3227,13 +3260,13 @@ class VotePinCommand extends Command{
 								}
 								if(message){
 									int max=d.settings.votepin[e.guild.id]?:3
-									if(e.author.id in votes[message.id]){
+									if(message.pinned){
+										e.sendMessage("That message is already pinned.")
+									}else if(e.author.id in votes[message.id]){
 										votes[message.id]-=e.author.id
 										e.sendMessage("Unvoted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)")
 									}else if(message.author.id==e.author.id){
 										e.sendMessage("Wow, shameless self-promotion.")
-									}else if(message.pinned){
-										e.sendMessage("That message is already pinned.")
 									}else{
 										if(!votes[message.id])votes[message.id]=[]
 										votes[message.id]+=e.author.id
@@ -3306,8 +3339,8 @@ class RadioCommand extends Command{
 			}
 			if(d.args[0]in["now","info"]){
 				e.sendMessage("""```css
-Now Playing: ${d.radio.now[e.guild.id]?"${if(d.radio.now[e.guild.id].startsWith('http')){""}else{"https://youtu.be/"}}${d.radio.now[e.guild.id]}":"Silence"}
-Station: ${d.audio.station[e.guild.id]?:"none"}
+Now Playing: ${d.radio.now[e.guild.id]?"${if(d.radio.now[e.guild.id].startsWith('http')){""}else{"https://youtu.be/"}}${d.radio.now[e.guild.id]?.trim()}":"Silence"}
+Station: ${d.audio.station[e.guild.id]?.trim()?:"none"}
 Channel: ${e.guild.voiceChannels.find{it.id==d.audio.channel[e.guild.id]}?.name?:d.audio.channel[e.guild.id]}
 Repeat: $player.repeat
 Volume: ${(player.volume*75).toInteger()}```""")
@@ -3361,12 +3394,16 @@ Volume: ${(player.volume*75).toInteger()}```""")
 					if(d.args[1]){
 						VoiceChannel channel=e.guild.findVoiceChannel(d.args[1..-1].join(' ').trim())
 						if(channel){
-							if(d.audio.toggle[e.guild.id]){
-								manager.closeAudioConnection()
-								manager.openAudioConnection(channel)
+							try{
+								if(d.audio.toggle[e.guild.id]){
+									manager.closeAudioConnection()
+									manager.openAudioConnection(channel)
+								}
+								d.audio.channel[e.guild.id]=channel.id
+								e.sendMessage("The channel has been changed to #$channel.name.")
+							}catch(ex){
+								e.sendMessage("I need to be able to speak in voice to do that...")
 							}
-							d.audio.channel[e.guild.id]=channel.id
-							e.sendMessage("The channel has been changed to #$channel.name.")
 							d.json.save(d.audio,"audio.json")
 						}else{
 							e.sendMessage("I couldn't find a voice channel with that name.")
@@ -3467,17 +3504,18 @@ Prepare your ten hour videos."""
 
 class SingCommand extends Command{
 	List aliases=['sing','song']
-	boolean singing=false
-	boolean covered=false
+	boolean singing
+	boolean covered
 	Element lyricsLink
 	String author
 	String coverLink
-	Channel venue
+	MessageChannel venue
 	String nick
+	String starter
 	void run(Map d,Event e){
 		if(singing&&d.args.toLowerCase()=="stop"){
 			if(e.channel.id==venue.id){
-				if(!e.guild||e.author.isOwner(e.guild)||e.channel.song){
+				if(!e.guild||e.author.isOwner(e.guild)||e.channel.song&&(e.author.id==starter)){
 					e.jda.accountManager.setAvatar(AvatarUtil.getAvatar(new File("images/avatars/"+d.info.avatar+".jpg")))
 					e.jda.accountManager.update()
 					if(e.guild)e.jda.accountManager.setNickname(e.guild,nick)
@@ -3488,7 +3526,7 @@ class SingCommand extends Command{
 					e.sendMessage("The song has been cancelled. Sorry folks.")
 				}else{
 					TextChannel songChannel=e.guild.textChannels.find{it.song}
-					e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(songChannel){", `Use in #$songChannel.name`"}else{""}}.")
+					e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(songChannel){", `Use in #$songChannel.name and be the starter of the song`"}else{""}}.")
 				}
 			}else{
 				if(e.guild.id==venue.guild.id){
@@ -3532,8 +3570,10 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 									covered=false
 								}
 								venue=e.channel
+								starter=e.author.id
 								e.sendMessage("The song starts in 10! I'm GRover and I'll be singing:\n**$author - ${lyricsLink.text()}**\nUse `${d.prefix}sing stop` to cancel the song!")
 								Thread.sleep(10000)
+								e.startTyping()
 								if(singing){
 									if(e.guild){
 										nick=e.guild.nickMap[e.jda.selfInfo]
@@ -3565,19 +3605,19 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 									e.sendMessage("My performance here is done.")
 								}
 							}catch(LyricsError){
+								singing=false
 								e.sendMessage("There was a problem with the lyrics.\n`$LyricsError.message`")
 								LyricsError.printStackTrace()
-								singing=false
 							}
 						}catch(NotFoundError){
+							singing=false
 							e.sendMessage("I couldn't find a song like that.")
 							NotFoundError.printStackTrace()
-							singing=false
 						}
 					}catch(GeneralError){
+						singing=false
 						e.sendMessage("Something went wrong.\n`$GeneralError.message`")
 						GeneralError.printStackTrace()
-						singing=false
 					}
 				}else{
 					e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}sing [song name]/stop/info`")
@@ -3587,7 +3627,7 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(songChannel){", `Use in #$songChannel.name`"}else{""}}.")
 			}
 		}else{
-			if(venue.guild){
+			if(venue?.guild){
 				e.sendMessage("I am already singing a song in $venue.guild.name.")
 			}else{
 				e.sendMessage("I am already singing a song in Direct Messages.")
@@ -3629,7 +3669,7 @@ class BanCommand extends Command{
 					}else if(d.args[0]in["search","find"]){
 						String query=d.args[1..-1].join(' ').toLowerCase().trim()
 						List bans=e.guild.manager.bans.findAll{[it.name.toLowerCase(),it.identity.toLowerCase()].any{it.contains(query)}}
-						String newString=("**__Search Results (${bans.size()})__:**\n")
+						String newString=("**__Ban Results (${bans.size()})__:**\n")
 						if(bans){
 							bans.each{
 								newString+="**${it.identity.capitalize()}**   ($it.id)\n"
@@ -3699,7 +3739,7 @@ class BanCommand extends Command{
 	String help="""`ban list` will make me list this server's bans.
 `ban search [search term]` will make me search this server's bans.
 `ban [user] [time] [reason]` will make me ban the user. All parameters are optional.
-You're banne."""
+Your banne."""
 }
 
 
@@ -4002,4 +4042,35 @@ class TrackerCommand extends Command{
 	String help="""`tracker join [message]` will make me send the message whenever someone joins the server.
 `tracker leave [message]` will make me send the message whenever someone leaves the server.
 Welcome-!"""
+}
+
+
+class IsupCommand extends Command{
+	List aliases=['isup','isitdownrightnow']
+	void run(Map d,Event e){
+		if(d.args){
+			d.args=d.args.replace(' ','-')
+			if(!d.args.startsWithAny(['http://','https://']))d.args="http://$d.args"
+			if(!d.args.contains('.'))d.args+=".com"
+			String alias=d.args.substring(d.args.indexOf('//')+2)
+			try{
+				long startTime=System.currentTimeMillis()
+				Document doc=Jsoup.connect(d.args).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				long stopTime=System.currentTimeMillis()
+				Element title=doc.getElementsByTag("title")[0]
+				e.sendMessage("It's just you. **${title?title.text():alias}** is up and running. (${(stopTime-startTime)/1000}s)")
+			}catch(ex){
+				if(ex.class==org.jsoup.HttpStatusException){
+					e.sendMessage("It's not just you. **$alias** is down for everyone. (HTTP $ex.statusCode)")
+				}else{
+					e.sendMessage("It's not just you. **$alias** is down for everyone. (${ex.class.simpleName})")
+				}
+			}
+		}else{
+			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}isup [domain]`")
+		}
+	}
+	String category="Online"
+	String help="""`isup [domain]` will make me check if that domain is online.
+It's just you."""
 }
