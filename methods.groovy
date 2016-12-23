@@ -19,7 +19,6 @@ String id="119184325219581952"
 String owner="107894146617868288"
 
 
-
 JDA.metaClass.play={String game->delegate.accountManager.setGame(game)}
 JDA.metaClass.setAvatar={String avatar->delegate.accountManager.avatar=AvatarUtil.getAvatar(new File(avatar))}
 JDA.metaClass.getEmotes={delegate.guilds*.emotes.sum()}
@@ -28,7 +27,7 @@ JDA.metaClass.getChannels={delegate.channelMap*.value}
 Event.metaClass.getJda={delegate.JDA}
 
 MessageReceivedEvent.metaClass.sendMessage={String content->delegate.channel.sendMessage("\u200b"+content?.replaceAll(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
-MessageReceivedEvent.metaClass.startTyping={Thread.start{delegate.channel.sendTyping()}}
+MessageReceivedEvent.metaClass.sendTyping={Thread.start{delegate.channel.sendTyping()}}
 MessageReceivedEvent.metaClass.sendFile={File file->delegate.channel.sendFile(file,null)}
 
 GenericGuildMemberEvent.metaClass.sendMessage={String content->delegate.guild.defaultChannel.sendMessage("\u200b"+content?.replaceAll(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
@@ -38,12 +37,12 @@ Message.metaClass.edit={String content->delegate.updateMessage(content)}
 Message.metaClass.delete={delegate.deleteMessage()}
 Message.metaClass.getGuild={delegate.channel?.guild}
 Message.metaClass.getMentions={delegate.mentionedUsers}
-Message.metaClass.getCreateTimeMillis={((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long}
+Message.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Message.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
 Message.metaClass.isTts={delegate.TTS}
 
 Message.Attachment.metaClass.getName={delegate.fileName}
-Message.Attachment.metaClass.getCreateTimeMillis={((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long}
+Message.Attachment.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Message.Attachment.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
 Message.Attachment.metaClass.download={String laura->new File(laura)<<delegate.url.toURL().newInputStream(requestProperties:["User-Agent":"groovy/2.4.3 DiscordBot (https://github.com/DV8FromTheWorld/JDA, 2.2.1)",Accept:"*/*"])}
 
@@ -51,7 +50,7 @@ User.metaClass.getStatus={delegate.onlineStatus.toString().toLowerCase()}
 User.metaClass.getName={delegate.username}
 User.metaClass.getAvatar={delegate.avatarUrl}
 User.metaClass.getMention={delegate.asMention}
-User.metaClass.getCreateTimeMillis={((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long}
+User.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 User.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
 User.metaClass.isMember={Guild guild->
 	guild.userRoles[delegate]||(delegate==guild.owner)||(delegate.id==owner)
@@ -63,7 +62,7 @@ User.metaClass.isOwner={Guild guild->
 	("Bot Commander"in guild.userRoles[delegate]*.name)||guild.userRoles[delegate].any{"ADMINISTRATOR"in it.permissions*.toString()}||(delegate==guild.owner)||(delegate.id==owner)
 }
 
-Channel.metaClass.getCreateTimeMillis={((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long}
+Channel.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Channel.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
 Channel.metaClass.edit={Map data->
 	if(data.name!=null)delegate.manager.setName(data.name)
@@ -85,11 +84,11 @@ PrivateChannel.metaClass.isNsfw={true}
 PrivateChannel.metaClass.isSong={true}
 PrivateChannel.metaClass.isIgnored={false}
 PrivateChannel.metaClass.getGuild={null}
-PrivateChannel.metaClass.getCreateTimeMillis={((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long}
-PrivateChannel.metaClass.getCreateTime={new Date(((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long)}
+PrivateChannel.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
+PrivateChannel.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
 
-Role.metaClass.getCreateTimeMillis={((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long}
-Role.metaClass.getCreateTime={new Date(((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long)}
+Role.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
+Role.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
 Role.metaClass.edit={Map data->
 	  if(data.name!=null)delegate.manager.setName(data.name)
 	  if(data.color!=null)delegate.manager.setColor(data.color)
@@ -100,8 +99,8 @@ Role.metaClass.edit={Map data->
 Role.metaClass.isColour={(delegate.name==~/#?[A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9]/)&&!delegate.name.toLowerCase().containsAny('g'..'z')}
 Role.metaClass.isConfig={delegate.name in["Bot Commander","Assist Owner","Trainer","Literally Hitler","spoo.py colorful","Spectra","spoo.py admin","spoo.py mod","Nadeko","Baka","regall commander","Ender","KOSMOS","Discoid Admin","Watchr Commander","Discone Admin","Living Meme","Bot Pony Commander","Beemo Music","Mop Staff"]}
 
-Emote.metaClass.getCreateTimeMillis={((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long}
-Emote.metaClass.getCreateTime={new Date(((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long)}
+Emote.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
+Emote.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
 Emote.metaClass.getManaged={false}
 
 Guild.metaClass.getChannels={delegate.textChannels+delegate.voiceChannels}
@@ -109,7 +108,7 @@ Guild.metaClass.getIcon={delegate.iconUrl}
 Guild.metaClass.getDefaultChannel={delegate.publicChannel}
 Guild.metaClass.getDefaultRole={delegate.publicRole}
 Guild.metaClass.getAfkChannel={delegate.voiceChannels.find{it.id==delegate.afkChannelId}}
-Guild.metaClass.getCreateTimeMillis={((Long.parseLong(delegate.id)>>22)+(1420070400000as long))as long}
+Guild.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Guild.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
 Guild.metaClass.getMembers={delegate.users}
 Guild.metaClass.edit={Map data->
@@ -121,7 +120,6 @@ Guild.metaClass.edit={Map data->
 }
 
 SelfInfo.metaClass.getGame={delegate.currentGame}
-
 
 
 JDA.metaClass.findGuild={String args->delegate.guilds.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
@@ -137,7 +135,6 @@ JDA.metaClass.findPrivateChannel={String args->delegate.privateChannels.toList()
 JDA.metaClass.findEmote={String args->delegate.emotes.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 Guild.metaClass.findEmote={String args->delegate.emotes.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 Guild.metaClass.findRole={String args->delegate.roles.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
-
 
 
 String.metaClass.cut={int at->
@@ -168,7 +165,6 @@ String.metaClass.formatTime={
 	  years.times{time+=31536000000}
 	  time
 }
-
 
 
 Closure addVariables={String group,String data,String args,Event e->
@@ -213,7 +209,7 @@ Closure addVariables={String group,String data,String args,Event e->
 	data
 }
 String.metaClass.addVariables={MessageReceivedEvent e,String args->
-	String data=delegate.replace('{args}',args)
+	String data=delegate.replace('{args}',args).replaceAll(/\/\*.+\*\//,'')
 	if(data.containsAll(['{','}'])){
 		User user
 		if(e.guild){
@@ -236,7 +232,7 @@ String.metaClass.addVariables={MessageReceivedEvent e,String args->
 	data
 }
 String.metaClass.addVariables={GenericGuildMemberEvent e,String args->
-	String data=delegate.replace('{args}',args)
+	String data=delegate.replace('{args}',args).replaceAll(/\/\*.+\*\//,'')
 	if(data.containsAll(['{','}'])){
 		User user=e.guild.users.toList().randomItem()
 		Channel channel=e.guild.channels.toList().randomItem()
@@ -253,10 +249,13 @@ String.metaClass.addVariables={GenericGuildMemberEvent e,String args->
 }
 
 
+Random random=new Random()
+ArrayList.metaClass.randomItem={delegate[random.nextInt(delegate.size())]}
+Range.metaClass.randomItem={delegate.toList().randomItem()}
+String.metaClass.randomItem={delegate.toList().randomItem()}
+
 
 String.metaClass.strip={delegate.replaceAll(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}
-ArrayList.metaClass.randomItem={delegate[(Math.floor((Math.random()*delegate.size())+1)-1)as int]}
-IntRange.metaClass.randomItem={delegate.toList()[(Math.floor((Math.random()*delegate.size())+1)-1)as int]}
 String.metaClass.addImports={"""import net.dv8tion.jda.JDA
 import net.dv8tion.jda.JDABuilder
 import net.dv8tion.jda.MessageHistory
