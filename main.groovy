@@ -237,7 +237,7 @@ class GRover extends ListenerAdapter{
 					feeds.youtube.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0").get()
+							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 							String id=doc.getElementsByClass("yt-lockup-title")[0].getElementsByTag("a")[0].attr("href")
 							if(id!=feed.last){
 								String title=doc.getElementsByTag("title").text().tokenize().join(' ')
@@ -251,7 +251,7 @@ class GRover extends ListenerAdapter{
 					feeds.animelist.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0").get()
+							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 							Element anime=doc.getElementsByTag("item")[0]
 							List data=anime.getElementsByTag("description")[0].text().replace(' episodes','').split(' - ')
 							String name=anime.getElementsByTag("title")[0].text().split(' - ')[0]
@@ -269,7 +269,7 @@ class GRover extends ListenerAdapter{
 					feeds.twitter.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0").get()
+							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 							String link=doc.getElementsByClass("tweet-timestamp")[0].attr("href")
 							String id=link.substring(link.lastIndexOf('/'))
 							if(id!=feed.last){
@@ -284,7 +284,7 @@ class GRover extends ListenerAdapter{
 					feeds.levelpalace.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0").get()
+							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 							Elements level=doc.getElementsByClass("levels-table")[0].getElementsByTag("a")
 							String id=level[0].attr("href")
 							if(id!=feed.last){
@@ -881,7 +881,7 @@ class GoogleCommand extends Command{
 					cache.remove(ass)
 				}else{
 					e.sendTyping()
-					Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+					Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 					Elements links=doc.getElementsByClass("r")
 					if(links){
 						Element linkTag=links[0].getElementsByTag("a")[0]
@@ -925,7 +925,7 @@ class YouTubeCommand extends Command{
 			}else{
 				e.sendTyping()
 				String link="https://www.youtube.com/results?search_query=${URLEncoder.encode(d.args,"UTF-8")}"
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				Elements links=doc.getElementsByClass("yt-lockup-title").findAll{!it.toString().contains('https://googleads')}
 				if(links){
 					Element linkTag=links[0].getElementsByTag("a")[0]
@@ -959,7 +959,7 @@ class ImageCommand extends Command{
 			String link="https://www.google.co.uk/search?q=${URLEncoder.encode(d.args,"UTF-8")}&tbm=isch"
 			if(gif)link+="&tbs=itp:animated"
 			try{
-				Document doc1=Jsoup.connect(link).userAgent("Mozilla/5.0 (Nintendo 3DS; U; ; en) Version/1.7498.US").get()
+				Document doc1=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36 (Nintendo 3DS; U; ; en) Version/1.7498.US").get()
 				Element image=doc1.getElementsByClass("image")[0]
 				Document doc2=Jsoup.connect(image.attr("href")).userAgent("Mozilla/5.0 (Nintendo 3DS; U; ; en) Version/1.7498.US").get()
 				String imagelink=doc2.getElementById('thumbnail').attr("href")
@@ -1001,7 +1001,7 @@ class NsfwCommand extends Command{
 			if(cache[d.args]){
 				pages=cache[d.args]
 			}else{
-				doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+				doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				if(doc.toString().contains('Nobody here')){
 					e.sendMessage("Sorry, no results. ;_;\nRemember Gelbooru is for hentai, so keywords should use underlines, names should be reversed and you won't find western porn.\n$link")
 				}else{
@@ -1022,10 +1022,10 @@ class NsfwCommand extends Command{
 				page=(((Math.floor((Math.random()*pages)+1)*42)as int)-42).toString()
 				String ass="$link&pid=$page"
 				doc=cache2[ass]
-				if(!doc)doc=Jsoup.connect(ass).userAgent("Mozilla/5.0").get()
+				if(!doc)doc=Jsoup.connect(ass).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				Elements previews=doc.getElementsByClass('thumb')
 				cache2[ass]=previews
-				doc=Jsoup.connect("http://gelbooru.com/${previews.randomItem().getElementsByTag("a")[0].attr('href')}").userAgent("Mozilla/5.0").get()
+				doc=Jsoup.connect("http://gelbooru.com/${previews.randomItem().getElementsByTag("a")[0].attr('href')}").userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				String hentai=doc.getElementsByClass('sidebar3')[1].getElementsByTag('div')[2].getElementsByTag('a')[0].attr('href')
 				if(hentai=="#")hentai=doc.getElementById('image').attr('src').substring(0,doc.getElementById('image').attr('src').indexOf('?'))
 				e.sendMessage(hentai)
@@ -1055,11 +1055,12 @@ class LevelPalaceCommand extends Command{
 				if(temporaryFix[ass]){
 					link="https://www.levelpalace.com/profile.php?user_id=${temporaryFix[ass]}"
 				}else{
-					Document doc1=Jsoup.connect("https://encrypted.google.com/search?q=${URLEncoder.encode("$d.args profile site:levelpalace.com","UTF-8")}").userAgent("Mozilla/5.0").get()
+					Document doc1=Jsoup.connect("https://encrypted.google.com/search?q=${URLEncoder.encode("$d.args profile site:levelpalace.com","UTF-8")}").userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 					link=doc1.getElementsByClass("r")[0].getElementsByTag("a")[0].attr('href')
 				}
 				try{
-					doc2=Jsoup.connect("$link&client=dogbot").userAgent("Mozilla/5.0").get()
+					if(!link.startsWith('http'))link="http://$link"
+					doc2=Jsoup.connect("$link&client=dogbot").userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 					Elements cards=doc2.getElementsByClass("card-content")
 					try{
 						String profileText=doc2.getElementById("main").text()
@@ -1099,10 +1100,10 @@ class AnimeCommand extends Command{
 			e.sendTyping()
 			String link="https://myanimelist.net/anime.php?q=${URLEncoder.encode(d.args)}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				try{
 					link=doc.getElementsByClass("hoverinfo_trigger")[0].attr("href")
-					doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+					doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 					String name=doc.getElementsByTag("span").find{it.attr("itemprop")=="name"}.text().capitalize()
 					String photo=doc.getElementsByClass("ac").attr("src")
 					String type=doc.getElementsByClass("type").text()
@@ -1142,7 +1143,7 @@ class WebsiteCommand extends Command{
 			List months=['January','February','March','April','May','June','July','August','September','October','November','December']
 			String link="http://website.informer.com/${URLEncoder.encode(d.args,"UTF-8")}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				String title=doc.getElementById("title")?doc.getElementById("title").text().capitalize():args
 				String description=doc.getElementById("description")?"\n${doc.getElementById("description").text().capitalize()}":""
 				String keywords=doc.getElementById("keywords")?.text()?.length()>9?"\n_${doc.getElementById("keywords").text().replace('Keywords: ','')}_":""
@@ -1177,7 +1178,7 @@ class MiiverseCommand extends Command{
 			e.sendTyping()
 			String link="https://miiverse.nintendo.net/users/${URLEncoder.encode(d.args,"UTF-8")}/posts"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				Elements posts=doc.getElementsByClass("post")
 				if(posts){
 					if(posts.size()>3)posts=posts[0..2]
@@ -1217,7 +1218,7 @@ class MarioMakerCommand extends Command{
 			e.sendTyping()
 			String link="https://supermariomakerbookmark.nintendo.net/courses/${URLEncoder.encode(d.args,"UTF-8")}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				String title=doc.getElementsByClass("course-title")[0].text()
 				String uploader=doc.getElementsByClass("name")[0].text()
 				String levelmap=doc.getElementsByClass("course-image-full")[0].attr("src")
@@ -1234,7 +1235,7 @@ class MarioMakerCommand extends Command{
 			e.sendTyping()
 			String link="https://supermariomakerbookmark.nintendo.net/profile/${URLEncoder.encode(d.args,"UTF-8")}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				Elements links=doc.getElementsByClass("course-card")
 				if(links){
 					if(links.size()>2)links=links[0..1]
@@ -1274,7 +1275,7 @@ class DefineCommand extends Command{
 			e.sendTyping()
 			String link="http://dictionary.cambridge.org/dictionary/english/${URLEncoder.encode(d.args,"UTF-8")}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				Elements error=doc.getElementsByClass("cdo-hero__error")
 				if(error){
 					e.sendMessage("There is no definition for '$d.args.'\n$link")
@@ -1315,7 +1316,7 @@ class UrbanCommand extends Command{
 			e.sendTyping()
 			String link="http://www.urbandictionary.com/define.php?term=${URLEncoder.encode(d.args,"UTF-8")}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				Element de=doc.getElementsByClass("def-panel")[0]
 				if(de){
 					Element worddef=de.getElementsByClass("word")[0]
@@ -2927,7 +2928,7 @@ class FeedCommand extends Command{
 				e.sendTyping()
 				List list=[]
 				d.feeds.youtube.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0").get()
+					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 					String id=doc.getElementsByClass("yt-lockup-title")[0].getElementsByTag("a")[0].attr("href")
 					if(id!=feed.last){
 						String title=doc.getElementsByTag("title").text().tokenize().join(' ')
@@ -2936,7 +2937,7 @@ class FeedCommand extends Command{
 					}
 				}
 				d.feeds.animelist.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0").get()
+					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 					Element anime=doc.getElementsByTag("item")[0]
 					List data=anime.getElementsByTag("description")[0].text().replace(' episodes','').split(' - ')
 					String name=anime.getElementsByTag("title")[0].text().split(' - ')[0]
@@ -2949,7 +2950,7 @@ class FeedCommand extends Command{
 					}
 				}
 				d.feeds.twitter.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0").get()
+					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 					String link=doc.getElementsByClass("tweet-timestamp")[0].attr("href")
 					String id=link.substring(link.lastIndexOf('/'))
 					if(id!=feed.last){
@@ -2959,7 +2960,7 @@ class FeedCommand extends Command{
 					}
 				}
 				d.feeds.levelpalace.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0").get()
+					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 					Elements level=doc.getElementsByClass("levels-table")[0].getElementsByTag("a")
 					String id=level[0].attr("href")
 					if(id!=feed.last){
@@ -2987,7 +2988,7 @@ class FeedCommand extends Command{
 						e.sendMessage("YouTube channel removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 						String id=doc.getElementsByClass("yt-lockup-title")[0].getElementsByTag("a")[0].attr("href")
 						d.feeds.youtube+=[
 							channel:e.channel.id,
@@ -3010,7 +3011,7 @@ class FeedCommand extends Command{
 						e.sendMessage("Anime list removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 						Element anime=doc.getElementsByTag("item")[0]
 						List data=anime.getElementsByTag("description")[0].text().replace(' episodes','').split(' - ')
 						String name=anime.getElementsByTag("title")[0].text().split(' - ')[0]
@@ -3036,7 +3037,7 @@ class FeedCommand extends Command{
 						e.sendMessage("Twitter handle removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 						String stamp=doc.getElementsByClass("tweet-timestamp")[0].attr("href")
 						String id=stamp.substring(stamp.lastIndexOf('/'))
 						d.feeds.twitter+=[
@@ -3061,7 +3062,7 @@ class FeedCommand extends Command{
 						e.sendMessage("Level Palace account removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 						String id=doc.getElementsByClass("levels-table")[0].getElementsByTag("a")[0].attr("href")
 						d.feeds.levelpalace+=[
 							channel:e.channel.id,
@@ -3268,7 +3269,7 @@ class VotePinCommand extends Command{
 										e.sendMessage("That message is already pinned.")
 									}else if(e.author.id in votes[message.id]){
 										votes[message.id]-=e.author.id
-										e.sendMessage("Unvoted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)")
+										e.sendMessage("Unvoted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)").deleteAfter(5000)
 									}else if(message.author.id==e.author.id){
 										e.sendMessage("Wow, shameless self-promotion.")
 									}else{
@@ -3276,9 +3277,9 @@ class VotePinCommand extends Command{
 										votes[message.id]+=e.author.id
 										if(votes[message.id].size()>=max){
 											message.pin()
-											e.sendMessage("${message.author.identity.capitalize()}'s message has been pinned.")
+											e.sendMessage("${message.author.identity.capitalize()}'s message has been pinned.").deleteAfter(5000)
 										}else{
-											e.sendMessage("Voted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)")
+											e.sendMessage("Voted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)").deleteAfter(5000)
 										}
 									}
 								}else{
@@ -3550,11 +3551,11 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 					singing=true
 					try{
 						String link="http://search.azlyrics.com/search.php?q=${URLEncoder.encode(d.args.trim(),"UTF-8")}"
-						Document search=Jsoup.connect(link).userAgent("Mozilla/5.0").get()
+						Document search=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 						try{
 							lyricsLink=search.getElementsByClass('panel')[-1].getElementsByClass('text-left')[0].getElementsByTag('a')[0]
 							author=search.getElementsByClass('panel')[-1].getElementsByClass('text-left')[0].getElementsByTag('b')[1].text()
-							Document song=Jsoup.connect(lyricsLink.attr('href')).userAgent("Mozilla/5.0").get()
+							Document song=Jsoup.connect(lyricsLink.attr('href')).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 							e.sendTyping()
 							try{
 								Element getLyrics=song.getElementsByTag("div").findAll{it.classNames().empty}[1]
@@ -3562,9 +3563,9 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 								List lyrics=ass.replaceAll(/(\#br\#)+/,'\n').split('\n')*.trim()
 								Iterator iterator=lyrics.iterator()
 								try{
-									Document doc=Jsoup.connect("https://www.google.co.uk/search?q="+URLEncoder.encode(("${lyricsLink.text()} $author")+"UTF-8")+"&tbm=isch").userAgent("Mozilla/5.0 (Nintendo 3DS; U; ; en) Version/1.7498.US").get()
+									Document doc=Jsoup.connect("https://www.google.co.uk/search?q="+URLEncoder.encode(("${lyricsLink.text()} $author")+"UTF-8")+"&tbm=isch").userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36 (Nintendo 3DS; U; ; en) Version/1.7498.US").get()
 									Element image=doc.getElementsByClass("image")[0]
-									doc=Jsoup.connect(image.attr("href")).userAgent("Mozilla/5.0 (Nintendo 3DS; U; ; en) Version/1.7498.US").get()
+									doc=Jsoup.connect(image.attr("href")).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36 (Nintendo 3DS; U; ; en) Version/1.7498.US").get()
 									coverLink=doc.getElementById('thumbnail').attr("href")
 									if(coverLink.contains('/revision/'))coverLink=coverLink.substring(0,coverLink.indexOf('/revision/'))
 									new File("images/album.jpg")<<new URL(coverLink).openStream()
@@ -4059,7 +4060,7 @@ class IsupCommand extends Command{
 			String alias=d.args.substring(d.args.indexOf('//')+2)
 			try{
 				long startTime=System.currentTimeMillis()
-				Document doc=Jsoup.connect(d.args).userAgent("Mozilla/5.0").get()
+				Document doc=Jsoup.connect(d.args).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
 				long stopTime=System.currentTimeMillis()
 				Element title=doc.getElementsByTag("title")[0]
 				e.sendMessage("It's just you. **${title?title.text():alias}** is up and running. (${(stopTime-startTime)/1000}s)")
