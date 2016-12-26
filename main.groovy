@@ -57,7 +57,7 @@ class Bot{
 		new MemberCommand(),new MuteCommand(),new KickCommand(),new LogCommand(),new ScopeCommand(),
 		new FeedCommand(),new ClearCommand(),new SetChannelCommand(),new SetRoleCommand(),new VotePinCommand(),
 		new RadioCommand(),new ConfigCommand(),new SingCommand(),new BanCommand(),new SmiliesCommand(),
-		new CloneCommand(),new AccessCommand(),new TrackerCommand(),new IsupCommand()
+		new CloneCommand(),new AccessCommand(),new TrackerCommand(),new IsupCommand(),new TopCommand()
 	]
 	List ignored=[]
 	String oauth="https://discordapp.com/oauth2/authorize?client_id=170646931641466882&scope=bot&permissions=268443670"
@@ -111,6 +111,19 @@ class Radio{
 
 
 
+class Web{
+	Map agents=[
+		"G.Chrome":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36",
+		"M.Firefox":"Mozilla/5.0 (Windows NT 6.1; rv:50.0) Gecko/20100101 Firefox/50.0",
+		"N.3DS":"Mozilla/5.0 (Nintendo 3DS; U; ; en) Version/1.7498.US"
+	]
+	Document get(String url,String agent="G.Chrome"){
+		Jsoup.connect(url).userAgent(agents[agent]).get()
+	}
+}
+
+
+
 class JSON{
 	String root="data/"
 	Map load(String donkey){
@@ -142,6 +155,7 @@ class GRover extends ListenerAdapter{
 	User banneer
 	Bot bot=new Bot()
 	Radio radio=new Radio()
+	Web web=new Web()
 	JSON json=new JSON()
 	Map db=json.database()
 	Map tags=json.tags()
@@ -237,7 +251,7 @@ class GRover extends ListenerAdapter{
 					feeds.youtube.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+							Document doc=web.get(feed.link,"G.Chrome")
 							String id=doc.getElementsByClass("yt-lockup-title")[0].getElementsByTag("a")[0].attr("href")
 							if(id!=feed.last){
 								String title=doc.getElementsByTag("title").text().tokenize().join(' ')
@@ -251,7 +265,7 @@ class GRover extends ListenerAdapter{
 					feeds.animelist.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+							Document doc=web.get(feed.link,"G.Chrome")
 							Element anime=doc.getElementsByTag("item")[0]
 							List data=anime.getElementsByTag("description")[0].text().replace(' episodes','').split(' - ')
 							String name=anime.getElementsByTag("title")[0].text().split(' - ')[0]
@@ -269,7 +283,7 @@ class GRover extends ListenerAdapter{
 					feeds.twitter.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+							Document doc=web.get(feed.link,"G.Chrome")
 							String link=doc.getElementsByClass("tweet-timestamp")[0].attr("href")
 							String id=link.substring(link.lastIndexOf('/'))
 							if(id!=feed.last){
@@ -284,7 +298,7 @@ class GRover extends ListenerAdapter{
 					feeds.levelpalace.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+							Document doc=web.get(feed.link,"G.Chrome")
 							Elements level=doc.getElementsByClass("levels-table")[0].getElementsByTag("a")
 							String id=level[0].attr("href")
 							if(id!=feed.last){
@@ -345,7 +359,7 @@ class GRover extends ListenerAdapter{
 						if(cmd){
 							try{
 								args=args.substring(command(cmd.aliases).length()).trim()
-								Map binding=[bot:bot,radio:radio,json:json,prefix:prefix,args:args,db:db,tags:tags,seen:seen,channels:channels,roles:roles,info:info,colours:colours,misc:misc,conversative:conversative,feeds:feeds,settings:settings,temp:temp,audio:audio,tracker:tracker,lastReply:lastReply,tableTimeout:tableTimeout,started:started,errorMessage:errorMessage,permissionMessage:permissionMessage,failMessage:failMessage,messages:messages]
+								Map binding=[bot:bot,radio:radio,json:json,web:web,prefix:prefix,args:args,db:db,tags:tags,seen:seen,channels:channels,roles:roles,info:info,colours:colours,misc:misc,conversative:conversative,feeds:feeds,settings:settings,temp:temp,audio:audio,tracker:tracker,lastReply:lastReply,tableTimeout:tableTimeout,started:started,errorMessage:errorMessage,permissionMessage:permissionMessage,failMessage:failMessage,messages:messages]
 								cmd.run(binding,e)
 							}catch(ex){
 								e.sendMessage(failMessage()+"Error: `$ex.message`")
@@ -629,9 +643,9 @@ ID: $user.id
 Icon: $user.avatar
 Region: London
 Opened: ${new Date(user.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (${key.abbreviate()})
-Roles: (0)
+Roles:  (0)
 Users: $e.jda.selfInfo.identity, ${if(e.jda.privateChannels.size()>3){e.jda.privateChannels[0..3]*.user*.identity.join(', ')+".."}else{e.jda.privateChannels*.user*.identity.join(', ')}} (${e.jda.privateChannels.size()+1})
-Emotes: (0)
+Emotes:  (0)
 Channels: ${if(e.jda.privateChannels.size()>1){e.jda.privateChannels[0..1]*.user*.identity.join(', ')+".."}else{e.jda.privateChannels*.user*.identity.join(', ')}} (${e.jda.privateChannels.size()}, 0)
 ${if(e.jda.privateChannels.size()>249){"Large"}else{"Small"}}```""")
 		}
@@ -771,7 +785,7 @@ class AvatarCommand extends Command{
 					if(guild.icon){
 						e.sendMessage("**${guild.name.capitalize()}**'s icon:\n$guild.icon")
 					}else{
-						e.sendMessage("**${guild.name.capitalize()}**'s icon:\n`${guild.name.tokenize()*.getAt(0).join()}`")
+						e.sendMessage("**${guild.name.capitalize()}**'s icon:\n`${guild.name.abbreviate()}`")
 					}
 				}else{
 					e.sendMessage("I couldn't find a user or server matching '$d.args.'")
@@ -881,7 +895,7 @@ class GoogleCommand extends Command{
 					cache.remove(ass)
 				}else{
 					e.sendTyping()
-					Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+					Document doc=d.web.get(link,"G.Chrome")
 					Elements links=doc.getElementsByClass("r")
 					if(links){
 						Element linkTag=links[0].getElementsByTag("a")[0]
@@ -925,7 +939,7 @@ class YouTubeCommand extends Command{
 			}else{
 				e.sendTyping()
 				String link="https://www.youtube.com/results?search_query=${URLEncoder.encode(d.args,"UTF-8")}"
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				Document doc=d.web.get(link,"G.Chrome")
 				Elements links=doc.getElementsByClass("yt-lockup-title").findAll{!it.toString().contains('https://googleads')}
 				if(links){
 					Element linkTag=links[0].getElementsByTag("a")[0]
@@ -959,11 +973,10 @@ class ImageCommand extends Command{
 			String link="https://www.google.co.uk/search?q=${URLEncoder.encode(d.args,"UTF-8")}&tbm=isch"
 			if(gif)link+="&tbs=itp:animated"
 			try{
-				Document doc1=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36 (Nintendo 3DS; U; ; en) Version/1.7498.US").get()
+				Document doc1=d.web.get(link,"N.3DS")
 				Element image=doc1.getElementsByClass("image")[0]
-				Document doc2=Jsoup.connect(image.attr("href")).userAgent("Mozilla/5.0 (Nintendo 3DS; U; ; en) Version/1.7498.US").get()
+				Document doc2=d.web.get(image.attr("href"),"N.3DS")
 				String imagelink=doc2.getElementById('thumbnail').attr("href")
-				//if(imagelink.contains('/revision/'))imagelink=imagelink.substring(0,imagelink.indexOf('/revision/'))
 				String trailer=imagelink.containsAny(['.png','.gif','.jpg','.svg'])
 				if(trailer&&!imagelink.contains('wikimedia'))imagelink=imagelink.substring(0,imagelink.indexOf(trailer)+4)
 				e.sendMessage(imagelink)
@@ -993,7 +1006,7 @@ class NsfwCommand extends Command{
 	void run(Map d,Event e){
 		d.args=d.args.replace(',',' ').trim()
 		if(e.private||e.channel.nsfw||e.author.isOwner(e.guild)){
-			if(!d.args)d.args="-rating:nonexistent"
+			if(!d.args)d.args="all"
 			String link="http://gelbooru.com/index.php?page=post&s=list&tags=${URLEncoder.encode(d.args,"UTF-8")}"
 			Document doc
 			int pages=1
@@ -1001,7 +1014,7 @@ class NsfwCommand extends Command{
 			if(cache[d.args]){
 				pages=cache[d.args]
 			}else{
-				doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				doc=d.web.get(link,"G.Chrome")
 				if(doc.toString().contains('Nobody here')){
 					e.sendMessage("Sorry, no results. ;_;\nRemember Gelbooru is for hentai, so keywords should use underlines, names should be reversed and you won't find western porn.\n$link")
 				}else{
@@ -1022,10 +1035,10 @@ class NsfwCommand extends Command{
 				page=(((Math.floor((Math.random()*pages)+1)*42)as int)-42).toString()
 				String ass="$link&pid=$page"
 				doc=cache2[ass]
-				if(!doc)doc=Jsoup.connect(ass).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				if(!doc)doc=d.web.get(ass,"G.Chrome")
 				Elements previews=doc.getElementsByClass('thumb')
 				cache2[ass]=previews
-				doc=Jsoup.connect("http://gelbooru.com/${previews.randomItem().getElementsByTag("a")[0].attr('href')}").userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				doc=d.web.get("http://gelbooru.com/${previews.randomItem().getElementsByTag("a")[0].attr('href')}","G.Chrome")
 				String hentai=doc.getElementsByClass('sidebar3')[1].getElementsByTag('div')[2].getElementsByTag('a')[0].attr('href')
 				if(hentai=="#")hentai=doc.getElementById('image').attr('src').substring(0,doc.getElementById('image').attr('src').indexOf('?'))
 				e.sendMessage(hentai)
@@ -1055,12 +1068,12 @@ class LevelPalaceCommand extends Command{
 				if(temporaryFix[ass]){
 					link="https://www.levelpalace.com/profile.php?user_id=${temporaryFix[ass]}"
 				}else{
-					Document doc1=Jsoup.connect("https://encrypted.google.com/search?q=${URLEncoder.encode("$d.args profile site:levelpalace.com","UTF-8")}").userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+					Document doc1=d.web.get("https://encrypted.google.com/search?q=${URLEncoder.encode("$d.args profile site:levelpalace.com","UTF-8")}","G.Chrome")
 					link=doc1.getElementsByClass("r")[0].getElementsByTag("a")[0].attr('href')
 				}
 				try{
 					if(!link.startsWith('http'))link="http://$link"
-					doc2=Jsoup.connect("$link&client=dogbot").userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+					doc2=d.web.get("$link&client=dogbot","G.Chrome")
 					Elements cards=doc2.getElementsByClass("card-content")
 					try{
 						String profileText=doc2.getElementById("main").text()
@@ -1100,10 +1113,10 @@ class AnimeCommand extends Command{
 			e.sendTyping()
 			String link="https://myanimelist.net/anime.php?q=${URLEncoder.encode(d.args)}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				Document doc=d.web.get(link,"G.Chrome")
 				try{
 					link=doc.getElementsByClass("hoverinfo_trigger")[0].attr("href")
-					doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+					doc=d.web.get(link,"G.Chrome")
 					String name=doc.getElementsByTag("span").find{it.attr("itemprop")=="name"}.text().capitalize()
 					String photo=doc.getElementsByClass("ac").attr("src")
 					String type=doc.getElementsByClass("type").text()
@@ -1143,7 +1156,7 @@ class WebsiteCommand extends Command{
 			List months=['January','February','March','April','May','June','July','August','September','October','November','December']
 			String link="http://website.informer.com/${URLEncoder.encode(d.args,"UTF-8")}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				Document doc=d.web.get(link,"G.Chrome")
 				String title=doc.getElementById("title")?doc.getElementById("title").text().capitalize():args
 				String description=doc.getElementById("description")?"\n${doc.getElementById("description").text().capitalize()}":""
 				String keywords=doc.getElementById("keywords")?.text()?.length()>9?"\n_${doc.getElementById("keywords").text().replace('Keywords: ','')}_":""
@@ -1178,7 +1191,7 @@ class MiiverseCommand extends Command{
 			e.sendTyping()
 			String link="https://miiverse.nintendo.net/users/${URLEncoder.encode(d.args,"UTF-8")}/posts"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				Document doc=d.web.get(link,"G.Chrome")
 				Elements posts=doc.getElementsByClass("post")
 				if(posts){
 					if(posts.size()>3)posts=posts[0..2]
@@ -1218,7 +1231,7 @@ class MarioMakerCommand extends Command{
 			e.sendTyping()
 			String link="https://supermariomakerbookmark.nintendo.net/courses/${URLEncoder.encode(d.args,"UTF-8")}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				Document doc=d.web.get(link,"G.Chrome")
 				String title=doc.getElementsByClass("course-title")[0].text()
 				String uploader=doc.getElementsByClass("name")[0].text()
 				String levelmap=doc.getElementsByClass("course-image-full")[0].attr("src")
@@ -1235,7 +1248,7 @@ class MarioMakerCommand extends Command{
 			e.sendTyping()
 			String link="https://supermariomakerbookmark.nintendo.net/profile/${URLEncoder.encode(d.args,"UTF-8")}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				Document doc=d.web.get(link,"G.Chrome")
 				Elements links=doc.getElementsByClass("course-card")
 				if(links){
 					if(links.size()>2)links=links[0..1]
@@ -1275,7 +1288,7 @@ class DefineCommand extends Command{
 			e.sendTyping()
 			String link="http://dictionary.cambridge.org/dictionary/english/${URLEncoder.encode(d.args,"UTF-8")}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				Document doc=d.web.get(link,"G.Chrome")
 				Elements error=doc.getElementsByClass("cdo-hero__error")
 				if(error){
 					e.sendMessage("There is no definition for '$d.args.'\n$link")
@@ -1316,7 +1329,7 @@ class UrbanCommand extends Command{
 			e.sendTyping()
 			String link="http://www.urbandictionary.com/define.php?term=${URLEncoder.encode(d.args,"UTF-8")}"
 			try{
-				Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				Document doc=d.web.get(link,"G.Chrome")
 				Element de=doc.getElementsByClass("def-panel")[0]
 				if(de){
 					Element worddef=de.getElementsByClass("word")[0]
@@ -1483,7 +1496,7 @@ class TagCommand extends Command{
 			}
 		}else if(d.args[0]=="history"){
 			try{
-				if((d.tags[d.args[1]].server in e.jda.guilds.findAll{e.author in it.users}.id)||(e.author.id in[d.tags[d.args[1]].history[0].author,d.bot.owner])||d.args[1].startsWith('wiki:')){
+				if((d.tags[d.args[1]].server in e.jda.guilds.findAll{e.author in it.users}.id)||(e.author.id in[d.tags[d.args[1]].history[0].author,d.bot.owner])){
 					d.args[1]=d.args[1].toLowerCase().replaceAll(['\n','\r'],'_')
 					String ass="**__${d.args[1].capitalize()}'s History (${d.tags[d.args[1]].history.size()})__:**\n"
 					d.tags[d.args[1]].history.reverse().each{Map kona->
@@ -1702,8 +1715,8 @@ class MiscCommand extends Command{
 				Object thing=e.jda.users.find{it.id==d.args[1]}
 				if(!thing)thing=e.jda.guilds.find{it.id==d.args[1]}
 				if(!thing)thing=e.jda.channels.find{it.id==d.args[1]}
-				if(!thing)thing=e.jda.channels*.roles.flatten().find{it.id==d.args[1]}
-				if(!thing)thing=e.jda.guilds*.emojis.flatten().find{it.id==d.args[1]}
+				if(!thing)thing=e.jda.guilds*.roles.flatten().find{it.id==d.args[1]}
+				if(!thing)thing=e.jda.emotes.flatten().find{it.id==d.args[1]}
 				if(thing){
 					String ass=thing.class.simpleName.replace('Impl','')
 					e.sendMessage("$thing.name ($ass)")
@@ -2144,7 +2157,7 @@ class TimeCommand extends Command{
 	List aliases=['time']
 	void run(Map d,Event e){
 		User ass
-		if(d.args)ass=e.guild.findUser(d.args)
+		if(e.guild&&d.args)ass=e.guild.findUser(d.args)
 		if(!d.args||e.message.mentions){
 			User user=e.message.mentions?e.message.mentions[-1]:e.author
 			if(ass)user=ass
@@ -2155,7 +2168,7 @@ class TimeCommand extends Command{
 					String key=d.misc.time*.key.sort{it.length()}.reverse().find{d.db[user.id].area.endsWith(it)}
 					if(key){
 						Object zone=d.misc.time[key]
-						e.sendMessage("The time for **$user.identity** is ${new Date(System.currentTimeMillis()+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (GMT${if(zone>0){"+$zone"}else if(zone<0){zone}else{""}}).")
+						e.sendMessage("The time for **$user.identity** is ${new Date((System.currentTimeMillis()+(zone*3600000)).toLong()).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (GMT${if(zone>0){"+$zone"}else if(zone<0){zone}else{""}}).")
 					}else{
 						e.sendMessage("The time for **$user.identity** is unknown.")
 					}
@@ -2164,10 +2177,12 @@ class TimeCommand extends Command{
 				e.sendMessage("There is no information in my database for $user.name.")
 			}
 		}else{
-			String key=d.misc.time*.key.sort{it.length()}.reverse().find{d.args.toLowerCase().replace(',','').contains(it.toLowerCase().replace(',',''))}
+			d.args=d.args.toLowerCase().replaceAll(['england','america'],['united kingdom','united states'])
+			List keys=d.misc.time*.key.sort{it.length()}.reverse()
+			String key=keys.find{it.toLowerCase().endsWith(d.args)}?:keys.find{it.toLowerCase().startsWith(d.args)}
 			if(key){
 				Object zone=d.misc.time[key]
-				e.sendMessage("The time in **${d.args.tokenize()*.capitalize().join(' ')}** is ${new Date(System.currentTimeMillis()+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (GMT${if(zone>0){"+$zone"}else if(zone<0){zone}else{""}}).")
+				e.sendMessage("The time in **${d.args.tokenize()*.capitalize().join(' ')}** is ${new Date((System.currentTimeMillis()+(zone*3600000)).toLong()).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (GMT${if(zone>0){"+$zone"}else if(zone<0){zone}else{""}}).")
 			}else{
 				e.sendMessage("The location **${d.args.tokenize()*.capitalize().join(' ')}** is invalid.")
 			}
@@ -2928,7 +2943,7 @@ class FeedCommand extends Command{
 				e.sendTyping()
 				List list=[]
 				d.feeds.youtube.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+					Document doc=d.web.get(feed.link,"G.Chrome")
 					String id=doc.getElementsByClass("yt-lockup-title")[0].getElementsByTag("a")[0].attr("href")
 					if(id!=feed.last){
 						String title=doc.getElementsByTag("title").text().tokenize().join(' ')
@@ -2937,7 +2952,7 @@ class FeedCommand extends Command{
 					}
 				}
 				d.feeds.animelist.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+					Document doc=d.web.get(feed.link,"G.Chrome")
 					Element anime=doc.getElementsByTag("item")[0]
 					List data=anime.getElementsByTag("description")[0].text().replace(' episodes','').split(' - ')
 					String name=anime.getElementsByTag("title")[0].text().split(' - ')[0]
@@ -2950,7 +2965,7 @@ class FeedCommand extends Command{
 					}
 				}
 				d.feeds.twitter.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+					Document doc=d.web.get(feed.link,"G.Chrome")
 					String link=doc.getElementsByClass("tweet-timestamp")[0].attr("href")
 					String id=link.substring(link.lastIndexOf('/'))
 					if(id!=feed.last){
@@ -2960,7 +2975,7 @@ class FeedCommand extends Command{
 					}
 				}
 				d.feeds.levelpalace.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=Jsoup.connect(feed.link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+					Document doc=d.web.get(feed.link,"G.Chrome")
 					Elements level=doc.getElementsByClass("levels-table")[0].getElementsByTag("a")
 					String id=level[0].attr("href")
 					if(id!=feed.last){
@@ -2988,7 +3003,7 @@ class FeedCommand extends Command{
 						e.sendMessage("YouTube channel removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+						Document doc=d.web.get(link,"G.Chrome")
 						String id=doc.getElementsByClass("yt-lockup-title")[0].getElementsByTag("a")[0].attr("href")
 						d.feeds.youtube+=[
 							channel:e.channel.id,
@@ -3011,7 +3026,7 @@ class FeedCommand extends Command{
 						e.sendMessage("Anime list removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+						Document doc=d.web.get(link,"G.Chrome")
 						Element anime=doc.getElementsByTag("item")[0]
 						List data=anime.getElementsByTag("description")[0].text().replace(' episodes','').split(' - ')
 						String name=anime.getElementsByTag("title")[0].text().split(' - ')[0]
@@ -3037,7 +3052,7 @@ class FeedCommand extends Command{
 						e.sendMessage("Twitter handle removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+						Document doc=d.web.get(link,"G.Chrome")
 						String stamp=doc.getElementsByClass("tweet-timestamp")[0].attr("href")
 						String id=stamp.substring(stamp.lastIndexOf('/'))
 						d.feeds.twitter+=[
@@ -3062,7 +3077,7 @@ class FeedCommand extends Command{
 						e.sendMessage("Level Palace account removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+						Document doc=d.web.get(link,"G.Chrome")
 						String id=doc.getElementsByClass("levels-table")[0].getElementsByTag("a")[0].attr("href")
 						d.feeds.levelpalace+=[
 							channel:e.channel.id,
@@ -3100,12 +3115,10 @@ class ClearCommand extends Command{
 				e.sendTyping()
 				d.args=d.args.toLowerCase().tokenize()
 				int amount=50
-				try{
+				if(d.args[-1]==~/\d+/){
 					amount=d.args[-1].toInteger()+1
-					if(amount>500)amount=500
+					if(amount>100)amount=100
 					if(amount<2)amount=2
-				}catch(ex){
-					
 				}
 				List messages=e.channel.history.retrieve(amount)-e.message
 				if(users)messages=messages.findAll{it.author.id in users*.id}
@@ -3269,7 +3282,7 @@ class VotePinCommand extends Command{
 										e.sendMessage("That message is already pinned.")
 									}else if(e.author.id in votes[message.id]){
 										votes[message.id]-=e.author.id
-										e.sendMessage("Unvoted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)").deleteAfter(5000)
+										e.sendMessage("Unvoted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)")
 									}else if(message.author.id==e.author.id){
 										e.sendMessage("Wow, shameless self-promotion.")
 									}else{
@@ -3277,9 +3290,9 @@ class VotePinCommand extends Command{
 										votes[message.id]+=e.author.id
 										if(votes[message.id].size()>=max){
 											message.pin()
-											e.sendMessage("${message.author.identity.capitalize()}'s message has been pinned.").deleteAfter(5000)
+											//e.sendMessage("${message.author.identity.capitalize()}'s message has been pinned.")
 										}else{
-											e.sendMessage("Voted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)").deleteAfter(5000)
+											e.sendMessage("Voted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)")
 										}
 									}
 								}else{
@@ -3356,6 +3369,7 @@ Volume: ${(player.volume*75).toInteger()}```""")
 					}else{
 						e.sendTyping()
 						String list=d.args[1..-1].join(' ')
+						if(!list.startsWith('http'))list="https://$list"
 						if(d.args[1].toLowerCase()in["nintendo","gaming"]){
 							list="https://www.youtube.com/playlist?list=PLk3_aBglmcQNRsfIMxDouylLk1K3uuEKL"
 						}else if(d.args[1].toLowerCase()in["anime","japanese"]){
@@ -3551,11 +3565,11 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 					singing=true
 					try{
 						String link="http://search.azlyrics.com/search.php?q=${URLEncoder.encode(d.args.trim(),"UTF-8")}"
-						Document search=Jsoup.connect(link).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+						Document search=d.web.get(link,"G.Chrome")
 						try{
 							lyricsLink=search.getElementsByClass('panel')[-1].getElementsByClass('text-left')[0].getElementsByTag('a')[0]
 							author=search.getElementsByClass('panel')[-1].getElementsByClass('text-left')[0].getElementsByTag('b')[1].text()
-							Document song=Jsoup.connect(lyricsLink.attr('href')).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+							Document song=d.web.get(lyricsLink.attr('href'),"G.Chrome")
 							e.sendTyping()
 							try{
 								Element getLyrics=song.getElementsByTag("div").findAll{it.classNames().empty}[1]
@@ -3563,9 +3577,9 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 								List lyrics=ass.replaceAll(/(\#br\#)+/,'\n').split('\n')*.trim()
 								Iterator iterator=lyrics.iterator()
 								try{
-									Document doc=Jsoup.connect("https://www.google.co.uk/search?q="+URLEncoder.encode(("${lyricsLink.text()} $author")+"UTF-8")+"&tbm=isch").userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36 (Nintendo 3DS; U; ; en) Version/1.7498.US").get()
+									Document doc=d.web.get(("https://www.google.co.uk/search?q="+URLEncoder.encode(("${lyricsLink.text()} $author")+"UTF-8")+"&tbm=isch"),"N.3DS")
 									Element image=doc.getElementsByClass("image")[0]
-									doc=Jsoup.connect(image.attr("href")).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36 (Nintendo 3DS; U; ; en) Version/1.7498.US").get()
+									doc=d.web.get(image.attr("href"),"N.3DS")
 									coverLink=doc.getElementById('thumbnail').attr("href")
 									if(coverLink.contains('/revision/'))coverLink=coverLink.substring(0,coverLink.indexOf('/revision/'))
 									new File("images/album.jpg")<<new URL(coverLink).openStream()
@@ -4060,7 +4074,7 @@ class IsupCommand extends Command{
 			String alias=d.args.substring(d.args.indexOf('//')+2)
 			try{
 				long startTime=System.currentTimeMillis()
-				Document doc=Jsoup.connect(d.args).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36").get()
+				Document doc=d.web.get(d.args,"G.Chrome")
 				long stopTime=System.currentTimeMillis()
 				Element title=doc.getElementsByTag("title")[0]
 				e.sendMessage("It's just you. **${title?title.text():alias}** is up and running. (${(stopTime-startTime)/1000}s)")
@@ -4078,4 +4092,46 @@ class IsupCommand extends Command{
 	String category="Online"
 	String help="""`isup [domain]` will make me check if that domain is online.
 It's just you."""
+}
+
+
+class TopCommand extends Command{
+	List aliases=['top','popular']
+	void run(Map d,Event e){
+		d.args=d.args.toLowerCase().tokenize()+"1"
+		List top=[]
+		int num=(d.args[1]==~/\d+/)?d.args[1].toInteger():1
+		num-=num?1:0
+		num*=15
+		Range range=(0+num)..(14+num)
+		try{
+			if(d.args[0].startsWith('name')){
+				Map table=e.jda.users.groupBy{it.name.toLowerCase()}.sort{it.value.size()}
+				table*.key.reverse()[range].each{
+					top+="`#${num+=1}` **${it.tokenize()*.capitalize().join(' ')}** (${table[it].size()} users)"
+				}
+			}else if(d.args[0].startsWith('game')){
+				Map table=e.jda.users.findAll{it.game}.groupBy{it.game.name}.sort{it.value.size()}
+				table*.key.reverse()[range].each{
+					top+="`#${num+=1}` **$it** (${table[it].size()} playing)"
+				}
+			}else if(d.args[0].startsWith('bot')){
+				Map table=e.jda.guilds*.users.flatten().findAll{it.bot}.groupBy{it.id}.sort{it.value.size()}
+				table*.key.reverse()[range].each{
+					top+="`#${num+=1}` **<@$it>** (${table[it].size()} servers)"
+				}
+			}else{
+				top+=(d.errorMessage()+"Usage: `${d.prefix}top [names/games/bots] [page]`")
+			}
+			e.sendMessage(top.join('\n'))
+		}catch(ex){
+			e.sendMessage("I'm unable to look this deep into it. Try a smaller page number.")
+			ex.printStackTrace()
+		}
+	}
+	String category="General"
+	String help="""`top names [page]` will make me tell you the most common usernames.
+`top games [page]` will make me tell you the most played games right now.
+`top bots [page]` will make me tell you which bots are in the most servers.
+This is only as far as I can see, though. Imagine the global statistic."""
 }
