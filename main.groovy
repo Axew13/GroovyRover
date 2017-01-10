@@ -13,6 +13,7 @@ import net.dv8tion.jda.events.*
 import net.dv8tion.jda.events.message.*
 import net.dv8tion.jda.events.guild.*
 import net.dv8tion.jda.events.guild.member.*
+import net.dv8tion.jda.events.user.*
 import net.dv8tion.jda.utils.AvatarUtil
 import net.dv8tion.jda.audio.*
 import net.dv8tion.jda.player.*
@@ -23,6 +24,7 @@ import java.awt.List as AWTList
 import java.util.List
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
+import com.mashape.unirest.http.Unirest
 @Grab(group='org.jsoup',module='jsoup',version='1.8.3')
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -40,10 +42,10 @@ builder.buildBlocking()
 
 
 class Bot{
-	List prefixes=["-","~"]
-	List mention=["<@119184325219581952> ","<@!119184325219581952> "]
-	String owner="107894146617868288"
-	String id="119184325219581952"
+	List prefixes=['-','~']
+	List mention=['<@119184325219581952> ','<@!119184325219581952> ']
+	String owner='107894146617868288'
+	String id='119184325219581952'
 	List commands=[
 		new SayCommand(),new PlayCommand(),new UserinfoCommand(),new ServerinfoCommand(),new ChannelinfoCommand(),
 		new RoleinfoCommand(),new EmoteinfoCommand(),new AvatarCommand(),new InfoCommand(),new HelpCommand(),
@@ -57,11 +59,12 @@ class Bot{
 		new MemberCommand(),new MuteCommand(),new KickCommand(),new LogCommand(),new ScopeCommand(),
 		new FeedCommand(),new ClearCommand(),new SetChannelCommand(),new SetRoleCommand(),new VotePinCommand(),
 		new RadioCommand(),new ConfigCommand(),new SingCommand(),new BanCommand(),new SmiliesCommand(),
-		new CloneCommand(),new AccessCommand(),new TrackerCommand(),new IsupCommand(),new TopCommand()
+		new CloneCommand(),new AccessCommand(),new TrackerCommand(),new IsupCommand(),new TopCommand(),
+		new CleanCommand(),new NoteCommand()
 	]
 	List ignored=[]
-	String oauth="https://discordapp.com/oauth2/authorize?client_id=170646931641466882&scope=bot&permissions=268443670"
-	String server="https://discord.gg/0vJZEroWHiGWWQc7"
+	String oauth='https://discordapp.com/oauth2/authorize?client_id=170646931641466882&scope=bot&permissions=268443670'
+	String server='https://discord.gg/0vJZEroWHiGWWQc7'
 }
 
 
@@ -101,7 +104,7 @@ class Radio{
 					}else{
 						player.play()
 					}
-					Thread.sleep(3000)
+					Thread.sleep(3500)
 				}
 			}
 			now[guild.id]=null
@@ -113,46 +116,48 @@ class Radio{
 
 class Web{
 	Map agents=[
-		"G.Chrome":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36",
-		"M.Firefox":"Mozilla/5.0 (Windows NT 6.1; rv:50.0) Gecko/20100101 Firefox/50.0",
-		"N.3DS":"Mozilla/5.0 (Nintendo 3DS; U; ; en) Version/1.7498.US"
+		'G.Chrome':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36',
+		'M.Firefox':'Mozilla/5.0 (Windows NT 6.1; rv:50.0) Gecko/20100101 Firefox/50.0',
+		'N.3DS':'Mozilla/5.0 (Nintendo 3DS; U; ; en) Version/1.7498.US'
 	]
-	Document get(String url,String agent="G.Chrome"){
+	Document get(String url,String agent='G.Chrome'){
 		Jsoup.connect(url).userAgent(agents[agent]).get()
+	}
+	String sendStats(Event e){
+		Unirest.post("https://bots.discord.pw/api/bots/$e.jda.selfInfo.id/stats").header('Content-Type','application/json').header('Authorization',new File("token").readLines()[4]).body(JsonOutput.toJson(server_count:e.jda.guilds.size())).asString().body
 	}
 }
 
 
 
 class JSON{
-	String root="data/"
+	String root='data/'
 	Map load(String donkey){
-		new JsonSlurper().parse(new File(root+donkey+".json"),"UTF-8")
+		new JsonSlurper().parse(new File(root+donkey+'.json'),'UTF-8')
 	}
-	Object save(Map diddy,String dixie){
+	void save(Map diddy,String dixie){
 		new File(root+dixie+".json").write(JsonOutput.prettyPrint(JsonOutput.toJson(diddy)))
 	}
-	Map database(){load("database")}
-	Map tags(){load("tags")}
-	Map lastseen(){load("lastseen")}
-	Map channels(){load("channels")}
-	Map roles(){load("roles")}
-	Map properties(){load("properties")}
-	Map colours(){load("colours")}
-	Map misc(){load("misc")}
-	Map conversative(){load("conversative")}
-	Map feeds(){load("feeds")}
-	Map settings(){load("settings")}
-	Map temp(){load("temp")}
-	Map audio(){load("audio")}
-	Map tracker(){load("tracker")}
+	Map database(){load('database')}
+	Map tags(){load('tags')}
+	Map lastseen(){load('lastseen')}
+	Map channels(){load('channels')}
+	Map roles(){load('roles')}
+	Map properties(){load('properties')}
+	Map colours(){load('colours')}
+	Map misc(){load('misc')}
+	Map conversative(){load('conversative')}
+	Map feeds(){load('feeds')}
+	Map settings(){load('settings')}
+	Map temp(){load('temp')}
+	Map audio(){load('audio')}
+	Map tracker(){load('tracker')}
+	Map notes(){load('notes')}
 }
 
 
 
 class GRover extends ListenerAdapter{
-	List modder
-	User banneer
 	Bot bot=new Bot()
 	Radio radio=new Radio()
 	Web web=new Web()
@@ -171,13 +176,14 @@ class GRover extends ListenerAdapter{
 	Map temp=json.temp()
 	Map audio=json.audio()
 	Map tracker=json.tracker()
+	Map notes=json.notes()
 	String lastReply
 	boolean tableTimeout
 	long started=System.currentTimeMillis()
 	List messages=[]
-	Closure errorMessage={["**Let's try that again.**\n","**Bots aren't your strong point. I can tell.**\n","**Watch how an expert does it.**\n","**You're doing it wrong.**\n","**Nah, it's more like this.**\n","**She wants to know if you're really a tech person.**\n","**Consider the following:**\n"].randomItem()}
-	Closure permissionMessage={["**The desire for something becomes stronger when you can't have it.**\n","**You may look, but don't touch.**\n","**What could go wrong in allowing that for everyone?**\n","**Access is denied to that.**\n","**I can't exploit your bot, therefore it sucks.**\n","**I can't let you do that, Star Fox.**\n","**There are function keys beyond F12. You are not ready for them.**\n"].randomItem()}
-	Closure failMessage={["**JDA, why you no user friendly?!**\n","**I have succeeded in my failure. Proud of me?**\n","**What on earth was that?**\n","**Hey, that was supposed to work. No fair.**\n","**LOSE LOSE LOSE LOSE LOSE LOSE!**\n","**I thought I fixed that.**\n","**It's java again isn't it?**\n"].randomItem()}
+	Closure errorMessage={"**"+["Let's try that again.","Bots aren't your strong point. I can tell.","Watch how an expert does it.","You're doing it wrong.","Nah, it's more like this.","She wants to know if you're really a tech person.","Consider the following:","git: 'gud' is not a git command. See 'git --help'."].randomItem()+"**\n"}
+	Closure permissionMessage={"**"+["The desire for something becomes stronger when you can't have it.","You may look, but don't touch.","What could go wrong in allowing that for everyone?","Access is denied to that.","I can't exploit your bot, therefore it sucks.","I can't let you do that, Star Fox.","There are function keys beyond F12. You are not ready for them.","You don't have a license to do that."].randomItem()+"**\n"}
+	Closure failMessage={"**"+["JDA, why you no user-friendly?!","I have succeeded in my failure. Proud of me?","What on earth was that?","Hey, that was supposed to work. No fair.","LOSE LOSE LOSE LOSE LOSE LOSE!","I thought I fixed that.","It's java again isn't it?","Let's motivate it with a controlled shock."].randomItem()+"**\n"}
 	
 	
 	// Methods
@@ -200,22 +206,33 @@ class GRover extends ListenerAdapter{
 		Thread.start{
 			e.jda.guilds.findAll{!roles.member[it.id]}.each{roles.member[it.id]=it.roles.findAll{!it.managed&&!it.colour&&!it.config}.max{Role role->role.guild.userRoles.findAll{role in it.value}*.key.size()}?.id}
 			e.jda.guilds.findAll{!roles.mute[it.id]}.each{roles.mute[it.id]=it.roles.findAll{!it.managed&&it.name.toLowerCase().containsAny(['mute','shun','naughty','punish'])}.max{Role role->role.guild.userRoles.findAll{role in it.value}*.key.size()}?.id}
-			json.save(roles,"roles")
+			json.save(roles,'roles')
 			List grad=[0xFF0000,0xFF2A00,0xFF5400,0xFF7F00,0xFFAA00,0xFFD400,0xFFFF00,0xD4FF00,0xAAFF00,0x7FFF00,0x54FF00,0x2AFF00,0x00FF00,0x00FF2A,0x00FF55,0x00FF7F,0x00FFA9,0x00FFD4,0x00FFFF,0x00D4FF,0x00A9FF,0x007FFF,0x0055FF,0x002AFF,0x0000FF,0x2A00FF,0x5400FF,0x7F00FF,0xAA00FF,0xD400FF,0xFF00FF,0xFF00D4,0xFF00AA,0xFF007F,0xFF0054,0xFF002A]
 			while(true){
 				grad.each{
-					e.jda.users.findAll{it.status!="offline"}.each{
+					long now=System.currentTimeMillis()
+					e.jda.users.findAll{it.status!='offline'}.each{
 						seen[it.id]=[
-							time:System.currentTimeMillis(),
+							time:now,
 							game:it.game?.name
 						]
 					}
-					json.save(seen,"lastseen")
+					json.save(seen,'lastseen')
 					try{
 						rainbow.manager.setColor(it)
 						rainbow.manager.update()
 					}catch(ex){
 						ex.printStackTrace()
+					}
+					List sticky=notes.timed.findAll{it.time<now}
+					sticky.each{Map note->
+						notes.timed-=note
+						try{
+							e.jda.users.find{it.id==note.user}.privateChannel.sendMessage("It is ${new Date().format('HH:mm:ss, d MMMM YYYY').formatBirthday()}. You asked me to remind you${if(note.content){":\n\n$note.content"}else{"."}}")
+						}catch(ex){
+							ex.printStackTrace()
+						}
+						json.save(notes,'notes')
 					}
 					Thread.sleep(180000)
 				}
@@ -251,10 +268,10 @@ class GRover extends ListenerAdapter{
 					feeds.youtube.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=web.get(feed.link,"G.Chrome")
-							String id=doc.getElementsByClass("yt-lockup-title")[0].getElementsByTag("a")[0].attr("href")
+							Document doc=web.get(feed.link,'G.Chrome')
+							String id=doc.getElementsByClass('yt-lockup-title')[0].getElementsByTag('a')[0].attr('href')
 							if(id!=feed.last){
-								String title=doc.getElementsByTag("title").text().tokenize().join(' ')
+								String title=doc.getElementsByTag('title').text().tokenize().join(' ')
 								channel.sendMessage("**New video from $title**:\nhttps://www.youtube.com$id")
 								feeds.youtube.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
 							}
@@ -265,14 +282,14 @@ class GRover extends ListenerAdapter{
 					feeds.animelist.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=web.get(feed.link,"G.Chrome")
-							Element anime=doc.getElementsByTag("item")[0]
-							List data=anime.getElementsByTag("description")[0].text().replace(' episodes','').split(' - ')
-							String name=anime.getElementsByTag("title")[0].text().split(' - ')[0]
+							Document doc=web.get(feed.link,'G.Chrome')
+							Element anime=doc.getElementsByTag('item')[0]
+							List data=anime.getElementsByTag('description')[0].text().replace(' episodes','').split(' - ')
+							String name=anime.getElementsByTag('title')[0].text().split(' - ')[0]
 							String id="$name/${data[1].tokenize()[0]}"
 							if(id!=feed.last){
-								String title=doc.getElementsByTag("title")[0].text().tokenize()[0]
-								String link=anime.getElementsByTag("link")[0].text()
+								String title=doc.getElementsByTag('title')[0].text().tokenize()[0]
+								String link=anime.getElementsByTag('link')[0].text()
 								channel.sendMessage("**New episode on $title anime list**:\n${data[0]}: Episode ${data[1]} of $name.\n<$link>")
 								feeds.animelist.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
 							}
@@ -283,11 +300,11 @@ class GRover extends ListenerAdapter{
 					feeds.twitter.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=web.get(feed.link,"G.Chrome")
-							String link=doc.getElementsByClass("tweet-timestamp")[0].attr("href")
+							Document doc=web.get(feed.link,'G.Chrome')
+							String link=doc.getElementsByClass('tweet-timestamp')[0].attr('href')
 							String id=link.substring(link.lastIndexOf('/'))
 							if(id!=feed.last){
-								String title=doc.getElementsByClass("ProfileHeaderCard-nameLink").text()
+								String title=doc.getElementsByClass('ProfileHeaderCard-nameLink').text()
 								channel.sendMessage("**New tweet from $title**:\nhttps://twitter.com$link")
 								feeds.twitter.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
 							}
@@ -298,9 +315,9 @@ class GRover extends ListenerAdapter{
 					feeds.levelpalace.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=web.get(feed.link,"G.Chrome")
-							Elements level=doc.getElementsByClass("levels-table")[0].getElementsByTag("a")
-							String id=level[0].attr("href")
+							Document doc=web.get(feed.link,'G.Chrome')
+							Elements level=doc.getElementsByClass('levels-table')[0].getElementsByTag('a')
+							String id=level[0].attr('href')
 							if(id!=feed.last){
 								String title=level[1].text()
 								String name=level[0].text()
@@ -311,7 +328,7 @@ class GRover extends ListenerAdapter{
 							feeds.levelpalace.remove(feed)
 						}
 					}
-					json.save(feeds,"feeds")
+					json.save(feeds,'feeds')
 				}catch(ex){
 					ex.printStackTrace()
 				}
@@ -334,7 +351,7 @@ class GRover extends ListenerAdapter{
 		Thread.start{
 			while(true){
 				Scanner scanner=new Scanner(System.in)
-				if(scanner.nextLine()=="stop"){
+				if(scanner.nextLine()=='stop'){
 					rainbow.manager.setColor(0x000000)
 					rainbow.manager.update()
 					System.exit(0)
@@ -346,36 +363,38 @@ class GRover extends ListenerAdapter{
 	
 	// Message Create Event
 	void onMessageReceived(MessageReceivedEvent e){
-		def args=e.message.rawContent
 		if(e.author){
+			def args=e.message.rawContent
 			if(!(e.author.bot||(e.author.id in bot.ignored)||e.channel.ignored)){
 				String prefix=args.startsWithAny(e.guild?(settings.prefix[e.guild.id]?:bot.prefixes)+bot.mention:bot.prefixes)
 				if(prefix!=null){
 					args=args.substring(prefix.size())
 					Thread.start{
 						
-						Closure command={List aliases->(args.toLowerCase()+" ").startsWithAny(aliases*.plus(' '))?.trim()}
+						Closure command={List aliases->(args.toLowerCase()+' ').startsWithAny(aliases*.plus(' '))?.trim()}
 						Command cmd=bot.commands.find{command(it.aliases)}
 						if(cmd){
 							try{
 								args=args.substring(command(cmd.aliases).length()).trim()
-								Map binding=[bot:bot,radio:radio,json:json,web:web,prefix:prefix,args:args,db:db,tags:tags,seen:seen,channels:channels,roles:roles,info:info,colours:colours,misc:misc,conversative:conversative,feeds:feeds,settings:settings,temp:temp,audio:audio,tracker:tracker,lastReply:lastReply,tableTimeout:tableTimeout,started:started,errorMessage:errorMessage,permissionMessage:permissionMessage,failMessage:failMessage,messages:messages]
+								Map binding=[bot:bot,radio:radio,json:json,web:web,prefix:prefix,args:args,db:db,tags:tags,seen:seen,channels:channels,roles:roles,info:info,colours:colours,misc:misc,conversative:conversative,feeds:feeds,settings:settings,temp:temp,audio:audio,tracker:tracker,notes:notes,lastReply:lastReply,tableTimeout:tableTimeout,started:started,errorMessage:errorMessage,permissionMessage:permissionMessage,failMessage:failMessage,messages:messages]
 								cmd.run(binding,e)
 							}catch(ex){
 								e.sendMessage(failMessage()+"Error: `$ex.message`")
 								ex.printStackTrace()
 							}
 							messages+=e.message
-						}else if(command(tags*.key)){
-							if(e.guild){
+						}else if(e.guild){
+							if(command(tags*.key*.replaceAll(/\d+:/,''))){
 								args=args.tokenize()
-								if(e.guild.id in tags[args[0].toLowerCase()].command){
-									tags[args[0].toLowerCase()].history[-1].content.addVariables(e,args.join(' ').substring(args[0].length()).trim()).split(1999).each{
+								args[0]=args[0].toLowerCase()
+								if(e.guild&&tags["$e.guild.id:${args[0]}"])args[0]="$e.guild.id:${args[0]}"
+								if(e.guild.id in tags[args[0]]?.command){
+									tags[args[0]].history[-1].content.addVariables(e,args.join(' ').substring(args[0].length()).trim()).split(1999).each{
 										e.sendMessage(it)
 										Thread.sleep(500)
 									}
-									tags[args[0].toLowerCase()].uses+=1
-									json.save(tags,"tags")
+									tags[args[0]].uses+=1
+									json.save(tags,'tags')
 									messages+=e.message
 								}
 							}
@@ -391,14 +410,14 @@ class GRover extends ListenerAdapter{
 						if(chat.contains('discordgg')){
 							e.sendMessage("I can't accept this. Please use this instead:\n$bot.oauth")
 						}else{
-							List entry=conversative.findAll{chat.contains(' '+it.key+' ')}*.key
+							List entry=conversative.findAll{chat.contains(" $it.key ")}*.key
 							if(lastReply?.length()>1){
 								User client=e.jda.users.find{it.id==bot.id}
 								String add=e.message.content.capitalize().replaceAll([client.name,client.id,client.identity],['[name]','[id]','[identity]'])
 								if(!add.endsWithAny(['.','!','?',')']))add+=['.','!','?','...'].randomItem()
 								if(!conversative[lastReply])conversative[lastReply]=[]
 								conversative[lastReply]+=add
-								json.save(conversative,"conversative")
+								json.save(conversative,'conversative')
 							}
 							if(entry){
 								String response=conversative[entry.randomItem()].randomItem().replaceAll(['[name]','[id]','[identity]'],[e.author.name,e.author.id,e.author.identity])
@@ -410,32 +429,25 @@ class GRover extends ListenerAdapter{
 								e.sendMessage(response)
 							}
 						}
-					}else if(modder){
-						if(e.author.isStaff(e.guild)&&(e.guild.id in modder*.guild*.id)){
-							modder*.edit("**${e.author.identity.capitalize()}**: Banned $banneer.identity forever.\nReason: $e.message.content")
-							modder=null
-							banneer=null
-							e.sendMessage("Job's done.")
-						}
 					}else if(e.channel.spam){
 						Thread.start{
-							if(e.message.content=="(\u256f\u00b0\u25a1\u00b0\uff09\u256f\ufe35 \u253b\u2501\u253b"){
+							if(e.message.content=='(\u256f\u00b0\u25a1\u00b0\uff09\u256f\ufe35 \u253b\u2501\u253b'){
 								if(!tableTimeout){
-									e.sendMessage(["(\u256f\u00b0\u2302\u00b0)\u256f\ufe35 \u253b\u2501\u2501\u253b","(~\u00b0 \u00b7\u00b0)~  \u252c\u2500\u2500\u252c"].randomItem())
+									e.sendMessage("(\u256f\u00b0\u2302\u00b0)\u256f\ufe35 \u253b\u2501\u2501\u253b")
 									tableTimeout=1
 									Thread.sleep(8000)
 									tableTimeout=0
 								}else{
 									e.sendMessage("(-\u00b0 \u00b7\u00b0)-  \u252c\u2500\u2500\u252c\nHow do you think the table feels?")
 								}
-							}else if(e.message.content=="\u252c\u2500\u252c\ufeff \u30ce( \u309c-\u309c\u30ce)"){
+							}else if(e.message.content=='\u252c\u2500\u252c\ufeff \u30ce( \u309c-\u309c\u30ce)'){
 								e.sendMessage("-\u252c\u2500\u2500\u252c\u256f\u30ce( o\u200b_o\u30ce)")
 								tableTimeout=1
 								Thread.sleep(8000)
 								tableTimeout=0
-							}else if(e.message.content=="ayy"){
+							}else if(e.message.content=='ayy'){
 								e.sendMessage("le mayo")
-							}else if(e.message.content=="wew"){
+							}else if(e.message.content=='wew'){
 								e.sendMessage("lad")
 							}
 						}
@@ -504,11 +516,19 @@ class GRover extends ListenerAdapter{
 	}
 	
 	
-	void onGuildMemberBan(GuildMemberBanEvent e){
-		if(e.guild.id in["145904657833787392","165499535630663680"]){
-			modder=e.guild.channels.findAll{it.log}*.sendMessage("$e.user.identity got banne. Pending case information...")
-			banneer=e.user
-			e.guild.defaultChannel.sendMessage("The ban hammer has been swung. Responsible member of staff, your next message will become the reason.")
+	// Presence Update Event
+	void onUserOnlineStatusUpdate(UserOnlineStatusUpdateEvent e){
+		if(!e.user.bot){
+			List sticky=notes.user.findAll{it.mention==e.user.id}
+			sticky.each{Map note->
+				notes.user-=note
+				try{
+					e.jda.users.find{it.id==note.user}.privateChannel.sendMessage("$e.user.identity is online. You asked me to tell you${if(note.content){":\n\n$note.content"}else{"."}}")
+				}catch(ex){
+					ex.printStackTrace()
+				}
+				json.save(notes,'notes')
+			}
 		}
 	}
 }
@@ -552,9 +572,9 @@ Don't say 'with fire' please."""
 class UserinfoCommand extends Command{
 	List aliases=['userinfo','user']
 	void run(Map d,Event e){
-		String area=d.db[e.author.id]?.area?:"United States"
-		String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
+		String area=d.db[e.author.id]?.area?:'United States'
+		String key=d.misc.time*.key.sort{it.length()}.find{area.endsWith(it)}
+		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time['United States']
 		if(e.guild){
 			if(e.message.mentions.size()>1){
 				List mens=e.message.mentions
@@ -615,9 +635,9 @@ Where they live is not included this time."""
 class ServerinfoCommand extends Command{
 	List aliases=['serverinfo','server']
 	void run(Map d,Event e){
-		String area=d.db[e.author.id]?.area?:"United States"
-		String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
+		String area=d.db[e.author.id]?.area?:'United States'
+		String key=d.misc.time*.key.sort{it.length()}.find{area.endsWith(it)}
+		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time['United States']
 		if(e.guild||d.args){
 			Guild guild=e.guild
 			if(d.args)guild=e.jda.findGuild(d.args)
@@ -659,9 +679,9 @@ How may I server you, master?"""
 class ChannelinfoCommand extends Command{
 	List aliases=['channelinfo','channel']
 	void run(Map d,Event e){
-		String area=d.db[e.author.id]?.area?:"United States"
-		String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
+		String area=d.db[e.author.id]?.area?:'United States'
+		String key=d.misc.time*.key.sort{it.length()}.find{area.endsWith(it)}
+		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time['United States']
 		def channel=e.channel
 		if(d.args&&e.guild)channel=e.message.mentionedChannels?e.message.mentionedChannels[-1]:e.guild.findChannel(d.args)
 		if(channel){
@@ -701,9 +721,9 @@ This is getting a little mundane, isn't it?"""
 class RoleinfoCommand extends Command{
 	List aliases=['roleinfo','role']
 	void run(Map d,Event e){
-		String area=d.db[e.author.id]?.area?:"United States"
-		String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
+		String area=d.db[e.author.id]?.area?:'United States'
+		String key=d.misc.time*.key.sort{it.length()}.find{area.endsWith(it)}
+		int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time['United States']
 		if(e.guild){
 			Role role
 			if(d.args&&e.guild)role=e.message.mentionedRoles?e.message.mentionedRoles[-1]:e.guild.findRole(d.args)
@@ -741,9 +761,9 @@ class EmoteinfoCommand extends Command{
 		if(d.args)emote=e.message.emotes?e.message.emotes[-1]:e.jda.findEmote(d.args)
 		Guild guild
 		if(emote){
-			String area=d.db[e.author.id]?.area?:"United States"
-			String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-			int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
+			String area=d.db[e.author.id]?.area?:'United States'
+			String key=d.misc.time*.key.sort{it.length()}.find{area.endsWith(it)}
+			int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time['United States']
 			if(emote.guilds)guild=emote.guilds[0]
 			e.sendMessage("""**${emote.name.capitalize()}** in ${if(guild){emote.guilds[0].name}else{"???"}}: ```css
 ID: $emote.id
@@ -768,7 +788,7 @@ class AvatarCommand extends Command{
 		if(e.message.mentions.size()>1){
 			List mens=e.message.mentions
 			if(mens.size()>5)mens=mens[0..4]
-			String list=e.message.mens.collect{"**${it.identity.capitalize()}**: ${it.avatar?:it.defaultAvatarUrl}"}.join('\n')
+			String list=e.message.mens.collect{"**${it.identity.capitalize()}**: ${it.avatar?it.avatar+"?size=512":it.defaultAvatarUrl}"}.join('\n')
 			e.sendMessage(list)
 		}else if(e.message.emotes){
 			String list=e.message.emotes.collect{"**${it.name.capitalize()}**: $it.imageUrl"}.join('\n')
@@ -777,13 +797,13 @@ class AvatarCommand extends Command{
 			User user=e.author
 			if(d.args&&e.guild)user=e.message.mentions?e.message.mentions[-1]:e.guild.findUser(d.args)
 			if(user){
-				e.sendMessage("**${user.identity.capitalize()}**'s avatar:\n${user.avatar?:user.defaultAvatarUrl}")
+				e.sendMessage("**${user.identity.capitalize()}**'s avatar:\n${user.avatar?user.avatar+"?size=512":user.defaultAvatarUrl}")
 			}else{
 				Guild guild
 				if(d.args)guild=e.jda.findGuild(d.args)
 				if(guild){
 					if(guild.icon){
-						e.sendMessage("**${guild.name.capitalize()}**'s icon:\n$guild.icon")
+						e.sendMessage("**${guild.name.capitalize()}**'s icon:\n$guild.icon?size=512")
 					}else{
 						e.sendMessage("**${guild.name.capitalize()}**'s icon:\n`${guild.name.abbreviate()}`")
 					}
@@ -866,8 +886,7 @@ I think by now you understand this though."""
 class JoinCommand extends Command{
 	List aliases=['join','invite']
 	void run(Map d,Event e){
-		d.args=d.args.toLowerCase()
-		if(d.args.contains('server')){
+		if(d.args.toLowerCase()=="server"){
 			e.sendMessage("Me and some other bots can be found here:\n$d.bot.server")
 		}else{
 			e.sendMessage("Add me to your server:\n$d.bot.oauth")
@@ -885,21 +904,21 @@ class GoogleCommand extends Command{
 	Map cache=[:]
 	void run(Map d,Event e){
 		if(d.args){
-			String link="https://encrypted.google.com/search?q=${URLEncoder.encode(d.args,"UTF-8")}"
+			String link="https://encrypted.google.com/search?q=${URLEncoder.encode(d.args,'UTF-8')}"
 			try{
 				String ass=d.args.replaceAll([' ','-'],'')
 				if(cache[ass]){
 					Elements links=cache[ass]
-					Element linkTag=links[1].getElementsByTag("a")[0]
-					e.sendMessage("${linkTag.text().capitalize()}: ${linkTag.attr("href")}")
+					Element linkTag=links[1].getElementsByTag('a')[0]
+					e.sendMessage("${linkTag.text().capitalize()}: ${linkTag.attr('href')}")
 					cache.remove(ass)
 				}else{
 					e.sendTyping()
-					Document doc=d.web.get(link,"G.Chrome")
-					Elements links=doc.getElementsByClass("r")
+					Document doc=d.web.get(link,'G.Chrome')
+					Elements links=doc.getElementsByClass('r')
 					if(links){
-						Element linkTag=links[0].getElementsByTag("a")[0]
-						e.sendMessage("${linkTag.text().capitalize()}: ${linkTag.attr("href")}")
+						Element linkTag=links[0].getElementsByTag('a')[0]
+						e.sendMessage("${linkTag.text().capitalize()}: ${linkTag.attr('href')}")
 						cache[ass]=links
 					}else{
 						e.sendMessage("There are no search results for '$d.args.'\n$link")
@@ -931,19 +950,19 @@ class YouTubeCommand extends Command{
 			String ass=d.args.replaceAll([' ','-'],'')
 			if(cache[ass]){
 				Elements links=cache[ass]
-				Element linkTag=links[1].getElementsByTag("a")[0]
-				String lonk="https://youtube.com${linkTag.attr("href")}"
+				Element linkTag=links[1].getElementsByTag('a')[0]
+				String lonk="https://youtube.com${linkTag.attr('href')}"
 				if(!lonk.containsAny(['&list=','/user/','/channel/']))lonk=lonk.replace('youtube.com/watch?v=','youtu.be/')
 				e.sendMessage("\u200b${linkTag.attr("title")}: $lonk")
 				cache.remove(ass)
 			}else{
 				e.sendTyping()
-				String link="https://www.youtube.com/results?search_query=${URLEncoder.encode(d.args,"UTF-8")}"
-				Document doc=d.web.get(link,"G.Chrome")
+				String link="https://www.youtube.com/results?search_query=${URLEncoder.encode(d.args,'UTF-8')}"
+				Document doc=d.web.get(link,'G.Chrome')
 				Elements links=doc.getElementsByClass("yt-lockup-title").findAll{!it.toString().contains('https://googleads')}
 				if(links){
-					Element linkTag=links[0].getElementsByTag("a")[0]
-					String lonk="https://youtube.com${linkTag.attr("href")}"
+					Element linkTag=links[0].getElementsByTag('a')[0]
+					String lonk="https://youtube.com${linkTag.attr('href')}"
 					if(!lonk.containsAny(['&list=','/user/','/channel/']))lonk=lonk.replace('youtube.com/watch?v=','youtu.be/')
 					e.sendMessage("\u200b${linkTag.attr("title")}: $lonk")
 					cache[ass]=links
@@ -970,13 +989,13 @@ class ImageCommand extends Command{
 		d.args=d.args.replace('GIF','').trim()
 		if(d.args){
 			e.sendTyping()
-			String link="https://www.google.co.uk/search?q=${URLEncoder.encode(d.args,"UTF-8")}&tbm=isch"
+			String link="https://www.google.co.uk/search?q=${URLEncoder.encode(d.args,'UTF-8')}&tbm=isch"
 			if(gif)link+="&tbs=itp:animated"
 			try{
-				Document doc1=d.web.get(link,"N.3DS")
+				Document doc1=d.web.get(link,'N.3DS')
 				Element image=doc1.getElementsByClass("image")[0]
-				Document doc2=d.web.get(image.attr("href"),"N.3DS")
-				String imagelink=doc2.getElementById('thumbnail').attr("href")
+				Document doc2=d.web.get(image.attr('href'),'N.3DS')
+				String imagelink=doc2.getElementById('thumbnail').attr('href')
 				String trailer=imagelink.containsAny(['.png','.gif','.jpg','.svg'])
 				if(trailer&&!imagelink.contains('wikimedia'))imagelink=imagelink.substring(0,imagelink.indexOf(trailer)+4)
 				e.sendMessage(imagelink)
@@ -1007,38 +1026,38 @@ class NsfwCommand extends Command{
 		d.args=d.args.replace(',',' ').trim()
 		if(e.private||e.channel.nsfw||e.author.isOwner(e.guild)){
 			if(!d.args)d.args="all"
-			String link="http://gelbooru.com/index.php?page=post&s=list&tags=${URLEncoder.encode(d.args,"UTF-8")}"
+			String link="http://gelbooru.com/index.php?page=post&s=list&tags=${URLEncoder.encode(d.args,'UTF-8')}"
 			Document doc
 			int pages=1
 			String page
 			if(cache[d.args]){
 				pages=cache[d.args]
 			}else{
-				doc=d.web.get(link,"G.Chrome")
+				doc=d.web.get(link,'G.Chrome')
 				if(doc.toString().contains('Nobody here')){
 					e.sendMessage("Sorry, no results. ;_;\nRemember Gelbooru is for hentai, so keywords should use underlines, names should be reversed and you won't find western porn.\n$link")
 				}else{
 					Element pagination=doc.getElementsByClass('pagination')[0]
-					Element lastpagebtn=pagination.getElementsByTag("a").last()
+					Element lastpagebtn=pagination.getElementsByTag('a').last()
 					String lastpage
 					if(lastpagebtn){
 						lastpage=lastpagebtn.attr('href')
 						pages=(lastpage.substring(lastpage.indexOf('pid=')+4).toInteger()/42)+1
 					}else{
-						lastpage="http://gelbooru.com/index.php?page=post&s=list&tags=${URLEncoder.encode(d.args,"UTF-8")}&pid=42"
+						lastpage="http://gelbooru.com/index.php?page=post&s=list&tags=${URLEncoder.encode(d.args,'UTF-8')}&pid=42"
 					}
 				}
 			}
 			if(pages>476)pages=476
-			if(!doc.toString().contains('Nobody here')){
+			if(!doc.text().contains('Nobody here')){
 				cache[d.args]=pages
 				page=(((Math.floor((Math.random()*pages)+1)*42)as int)-42).toString()
 				String ass="$link&pid=$page"
 				doc=cache2[ass]
-				if(!doc)doc=d.web.get(ass,"G.Chrome")
+				if(!doc)doc=d.web.get(ass,'G.Chrome')
 				Elements previews=doc.getElementsByClass('thumb')
 				cache2[ass]=previews
-				doc=d.web.get("http://gelbooru.com/${previews.randomItem().getElementsByTag("a")[0].attr('href')}","G.Chrome")
+				doc=d.web.get("http://gelbooru.com/${previews.randomItem().getElementsByTag('a')[0].attr('href')}",'G.Chrome')
 				String hentai=doc.getElementsByClass('sidebar3')[1].getElementsByTag('div')[2].getElementsByTag('a')[0].attr('href')
 				if(hentai=="#")hentai=doc.getElementById('image').attr('src').substring(0,doc.getElementById('image').attr('src').indexOf('?'))
 				e.sendMessage(hentai)
@@ -1061,19 +1080,19 @@ class LevelPalaceCommand extends Command{
 		if(d.args){
 			try{
 				e.sendTyping()
-				Map temporaryFix=["pixelfox":"8","mario1luigi9":"8","7supermariobros7":"212","mariomaster7771":"212","brendan":"1","doomslayer522":"266","masterkastyl1nos222":"285","tnttimelord":"349","unown":"555","evol vex":"694"]
+				Map temporaryFix=['pixelfox':8,'mario1luigi9':8,'7supermariobros7':212,'mariomaster7771':212,'brendan':1,'doomslayer522':266,'masterkastyl1nos222':285,'tnttimelord':349,'unown':555,'evol vex':694]
 				Document doc2
 				String link
 				String ass=d.args.toLowerCase()
 				if(temporaryFix[ass]){
 					link="https://www.levelpalace.com/profile.php?user_id=${temporaryFix[ass]}"
 				}else{
-					Document doc1=d.web.get("https://encrypted.google.com/search?q=${URLEncoder.encode("$d.args profile site:levelpalace.com","UTF-8")}","G.Chrome")
-					link=doc1.getElementsByClass("r")[0].getElementsByTag("a")[0].attr('href')
+					Document doc1=d.web.get("https://encrypted.google.com/search?q=${URLEncoder.encode("$d.args profile site:levelpalace.com",'UTF-8')}",'G.Chrome')
+					link=doc1.getElementsByClass("r")[0].getElementsByTag('a')[0].attr('href')
 				}
 				try{
 					if(!link.startsWith('http'))link="http://$link"
-					doc2=d.web.get("$link&client=dogbot","G.Chrome")
+					doc2=d.web.get("$link&client=dogbot",'G.Chrome')
 					Elements cards=doc2.getElementsByClass("card-content")
 					try{
 						String profileText=doc2.getElementById("main").text()
@@ -1113,10 +1132,10 @@ class AnimeCommand extends Command{
 			e.sendTyping()
 			String link="https://myanimelist.net/anime.php?q=${URLEncoder.encode(d.args)}"
 			try{
-				Document doc=d.web.get(link,"G.Chrome")
+				Document doc=d.web.get(link,'G.Chrome')
 				try{
-					link=doc.getElementsByClass("hoverinfo_trigger")[0].attr("href")
-					doc=d.web.get(link,"G.Chrome")
+					link=doc.getElementsByClass("hoverinfo_trigger")[0].attr('href')
+					doc=d.web.get(link,'G.Chrome')
 					String name=doc.getElementsByTag("span").find{it.attr("itemprop")=="name"}.text().capitalize()
 					String photo=doc.getElementsByClass("ac").attr("src")
 					String type=doc.getElementsByClass("type").text()
@@ -1154,9 +1173,9 @@ class WebsiteCommand extends Command{
 		if(d.args.contains('.')){
 			e.sendTyping()
 			List months=['January','February','March','April','May','June','July','August','September','October','November','December']
-			String link="http://website.informer.com/${URLEncoder.encode(d.args,"UTF-8")}"
+			String link="http://website.informer.com/${URLEncoder.encode(d.args,'UTF-8')}"
 			try{
-				Document doc=d.web.get(link,"G.Chrome")
+				Document doc=d.web.get(link,'G.Chrome')
 				String title=doc.getElementById("title")?doc.getElementById("title").text().capitalize():args
 				String description=doc.getElementById("description")?"\n${doc.getElementById("description").text().capitalize()}":""
 				String keywords=doc.getElementById("keywords")?.text()?.length()>9?"\n_${doc.getElementById("keywords").text().replace('Keywords: ','')}_":""
@@ -1189,14 +1208,14 @@ class MiiverseCommand extends Command{
 		d.args=d.args.replace('@','')
 		if(d.args){
 			e.sendTyping()
-			String link="https://miiverse.nintendo.net/users/${URLEncoder.encode(d.args,"UTF-8")}/posts"
+			String link="https://miiverse.nintendo.net/users/${URLEncoder.encode(d.args,'UTF-8')}/posts"
 			try{
-				Document doc=d.web.get(link,"G.Chrome")
+				Document doc=d.web.get(link,'G.Chrome')
 				Elements posts=doc.getElementsByClass("post")
 				if(posts){
 					if(posts.size()>3)posts=posts[0..2]
 					Element post=posts.randomItem()
-					String url=post.getElementsByClass("timestamp")[0].attr("href")
+					String url=post.getElementsByClass("timestamp")[0].attr('href')
 					if(!url)url=post.getElementsByClass("timestamp")[0].attr("data-href-hidden")
 					String community=post.getElementsByClass("test-community-link")[0].text().replace('Community','').trim()
 					String type=post.getElementsByClass("post-subtype-label")[0].text()
@@ -1226,12 +1245,12 @@ class MarioMakerCommand extends Command{
 	List aliases=['mariomaker','smm']
 	void run(Map d,Event e){
 		d.args=d.args.replace('@','')
-		String ass=d.args+("0"*100)
-		if((ass[4]=="-")&&(ass[9]=="-")&&(ass[14]=="-")){
+		String ass=d.args+('0'*15)
+		if((ass[4]=='-')&&(ass[9]=='-')&&(ass[14]=='-')){
 			e.sendTyping()
-			String link="https://supermariomakerbookmark.nintendo.net/courses/${URLEncoder.encode(d.args,"UTF-8")}"
+			String link="https://supermariomakerbookmark.nintendo.net/courses/${URLEncoder.encode(d.args,'UTF-8')}"
 			try{
-				Document doc=d.web.get(link,"G.Chrome")
+				Document doc=d.web.get(link,'G.Chrome')
 				String title=doc.getElementsByClass("course-title")[0].text()
 				String uploader=doc.getElementsByClass("name")[0].text()
 				String levelmap=doc.getElementsByClass("course-image-full")[0].attr("src")
@@ -1246,15 +1265,15 @@ class MarioMakerCommand extends Command{
 			}
 		}else if(d.args){
 			e.sendTyping()
-			String link="https://supermariomakerbookmark.nintendo.net/profile/${URLEncoder.encode(d.args,"UTF-8")}"
+			String link="https://supermariomakerbookmark.nintendo.net/profile/${URLEncoder.encode(d.args,'UTF-8')}"
 			try{
-				Document doc=d.web.get(link,"G.Chrome")
+				Document doc=d.web.get(link,'G.Chrome')
 				Elements links=doc.getElementsByClass("course-card")
 				if(links){
 					if(links.size()>2)links=links[0..1]
 					String text=""
 					for(l in links){
-						String id=l.getElementsByClass("button")[0].attr("href").replace('/courses/','')
+						String id=l.getElementsByClass("button")[0].attr('href').replace('/courses/','')
 						String name=l.getElementsByClass("course-title")[0].text()
 						String tag=l.getElementsByClass("course-tag")[0].text()
 						String difficulty=l.getElementsByClass("course-header")[0].text()
@@ -1286,9 +1305,9 @@ class DefineCommand extends Command{
 	void run(Map d,Event e){
 		if(d.args){
 			e.sendTyping()
-			String link="http://dictionary.cambridge.org/dictionary/english/${URLEncoder.encode(d.args,"UTF-8")}"
+			String link="http://dictionary.cambridge.org/dictionary/english/${URLEncoder.encode(d.args,'UTF-8')}"
 			try{
-				Document doc=d.web.get(link,"G.Chrome")
+				Document doc=d.web.get(link,'G.Chrome')
 				Elements error=doc.getElementsByClass("cdo-hero__error")
 				if(error){
 					e.sendMessage("There is no definition for '$d.args.'\n$link")
@@ -1327,9 +1346,9 @@ class UrbanCommand extends Command{
 	void run(Map d,Event e){
 		if(d.args){
 			e.sendTyping()
-			String link="http://www.urbandictionary.com/define.php?term=${URLEncoder.encode(d.args,"UTF-8")}"
+			String link="http://www.urbandictionary.com/define.php?term=${URLEncoder.encode(d.args,'UTF-8')}"
 			try{
-				Document doc=d.web.get(link,"G.Chrome")
+				Document doc=d.web.get(link,'G.Chrome')
 				Element de=doc.getElementsByClass("def-panel")[0]
 				if(de){
 					Element worddef=de.getElementsByClass("word")[0]
@@ -1361,20 +1380,21 @@ class TagCommand extends Command{
 		d.args=d.args.tokenize(' ')
 		d.args[0]=d.args[0]?.toLowerCase()
 		if(e.message.attachment)d.args+=e.message.attachment.url
-		if(d.args[0]=="create"){
+		if(d.args[0]=='create'){
 			if(d.args[2]){
 				d.args[1]=d.args[1]?.toLowerCase()
+//				String ass=d.args[1].startsWithAny(e.jda.guilds.findAll{e.author in it.users}.id*.plus(':'))
 				if(d.args[1].containsAny(['@everyone','@here'])){
 					e.sendMessage("You cannot create a tag with that name.")
+/*				}else if(d.args[1]=~/^\d+:/&&!ass){
+					e.sendMessage("You cannot create a tag in a server you're not in.")*/
 				}else if(d.tags[d.args[1]]){
 					e.sendMessage("That tag already exists. You can edit it if it belongs to you or the server you're in.")
-				}else if(d.args[1].startsWith('docs:')&&(e.author.id!=bot.owner)){
-					e.sendMessage("You can't create a documentation tag.")
-				}else if(d.args[1].startsWith('invite:')&&!d.args[2..-1].join(' ').contains('//discord.gg/')){
-					e.sendMessage("You can't create an invite tag without an invite.")
 				}else{
+/*					String server=e.guild?.id
+					if(ass)server=ass.substring(0,ass.length()-1)*/
 					d.tags[d.args[1]]=[
-						server:e.guild?.id,
+						server:/*server*/e.guild?.id,
 						history:[[
 							content:d.args[2..-1].join(' '),
 							author:e.author.id
@@ -1387,13 +1407,12 @@ class TagCommand extends Command{
 			}else{
 				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag create [tag name] [tag content]`.")
 			}
-		}else if(d.args[0]=="edit"){
+		}else if(d.args[0]=='edit'){
 			if(d.args[2]){
 				d.args[1]=d.args[1]?.toLowerCase()
-				try{
-					if(d.args[1].startsWith('invite:')&&!d.args[2..-1].join(' ').contains('//discord.gg/')){
-						e.sendMessage("You can't edit an invite tag without an invite.")
-					}else if((d.tags[d.args[1]].server in e.jda.guilds.findAll{e.author in it.users}.id)||(e.author.id in[d.tags[d.args[1]].history[0].author,d.bot.owner])){
+				if(e.guild&&d.tags["$e.guild.id:${d.args[1]}"])d.args[1]="$e.guild.id:${d.args[1]}"
+				if(d.tags[d.args[1]]){
+					if((d.tags[d.args[1]].server in e.jda.guilds.findAll{e.author in it.users}.id)||(e.author.id in[d.tags[d.args[1]].history[0].author,d.bot.owner])){
 						d.tags[d.args[1]].history+=[
 							content:d.args[2..-1].join(' '),
 							author:e.author.id
@@ -1403,35 +1422,35 @@ class TagCommand extends Command{
 					}else{
 						e.sendMessage("You can't edit that tag because you don't own it, nor are you in the server where it was created.")
 					}
-				}catch(ex){
-					ex.printStackTrace()
-					e.sendMessage("The tag '${d.args[1]}' doesn't exist, or you forgot the content.")
+				}else{
+					e.sendMessage("The tag '${d.args[1]}' doesn't exist.")
 				}
 			}else{
 				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag edit [tag name] [tag content]`.")
 			}
-		}else if(d.args[0]=="delete"){
-			d.args[1]=d.args[1]?.toLowerCase()
-			try{
-				if(e.author.id in[d.tags[d.args[1]].history[0].author,d.bot.owner]){
-					d.tags.remove(d.args[1])
-					e.sendMessage("The tag **${d.args[1]}** has been deleted.")
-					d.json.save(d.tags,"tags")
+		}else if(d.args[0]=='delete'){
+			if(d.args[1]){
+				d.args[1]=d.args[1]?.toLowerCase()
+				if(e.guild&&d.tags["$e.guild.id:${d.args[1]}"])d.args[1]="$e.guild.id:${d.args[1]}"
+				if(d.tags[d.args[1]]){
+					if(e.author.id in[d.tags[d.args[1]].history[0].author,d.bot.owner]){
+						d.tags.remove(d.args[1])
+						e.sendMessage("The tag **${d.args[1]}** has been deleted.")
+						d.json.save(d.tags,"tags")
+					}else{
+						e.sendMessage("You can't delete that tag because you don't own it.")
+					}
 				}else{
-					e.sendMessage("You can't delete that tag because you don't own it.")
-				}
-			}catch(ex){
-				ex.printStackTrace()
-				try{
 					e.sendMessage("The tag '${d.args[1]}' doesn't exist.")
-				}catch(ex2){
-					e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag delete [tag name]`.")
 				}
+			}else{
+				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag delete [tag name]`.")
 			}
-		}else if(d.args[0]=="move"){
+		}else if(d.args[0]=='move'){
 			if(d.args[2]){
 				d.args[1]=d.args[1]?.toLowerCase()
-				try{
+				if(e.guild&&d.tags["$e.guild.id:${d.args[1]}"])d.args[1]="$e.guild.id:${d.args[1]}"
+				if(d.tags[d.args[1]]){
 					if(e.author.id in[d.tags[d.args[1]].history[0].author,d.bot.owner]){
 						d.args[2]=d.args[2..-1].join().replace(' ','').toLowerCase()
 						List servers=e.jda.guilds.findAll{e.author in it.users}
@@ -1449,14 +1468,13 @@ class TagCommand extends Command{
 					}else{
 						e.sendMessage("You can't move that tag because you don't own it.")
 					}
-				}catch(ex){
-					ex.printStackTrace()
+				}else{
 					e.sendMessage("The tag '${d.args[1]}' doesn't exist.")
 				}
 			}else{
 				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag move [tag name] [server]`.")
 			}
-		}else if(d.args[0]=="list"){
+		}else if(d.args[0]=='list'){
 			d.args+=""
 			List list
 			String ass
@@ -1477,51 +1495,54 @@ class TagCommand extends Command{
 				e.sendMessage(it)
 				Thread.sleep(500)
 			}
-		}else if(d.args[0]=="info"){
-			try{
-				d.args[1]=d.args[1].toLowerCase().replaceAll(['\n','\r'],'_')
-				String server="Direct Messages"
-				String author=e.jda.users.find{it.id==d.tags[d.args[1]].history[0].author}?.identity?:d.tags[d.args[1]].history[0].author
-				if(d.tags[d.args[1]].server)server=e.jda.guilds.find{it.id==d.tags[d.args[1]].server}?.name?:d.tags[d.args[1]].server
-				"Created by $author in $server.\n\n${d.tags[d.args[1]].history[-1].content}\n\nThis tag has ${d.tags[d.args[1]].uses} use${if(d.tags[d.args[1]].uses==1){""}else{"s"}} and ${d.tags[d.args[1]].history*.key.size()} history.".split(1999).each{
-					e.sendMessage(it)
-				}
-			}catch(ex){
-				ex.printStackTrace()
-				try{
-					e.sendMessage("The tag '${d.args[1]}' doesn't exist.")
-				}catch(ex2){
-					e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag info [tag name]`.")
-				}
-			}
-		}else if(d.args[0]=="history"){
-			try{
-				if((d.tags[d.args[1]].server in e.jda.guilds.findAll{e.author in it.users}.id)||(e.author.id in[d.tags[d.args[1]].history[0].author,d.bot.owner])){
-					d.args[1]=d.args[1].toLowerCase().replaceAll(['\n','\r'],'_')
-					String ass="**__${d.args[1].capitalize()}'s History (${d.tags[d.args[1]].history.size()})__:**\n"
-					d.tags[d.args[1]].history.reverse().each{Map kona->
-						ass+="${(e.jda.users.find{it.id==kona.author}?.identity?:kona.author).capitalize()} ${if(kona.index(d.tags[d.args[1]].history)){"edited"}else{"created"}}:\n$kona.content\n\n"
-					}
-					ass.split(1999).each{
-						e.author.privateChannel.sendMessage(it)
-						Thread.sleep(1000)
-					}
-					if(e.guild)e.sendMessage("I have sent you that tag's history. <@$e.author.id>").deleteAfter(3000)
-				}else{
-					e.sendMessage("You can't view that tag's history because you don't own it, nor are you in the server where it was created.")
-				}
-			}catch(ex){
-				ex.printStackTrace()
-				try{
-					e.sendMessage("The tag '${d.args[1]}' doesn't exist.")
-				}catch(ex2){
-					e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag history [tag name]`.")
-				}
-			}
-		}else if(d.args[0]=="owner"){
+		}else if(d.args[0]=='info'){
 			if(d.args[1]){
 				d.args[1]=d.args[1]?.toLowerCase()
-				try{
+				if(e.guild&&d.tags["$e.guild.id:${d.args[1]}"])d.args[1]="$e.guild.id:${d.args[1]}"
+				if(d.tags[d.args[1]]){
+					d.args[1]=d.args[1].toLowerCase().replaceAll(['\n','\r'],'_')
+					String server="Direct Messages"
+					String author=e.jda.users.find{it.id==d.tags[d.args[1]].history[0].author}?.identity?:d.tags[d.args[1]].history[0].author
+					if(d.tags[d.args[1]].server)server=e.jda.guilds.find{it.id==d.tags[d.args[1]].server}?.name?:d.tags[d.args[1]].server
+					"Created by $author in $server.\n\n${d.tags[d.args[1]].history[-1].content}\n\nThis tag has ${d.tags[d.args[1]].uses} use${if(d.tags[d.args[1]].uses==1){""}else{"s"}} and ${d.tags[d.args[1]].history*.key.size()} history.".split(1999).each{
+						e.sendMessage(it)
+					}
+				}else{
+					e.sendMessage("The tag '${d.args[1]}' doesn't exist.")
+				}
+			}else{
+				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag info [tag name]`.")
+			}
+		}else if(d.args[0]=='history'){
+			if(d.args[1]){
+				d.args[1]=d.args[1]?.toLowerCase()
+				if(e.guild&&d.tags["$e.guild.id:${d.args[1]}"])d.args[1]="$e.guild.id:${d.args[1]}"
+				if(d.tags[d.args[1]]){
+					if((d.tags[d.args[1]].server in e.jda.guilds.findAll{e.author in it.users}.id)||(e.author.id in[d.tags[d.args[1]].history[0].author,d.bot.owner])){
+						d.args[1]=d.args[1].toLowerCase().replaceAll(['\n','\r'],'_')
+						String ass="**__${d.args[1].capitalize()}'s History (${d.tags[d.args[1]].history.size()})__:**\n"
+						d.tags[d.args[1]].history.reverse().each{Map kona->
+							ass+="${(e.jda.users.find{it.id==kona.author}?.identity?:kona.author).capitalize()} ${if(kona.index(d.tags[d.args[1]].history)){"edited"}else{"created"}}:\n$kona.content\n\n"
+						}
+						ass.split(1999).each{
+							e.author.privateChannel.sendMessage(it)
+							Thread.sleep(1000)
+						}
+						if(e.guild)e.sendMessage("I have sent you that tag's history. <@$e.author.id>").deleteAfter(3000)
+					}else{
+						e.sendMessage("You can't view that tag's history because you don't own it, nor are you in the server where it was created.")
+					}
+				}else{
+					e.sendMessage("The tag '${d.args[1]}' doesn't exist.")
+				}
+			}else{
+				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag history [tag name]`.")
+			}
+		}else if(d.args[0]=='owner'){
+			if(d.args[1]){
+				d.args[1]=d.args[1]?.toLowerCase()
+				if(e.guild&&d.tags["$e.guild.id:${d.args[1]}"])d.args[1]="$e.guild.id:${d.args[1]}"
+				if(d.tags[d.args[1]]){
 					String id=d.tags[d.args[1]].history[0].author
 					String owner=e.jda.users.find{it.id==id}?.identity?:id
 					List contrids=d.tags[d.args[1]].history*.author.unique()-id
@@ -1531,14 +1552,13 @@ class TagCommand extends Command{
 					}
 					if(!contributors)contributors+="None"
 					e.sendMessage("Owner: $owner\n\nContributors: ${contributors.join(', ')}")
-				}catch(ex){
-					ex.printStackTrace()
+				}else{
 					e.sendMessage("The tag '${d.args[1]}' doesn't exist.")
 				}
 			}else{
 				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag owner [tag name]`.")
 			}
-		}else if(d.args[0]=="popular"){
+		}else if(d.args[0]=='popular'){
 			int amount=10
 			List popular=d.tags*.key.sort{d.tags[it].uses}.reverse()
 			if(d.args.join(' ').toLowerCase()=="me")popular=popular.findAll{d.tags[it].history[0].author==e.author.id}
@@ -1549,13 +1569,12 @@ class TagCommand extends Command{
 			if(popular){
 				popular=popular.sort{d.tags[it].uses}.reverse()
 				if(popular.size>amount)popular=popular[0..amount-1]
-				String top10="**__${if(e.message.mentions){"${e.message.mentions[-1].identity.capitalize()}'s "}else{""}}Top $popular.size Tags__**:\n"
-				for(i in 0..(popular.size-1))top10+="`${i+1}.` ${popular[i]}  (${d.tags[popular[i]].uses})\n"
-				e.sendMessage(top10)
+				int num=0
+				e.sendMessage(popular[0..(popular.size()-1)].collect{"`#${num+=1}` **$it** (${d.tags[it].uses} uses)"}.join('\n'))
 			}else{
 				e.sendMessage("That user doesn't seem to have any tags.")
 			}
-		}else if(d.args[0]=="search"){
+		}else if(d.args[0]=='search'){
 			if(d.args[1]){
 				String search=d.args[1..-1].join().toLowerCase()
 				List tags=d.tags*.key.findAll{it.contains(search)}
@@ -1566,13 +1585,15 @@ class TagCommand extends Command{
 			}else{
 				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag search [search term]`.")
 			}
-		}else if(d.args[0]=="command"){
+		}else if(d.args[0]=='command'){
 			if(e.guild){
 				if(e.author.isOwner(e.guild)){
 					if(d.args[1]){
-						try{
+						d.args[1]=d.args[1]?.toLowerCase()
+						if(e.guild&&d.tags["$e.guild.id:${d.args[1]}"])d.args[1]="$e.guild.id:${d.args[1]}"
+						if(d.tags[d.args[1]]){
 							d.args[1]=d.args[1].toLowerCase()
-							if(d.args[1]in d.bot.commands*.aliases.flatten()){
+							if(d.args[1].replaceAll(/^$e.guild.id:/,'')in d.bot.commands*.aliases.flatten()){
 								e.sendMessage("You can't make a tag command with that name because it is already in use by another command.")
 							}else{
 								if(d.tags[d.args[1]].command){
@@ -1589,8 +1610,7 @@ class TagCommand extends Command{
 								}
 								d.json.save(d.tags,"tags")
 							}
-						}catch(ex){
-							ex.printStackTrace()
+						}else{
 							e.sendMessage("The tag '${d.args[1]}' doesn't exist.")
 						}
 					}else{
@@ -1602,33 +1622,32 @@ class TagCommand extends Command{
 			}else{
 				e.sendMessage("There's really no point to having this work in Direct Messages.")
 			}
-		}else if(d.args[0]=="get"){
+		}else if(d.args[0]=='get'){
 			if(d.args[1]){
 				d.args[1]=d.args[1]?.toLowerCase()
-				try{
+				if(d.tags[d.args[1]]){
 					d.tags[d.args[1]].history[-1].content.addVariables(e,d.args.join(' ').substring(d.args[0..1].join(' ').length()).trim()).split(1999).each{
 						e.sendMessage(it)
 						Thread.sleep(500)
 					}
 					d.tags[d.args[1]].uses+=1
 					d.json.save(d.tags,"tags")
-				}catch(ex){
-					ex.printStackTrace()
+				}else{
 					e.sendMessage("The tag '${d.args[1]}' doesn't exist.")
 				}
 			}else{
 				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tag get [tag name]`.")
 			}
 		}else if(d.args[0]){
-			try{
+			if(e.guild&&d.tags["$e.guild.id:${d.args[0]}"])d.args[0]="$e.guild.id:${d.args[0]}"
+			if(d.tags[d.args[0]]){
 				d.tags[d.args[0]].history[-1].content.addVariables(e,d.args.join(' ').substring(d.args[0].length()).trim()).split(1999).each{
 					e.sendMessage(it)
 					Thread.sleep(500)
 				}
 				d.tags[d.args[0]].uses+=1
 				d.json.save(d.tags,"tags")
-			}catch(ex){
-				ex.printStackTrace()
+			}else{
 				e.sendMessage("The tag '${d.args[0]}' doesn't exist.")
 			}
 		}else{
@@ -1656,7 +1675,7 @@ class MiscCommand extends Command{
 	List aliases=['misc']
 	void run(Map d,Event e){
 		d.args=d.args.toLowerCase().tokenize()
-		if(d.args[0]in["pi","\u03c0"]){
+		if(d.args[0]in['pi','\u03c0']){
 			String pi="141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408128481117450284102701938521105559644622948954930381964428810975665933446128475648233786783165271201909145648566923460348610454326648213393607260249141273"
 			int decimals=11
 			try{
@@ -1667,20 +1686,20 @@ class MiscCommand extends Command{
 				
 			}
 			e.sendMessage("3.${pi.substring(0,decimals)}")
-		}else if(d.args[0]in["uptime","up"]){
+		}else if(d.args[0]in['uptime','up']){
 			List uptime=[0,(((System.currentTimeMillis()-d.started)/1000)/60)as int]
 			(uptime[1]/60).times{
 				uptime[0]+=1
 				uptime[1]-=60
 			}
 			e.sendMessage("`${uptime[0]}` hour${if(uptime[0]!=1){"s"}else{""}}, `${uptime[1]}` minute${if(uptime[1]!=1){"s"}else{""}}")
-		}else if(d.args[0]in["timefromnow","time"]){
+		}else if(d.args[0]in['timefromnow','time']){
 			try{
 				e.sendMessage(new Date(d.args[1].formatTime()).format('HH:mm:ss, dd MMMM YYYY'))
 			}catch(ex){
 				e.sendMessage("Enter a timefromnow format, like `1d12h`.")
 			}
-		}else if(d.args[0]in["area","location"]){
+		}else if(d.args[0]in['area','location']){
 			try{
 				List people=d.db.findAll{it.value.area.toLowerCase().contains(d.args[1..-1].join(' ').toLowerCase())}*.value.name.unique()
 				if(people){
@@ -1693,7 +1712,7 @@ class MiscCommand extends Command{
 			}catch(ex){
 				e.sendMessage("Enter a location.")
 			}
-		}else if(d.args[0]=="http"){
+		}else if(d.args[0]=='http'){
 			if(d.args[1]){
 				try{
 					String status=d.misc.http[d.args[1].toInteger().toString()]
@@ -1708,7 +1727,7 @@ class MiscCommand extends Command{
 			}else{
 				e.sendMessage("Enter a HTTP error code, like `404`.")
 			}
-		}else if(d.args[0]in["name","reg"]){
+		}else if(d.args[0]in['name','reg']){
 			if(!d.args[1])d.args[1]=""
 			d.args[1]=d.args[1].replaceAll(/\D/,'')
 			if(d.args[1]){
@@ -1726,20 +1745,20 @@ class MiscCommand extends Command{
 			}else{
 				e.sendMessage("Enter an ID, like `$e.author.id`.")
 			}
-		}else if(d.args[0]=="created"){
+		}else if(d.args[0]=='created'){
 			if(!d.args[1])d.args[1]=""
 			d.args[1]=d.args[1]?d.args[1].replaceAll(/\D/,''):e.author.id
 			if(d.args[1]){
-				String area=d.db[e.author.id]?.area?:"United States"
-				String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-				int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
+				String area=d.db[e.author.id]?.area?:'United States'
+				String key=d.misc.time*.key.sort{it.length()}.find{area.endsWith(it)}
+				int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time['United States']
 				long time=((Long.parseLong(d.args[1])>>22)+1420070400000)+(zone*3600000)
-				String date=new Date(time).format('HH:mm:ss, dd MMMM YYYY').formatBirthday()
+				String date=new Date(time).format('HH:mm:ss, d MMMM YYYY').formatBirthday()
 				e.sendMessage("$date ($time) (${key.abbreviate()})")
 			}else{
 				e.sendMessage("Enter an ID, like `$e.author.id`.")
 			}
-		}else if(d.args[0]in["prefix","prefixes"]){
+		}else if(d.args[0]in['prefix','prefixes']){
 			if(e.guild){
 				String ass=""
 				e.guild.users.findAll{it.bot}.findAll{it.id in d.db*.key}.findAll{d.db[it.id].tags.startsWith('Bot')}.each{
@@ -1760,7 +1779,7 @@ class MiscCommand extends Command{
 	String category="General"
 	String help="""`misc pi [number]` will make me tell you pi to that decimal.
 `misc uptime` will tell you how long I've been running. JDA strong!
-`misc timefromnow [timefromnow]` will make me tell you the expiry time of your timefromnow format. This function is used in other commands.
+`misc timefromnow [time]` will make me tell you the expiry time of your timefromnow format. This function is used in other commands.
 `misc area [area]` will make me tell you the people I know who live there. It's a small world.
 `misc http [http]` will make me tell you more about the HTTP status code.
 `misc name [id]` will make me trace an ID back to an object on Discord.
@@ -2165,7 +2184,7 @@ class TimeCommand extends Command{
 				if(d.db[user.id].area=="private"){
 					e.sendMessage("${user.identity.capitalize()}'s location is private.")
 				}else{
-					String key=d.misc.time*.key.sort{it.length()}.reverse().find{d.db[user.id].area.endsWith(it)}
+					String key=d.misc.time*.key.sort{it.length()}.find{d.db[user.id].area.endsWith(it)}
 					if(key){
 						Object zone=d.misc.time[key]
 						e.sendMessage("The time for **$user.identity** is ${new Date((System.currentTimeMillis()+(zone*3600000)).toLong()).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (GMT${if(zone>0){"+$zone"}else if(zone<0){zone}else{""}}).")
@@ -2176,10 +2195,13 @@ class TimeCommand extends Command{
 			}else{
 				e.sendMessage("There is no information in my database for $user.name.")
 			}
+		}else if(d.args.toLowerCase()=="earth"){
+			e.sendMessage("<:mfw:259384457772007443>")
 		}else{
 			d.args=d.args.toLowerCase().replaceAll(['england','america'],['united kingdom','united states'])
-			List keys=d.misc.time*.key.sort{it.length()}.reverse()
-			String key=keys.find{it.toLowerCase().endsWith(d.args)}?:keys.find{it.toLowerCase().startsWith(d.args)}
+			List keys=d.misc.time*.key.sort{it.length()}
+			String key=keys.find{it.abbreviate().toLowerCase()==d.args}
+			if(!key)key=keys.find{it.toLowerCase().endsWith(d.args)}?:keys.find{it.toLowerCase().startsWith(d.args)}
 			if(key){
 				Object zone=d.misc.time[key]
 				e.sendMessage("The time in **${d.args.tokenize()*.capitalize().join(' ')}** is ${new Date((System.currentTimeMillis()+(zone*3600000)).toLong()).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (GMT${if(zone>0){"+$zone"}else if(zone<0){zone}else{""}}).")
@@ -2204,9 +2226,9 @@ class SeenCommand extends Command{
 			String address="he is"
 			if(d.db[user.id]?.gender=="Female")address="she is"
 			if(d.seen[user.id]){
-				String area=d.db[e.author.id]?.area?:"United States"
-				String key=d.misc.time*.key.sort{it.length()}.reverse().find{area.endsWith(it)}
-				int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time["United States"]
+				String area=d.db[e.author.id]?.area?:'United States'
+				String key=d.misc.time*.key.sort{it.length()}.find{area.endsWith(it)}
+				int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time['United States']
 				if(d.seen[user.id].game){
 					e.sendMessage("**${user.identity.capitalize()}** was last seen online at ${new Date(d.seen[user.id].time+(zone*3600000)).format('HH:mm:ss, d MMMM YYYY').formatBirthday()} (${key.abbreviate()} time) playing ${d.seen[user.id].game}.\nCurrently, $address $user.status.")
 				}else{
@@ -2258,7 +2280,6 @@ class EventsCommand extends Command{
 				eventsUpcoming=eventsUpcoming.unique()
 				e.sendMessage("**__Upcoming Events ($numberOfDays Days) ($eventsUpcoming.size)__:**\n${if(eventsUpcoming){eventsUpcoming.join('\n')}else{"Sure is boring around here."}}")
 			}catch(ex){
-				ex.printStackTrace()
 				String todaysDate=d.args.tokenize()*.toLowerCase()*.capitalize().join(' ').replaceAll(/\bJan\b/,'January').replaceAll(/\bFeb\b/,'February').replaceAll(/\bMar\b/,'March').replaceAll(/\bApr\b/,'April').replaceAll(/\bJun\b/,'June').replaceAll(/\bJul\b/,'July').replaceAll(/\bAug\b/,'August').replaceAll(/\bSep\b/,'September').replaceAll(/\bOct\b/,'October').replaceAll(/\bNov\b/,'November').replaceAll(/\bDec\b/,'December').rawBirthday()
 				if(specials.find{it.value==todaysDate})todaysDate=specials.find{it.value==todaysDate}.key
 				if(todaysDate.tokenize().size()>2)todaysDate=todaysDate.tokenize()[0..1].join(' ')
@@ -2356,7 +2377,7 @@ class ColourCommand extends Command{
 						String colour=d.args.tokenize()[0].toLowerCase().replaceAll(/\W+/,'')
 						if(d.colours[colour]){
 							colour=d.colours[colour]
-						}else if(colour=="random"){
+						}else if(colour=='random'){
 							colour=""
 							6.times{colour+=(('0'..'9')+('a'..'f')).randomItem()}
 						}else if(colour.length()>6){
@@ -2374,7 +2395,7 @@ class ColourCommand extends Command{
 						Role role=e.guild.roles.find{it.name.toLowerCase().replace('#','')==colour}
 						if(!role){
 							RoleManager manager=e.guild.createRole()
-							manager.setName(name).setColor(hex).update()
+							manager.setName(name).setColor(hex).setPermissionsRaw(0).update()
 							role=manager.role
 						}
 						List old=e.guild.userRoles[user].findAll{it.colour}
@@ -2393,7 +2414,7 @@ class ColourCommand extends Command{
 						if(old)message+="\n(Your previous colour was ${old*.asMention.join(' ')}.)"
 						if(failed)message+="\n(Due to permissions, I couldn't remove ${failed*.asMention.join(' ')})"
 						e.sendMessage(message)
-						old.findAll{!(it.id in e.guild.userRoles*.value*.id)}*.manager*.delete()
+						old.findAll{!(it.id in e.guild.userRoles*.value*.id.flatten())}*.manager*.delete()
 					}catch(ex){
 						e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}colour [hex/svg/random]`.")
 						ex.printStackTrace()
@@ -2425,13 +2446,27 @@ class StatsCommand extends Command{
 		}
 		int musics=e.jda.guilds.findAll{it.audioManager.sendingHandler?.stopped==false}.size()
 		int playlists=d.audio.station*.value.unique().size()
-		e.sendMessage("""Connected to `${e.jda.guilds.size()}` servers with `${e.jda.channels.size()}` channels and `${e.jda.users.size()}` users.
+		String stats="""Connected to `${e.jda.guilds.size()}` servers with `${e.jda.channels.size()}` channels and `${e.jda.users.size()}` users.
 Total `${d.db*.key.size}` database entries, `${d.tags*.key.size}` tags and `${new File("images/xat").listFiles().size()+new File("images/cs").listFiles().size()}` smilies.
 Playing music in `$musics` server${if(musics!=1){"s"}else{""}} with `$playlists` unique playlist${if(playlists!=1){"s"}else{""}}.
-Online for `${uptime[0]}` hour${if(uptime[0]!=1){"s"}else{""}} and `${uptime[1]}` minute${if(uptime[1]!=1){"s"}else{""}}.""")
+Online for `${uptime[0]}` hour${if(uptime[0]!=1){"s"}else{""}} and `${uptime[1]}` minute${if(uptime[1]!=1){"s"}else{""}}."""
+		if(d.args.toLowerCase()=="full"){
+			List os=[System.getProperty('os.name'),System.getProperty('os.version'),System.getProperty('os.arch'),System.getProperty('sun.os.patch.level')]
+			String groove=System.getProperty('java.class.path').replace('.jar','')
+			groove=groove.substring(groove.lastIndexOf('-')+1)
+			String jave=System.getProperty('java.class.version')
+			stats+="""
+Recieving `$e.responseNumber` messages over a `v6` doggy door.
+I'm a Microsoft fanboy using ${os[0]} (${os[1]}) ${os[2]} ${os[3]}.
+DOSing `${d.feeds*.value.link.flatten().unique().size()}` different webpages for feed purposes. Sorry!
+I have my coffee with `$jave` sugars which raises my groove to `$groove`.
+I've successfully taken `${d.messages.size()}` command${if(d.messages.size()!=1){"s"}else{""}} this session. Woof!"""
+		}
+		e.sendMessage(stats)
 	}
 	String category="General"
-	String help="""`stats` will make me tell you some stats.
+	String help="""`stats` will make me tell you some of my stats.
+`stats full` will make me tell you some more of my stats.
 I don't know what else you were expecting."""
 }
 
@@ -2519,10 +2554,10 @@ class SetPrefixCommand extends Command{
 					}
 					e.sendMessage("My prefix in this server is now `${d.args.join('`, `')}`.")
 				}else{
-					d.settings.prefix[e.guild.id]=[""]
+					d.settings.prefix[e.guild.id]=['']
 					e.sendMessage("We're going unprefixed, baby.")
 				}
-				d.json.save(d.settings,"settings")
+				d.json.save(d.settings,'settings')
 			}else{
 				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`.")
 			}
@@ -2768,9 +2803,9 @@ class MuteCommand extends Command{
 									it.sendMessage("**${e.author.identity.capitalize()}**: Muted $user.identity ${if(time){"until ${new Date(time).format('HH:mm:ss, dd MMMM YYYY').formatBirthday()}"}else{"forever"}}${if(reason){".\nReason: $reason"}else{" for no reason."}}")
 								}
 							}
-							d.json.save(d.temp,"temp")
+							d.json.save(d.temp,'temp')
 						}catch(ex){
-							e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}mute [user] [timefromnow] [reason]`.")
+							e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}mute [user] [time] [reason]`.")
 							ex.printStackTrace()
 						}
 					}else{
@@ -2837,21 +2872,27 @@ class LogCommand extends Command{
 	void run(Map d,Event e){
 		e.sendTyping()
 		int size=50
-		String arg=d.args.tokenize()[-1]
+		d.args=d.args.tokenize()+""
+		String arg=d.args[-1]
 		if(arg==~/\d+/)size=arg.toInteger()
-		if(size>5000)size=5000
+		if(size>100)size=100
 		if(size<2)size=2
 		String log="${new Date().format('d MMMM YYYY').formatBirthday()}, #${if(e.guild){e.channel.name}else{e.author.name}} in ${try{e.guild.name}catch(DM){"Direct Messages"}}:\r\n"
 		List logs=e.channel.history.retrieve(size).reverse()-e.message
-		for(l in logs)log+="\r\n${l.createTime.format('HH:mm')} $l.author.identity: ${l.content.replace('\r\n','\n').replace('\r','\r\n  ').replace('\n','\r\n  ')}${if(l.attachments){"${if(l.content){"\r\n"}else{""}}${l.attachments*.name}"}else{""}}"
-		File archive=new File("temp/archive.txt")
-		archive.write(log,"Unicode")
-		try{
-			e.sendFile(archive)
-		}catch(ex){
-			ex.printStackTrace()
-			e.sendMessage("I need to be able to upload files to do that...")
-		}
+		for(l in logs)log+="\r\n[${l.createTime.format('HH:mm:ss')}] [$l.author.identity]: ${l.content.replace('\r\n','\n').replace('\r','\r\n   ').replace('\n','\r\n   ')}${if(l.attachments){"${if(l.content){"\r\n"}else{""}}${l.attachments*.name}"}else{""}}"
+//		try{
+			e.sendMessage(Unirest.post('https://puush.me/api/up').field('k',new File("token").readLines()[5]).field('z','dogbot').field('f',log.bytes,"archive-${e.author.id}.log").asString().body.split(',')[1])
+/*		}catch(puush){
+			puush.printStackTrace()
+			File archive=new File("temp/archive.txt")
+			archive.write(log,'Unicode')
+			try{
+				e.sendFile(archive)
+			}catch(ex){
+				ex.printStackTrace()
+				e.sendMessage("I need to be able to upload files to do that...")
+			}
+		}*/
 	}
 	String category="General"
 	String help="""`log [number]` will make me generate a log of the channel history to up to 5000 messages ago.
@@ -2876,8 +2917,8 @@ class ScopeCommand extends Command{
 						int pos=0
 						users.each{User u->
 							used+=u.id
-							String abbrev=u.name.replaceAll([' ','-','_','\'','"','(',')','[',']','{','}','|','.','/'],'')
-							if(!abbrev)abbrev=u.name
+							String alias=e.guild.nickMap[u]?:u.name
+							String abbrev=alias.replaceAll([' ','-','_','\'','"','(',')','[',']','{','}','<','>','|','.','/',':',';'],'')?:alias
 							String name="$u.identity ($abbrev)"
 							if(name.length()>26)name=name.substring(0,24)+"\u2026"
 							ass+="<${emotes[u.status]}> `$name${" "*(26-name.length())}\u200b`"
@@ -2893,7 +2934,8 @@ class ScopeCommand extends Command{
 					int pos=0
 					users.each{User u->
 						used+=u.id
-						String abbrev=u.name.replaceAll([' ','-','_','\'','"','(',')','[',']','{','}','|','.'],'')
+						String alias=e.guild.nickMap[u]?:u.name
+						String abbrev=alias.replaceAll([' ','-','_','\'','"','(',')','[',']','{','}','<','>','|','.'],'')?:alias
 						String name="$u.identity ($abbrev)"
 						if(name.length()>26)name=name.substring(0,24)+"\u2026"
 						ass+="<${emotes[u.status]}> `$name${" "*(26-name.length())}\u200b`"
@@ -2943,30 +2985,30 @@ class FeedCommand extends Command{
 				e.sendTyping()
 				List list=[]
 				d.feeds.youtube.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=d.web.get(feed.link,"G.Chrome")
-					String id=doc.getElementsByClass("yt-lockup-title")[0].getElementsByTag("a")[0].attr("href")
+					Document doc=d.web.get(feed.link,'G.Chrome')
+					String id=doc.getElementsByClass("yt-lockup-title")[0].getElementsByTag('a')[0].attr('href')
 					if(id!=feed.last){
-						String title=doc.getElementsByTag("title").text().tokenize().join(' ')
+						String title=doc.getElementsByTag('title').text().tokenize().join(' ')
 						list+="**New video from $title**:\nhttps://www.youtube.com$id"
 						d.feeds.youtube.find{(it.link==feed.link)&&(it.channel==e.channel.id)}.last=id
 					}
 				}
 				d.feeds.animelist.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=d.web.get(feed.link,"G.Chrome")
+					Document doc=d.web.get(feed.link,'G.Chrome')
 					Element anime=doc.getElementsByTag("item")[0]
 					List data=anime.getElementsByTag("description")[0].text().replace(' episodes','').split(' - ')
-					String name=anime.getElementsByTag("title")[0].text().split(' - ')[0]
+					String name=anime.getElementsByTag('title')[0].text().split(' - ')[0]
 					String id="$name/${data[1].tokenize()[0]}"
 					if(id!=feed.last){
-						String title=doc.getElementsByTag("title")[0].text().tokenize()[0]
+						String title=doc.getElementsByTag('title')[0].text().tokenize()[0]
 						String link=anime.getElementsByTag("link")[0].text()
 						list+="**New episode on $title anime list**:\n${data[0]}: Episode ${data[1]} of $name.\n<$link>"
 						d.feeds.animelist.find{(it.link==feed.link)&&(it.channel==e.channel.id)}.last=id
 					}
 				}
 				d.feeds.twitter.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=d.web.get(feed.link,"G.Chrome")
-					String link=doc.getElementsByClass("tweet-timestamp")[0].attr("href")
+					Document doc=d.web.get(feed.link,'G.Chrome')
+					String link=doc.getElementsByClass("tweet-timestamp")[0].attr('href')
 					String id=link.substring(link.lastIndexOf('/'))
 					if(id!=feed.last){
 						String title=doc.getElementsByClass("ProfileHeaderCard-nameLink").text()
@@ -2975,9 +3017,9 @@ class FeedCommand extends Command{
 					}
 				}
 				d.feeds.levelpalace.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=d.web.get(feed.link,"G.Chrome")
-					Elements level=doc.getElementsByClass("levels-table")[0].getElementsByTag("a")
-					String id=level[0].attr("href")
+					Document doc=d.web.get(feed.link,'G.Chrome')
+					Elements level=doc.getElementsByClass("levels-table")[0].getElementsByTag('a')
+					String id=level[0].attr('href')
 					if(id!=feed.last){
 						String title=level[1].text()
 						String name=level[0].text()
@@ -3003,8 +3045,8 @@ class FeedCommand extends Command{
 						e.sendMessage("YouTube channel removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=d.web.get(link,"G.Chrome")
-						String id=doc.getElementsByClass("yt-lockup-title")[0].getElementsByTag("a")[0].attr("href")
+						Document doc=d.web.get(link,'G.Chrome')
+						String id=doc.getElementsByClass("yt-lockup-title")[0].getElementsByTag('a')[0].attr('href')
 						d.feeds.youtube+=[
 							channel:e.channel.id,
 							link:link,
@@ -3026,10 +3068,10 @@ class FeedCommand extends Command{
 						e.sendMessage("Anime list removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=d.web.get(link,"G.Chrome")
+						Document doc=d.web.get(link,'G.Chrome')
 						Element anime=doc.getElementsByTag("item")[0]
 						List data=anime.getElementsByTag("description")[0].text().replace(' episodes','').split(' - ')
-						String name=anime.getElementsByTag("title")[0].text().split(' - ')[0]
+						String name=anime.getElementsByTag('title')[0].text().split(' - ')[0]
 						String id="$name/${data[1].tokenize()[0]}"
 						d.feeds.animelist+=[
 							channel:e.channel.id,
@@ -3052,8 +3094,8 @@ class FeedCommand extends Command{
 						e.sendMessage("Twitter handle removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=d.web.get(link,"G.Chrome")
-						String stamp=doc.getElementsByClass("tweet-timestamp")[0].attr("href")
+						Document doc=d.web.get(link,'G.Chrome')
+						String stamp=doc.getElementsByClass("tweet-timestamp")[0].attr('href')
 						String id=stamp.substring(stamp.lastIndexOf('/'))
 						d.feeds.twitter+=[
 							channel:e.channel.id,
@@ -3077,8 +3119,8 @@ class FeedCommand extends Command{
 						e.sendMessage("Level Palace account removed from the feed for this channel.")
 					}else{
 						e.sendTyping()
-						Document doc=d.web.get(link,"G.Chrome")
-						String id=doc.getElementsByClass("levels-table")[0].getElementsByTag("a")[0].attr("href")
+						Document doc=d.web.get(link,'G.Chrome')
+						String id=doc.getElementsByClass("levels-table")[0].getElementsByTag('a')[0].attr('href')
 						d.feeds.levelpalace+=[
 							channel:e.channel.id,
 							link:link,
@@ -3092,7 +3134,7 @@ class FeedCommand extends Command{
 					e.sendMessage("Malformed Level Palace account. Make sure the link leads to a level list and that at least one level has been posted.")
 				}
 			}else{
-				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}feed [url]/list`.")
+				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}feed [url]/list/check`.")
 			}
 		}else{
 			e.sendMessage(d.permissionMessage()+"Required: `Staff (Trainer/MANAGE_MESSAGES)`.")
@@ -3111,7 +3153,7 @@ class ClearCommand extends Command{
 	void run(Map d,Event e){
 		List users=e.message.mentions
 		if(!e.guild||e.author.isStaff(e.guild)||((users*.id==[e.author.id])&&e.author.isMember(e.guild))){
-			if(!e.guild||e.guild.userRoles[e.jda.selfInfo].any{"MESSAGE_MANAGE"in it.permissions*.toString()||(users==[e.jda.selfInfo])}){
+			if(!e.guild||e.guild.userRoles[e.jda.selfInfo].any{"MESSAGE_MANAGE"in it.permissions*.toString()}||(users==[e.jda.selfInfo])){
 				e.sendTyping()
 				d.args=d.args.toLowerCase().tokenize()
 				int amount=50
@@ -3532,7 +3574,8 @@ class SingCommand extends Command{
 	String nick
 	String starter
 	void run(Map d,Event e){
-		if(singing&&d.args.toLowerCase()=="stop"){
+		d.args=d.args.toLowerCase()
+		if(singing&&d.args=='stop'){
 			if(e.channel.id==venue.id){
 				if(!e.guild||e.author.isOwner(e.guild)||e.channel.song&&(e.author.id==starter)){
 /*					e.jda.accountManager.setAvatar(AvatarUtil.getAvatar(new File("images/avatars/"+d.info.avatar+".jpg")))
@@ -3554,7 +3597,7 @@ class SingCommand extends Command{
 					e.sendMessage("The song is not playing in this server.")
 				}
 			}
-		}else if(singing&&d.args.toLowerCase()=="info"){
+		}else if(singing&&d.args=='info'){
 			e.sendMessage("""```css
 Title: ${lyricsLink.text()}
 Author: $author
@@ -3564,12 +3607,12 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 				if(d.args){
 					singing=true
 					try{
-						String link="http://search.azlyrics.com/search.php?q=${URLEncoder.encode(d.args.trim(),"UTF-8")}"
-						Document search=d.web.get(link,"G.Chrome")
+						String link="http://search.azlyrics.com/search.php?q=${URLEncoder.encode(d.args.trim(),'UTF-8')}"
+						Document search=d.web.get(link,'G.Chrome')
 						try{
 							lyricsLink=search.getElementsByClass('panel')[-1].getElementsByClass('text-left')[0].getElementsByTag('a')[0]
 							author=search.getElementsByClass('panel')[-1].getElementsByClass('text-left')[0].getElementsByTag('b')[1].text()
-							Document song=d.web.get(lyricsLink.attr('href'),"G.Chrome")
+							Document song=d.web.get(lyricsLink.attr('href'),'G.Chrome')
 							e.sendTyping()
 							try{
 								Element getLyrics=song.getElementsByTag("div").findAll{it.classNames().empty}[1]
@@ -3577,10 +3620,10 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 								List lyrics=ass.replaceAll(/(\#br\#)+/,'\n').split('\n')*.trim()
 								Iterator iterator=lyrics.iterator()
 								try{
-									Document doc=d.web.get(("https://www.google.co.uk/search?q="+URLEncoder.encode(("${lyricsLink.text()} $author")+"UTF-8")+"&tbm=isch"),"N.3DS")
+									Document doc=d.web.get(("https://www.google.co.uk/search?q="+URLEncoder.encode(("${lyricsLink.text()} $author")+'UTF-8')+"&tbm=isch"),'N.3DS')
 									Element image=doc.getElementsByClass("image")[0]
-									doc=d.web.get(image.attr("href"),"N.3DS")
-									coverLink=doc.getElementById('thumbnail').attr("href")
+									doc=d.web.get(image.attr('href'),'N.3DS')
+									coverLink=doc.getElementById('thumbnail').attr('href')
 									if(coverLink.contains('/revision/'))coverLink=coverLink.substring(0,coverLink.indexOf('/revision/'))
 									new File("images/album.jpg")<<new URL(coverLink).openStream()
 									covered=true
@@ -3608,9 +3651,9 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 									}
 									e.jda.accountManager.update()*/
 									while(singing&&iterator.hasNext()){
-										String wank=iterator.next()
-										if((wank.trim().length()>2)&&!wank.contains(']')){
-											e.sendMessage("_${wank.trim().replace('_','\\_')}_")
+										String lyric=iterator.next().trim()
+										if((lyric.length()>2)&&!lyric.contains(']')){
+											e.sendMessage("_${lyric.replace('_','\\_')}_")
 											Thread.sleep(1750)
 										}
 									}
@@ -3735,7 +3778,7 @@ class BanCommand extends Command{
 										commander:e.author.id,
 										reason:reason
 									]
-									d.json.save(d.temp,"temp")
+									d.json.save(d.temp,'temp')
 								}
 								e.sendMessage("I have banned $user.identity ${if(time){"until ${new Date(time).format('HH:mm:ss, dd MMMM YYYY').formatBirthday()}"}else{"forever"}}.")
 								e.guild.textChannels.findAll{it.log}*.sendMessage("**${e.author.identity.capitalize()}**: Banned $user.identity ${if(time){"until ${new Date(time).format('HH:mm:ss, dd MMMM YYYY').formatBirthday()}"}else{"forever"}}${if(reason){".\nReason: $reason"}else{" for no reason."}}")
@@ -3770,7 +3813,7 @@ class SmiliesCommand extends Command{
 				d.args=[d.args.tokenize(),'','',''].flatten()
 				String arg=d.args[0].toLowerCase()
 				String name=d.args[1].replaceAll(['(',')'],'').toLowerCase()
-				if(arg=="xat"){
+				if(arg=='xat'){
 					if(d.settings.smilies[e.guild.id]){
 						d.settings.smilies[e.guild.id]=false
 						e.sendMessage("Xat smilies have been disabled for this server.")
@@ -3778,8 +3821,8 @@ class SmiliesCommand extends Command{
 						d.settings.smilies[e.guild.id]=true
 						e.sendMessage("Xat smilies have been enabled for this server.")
 					}
-					d.json.save(d.settings,"settings")
-				}else if(arg in["create","add"]){
+					d.json.save(d.settings,'settings')
+				}else if(arg in['create','add']){
 					if(new File("images/cs").listFiles().findAll{it.name.endsWith('_'+e.guild.id+'_png')}.size()>49){
 						e.sendMessage("You can't add any more smilies because you've reached the maximum amount, which is 50. Delete some of the less important ones and come see me again.")
 					}else if(!name){
@@ -3808,7 +3851,7 @@ class SmiliesCommand extends Command{
 							e.sendMessage("That isn't an image, or it wasn't found.")
 						}
 					}
-				}else if(arg in["edit","change"]){
+				}else if(arg in['edit','change']){
 					if(!name){
 						e.sendMessage("Which smilie are you trying to edit?")
 					}else if(!d.args[2]){
@@ -3835,7 +3878,7 @@ class SmiliesCommand extends Command{
 							e.sendMessage("I couldn't find a custom smilie matching '$name.'")
 						}
 					}
-				}else if(arg in["delete","remove"]){
+				}else if(arg in['delete','remove']){
 					if(!name){
 						e.sendMessage("Which smilie are you trying to delete?")
 					}else{
@@ -3847,14 +3890,14 @@ class SmiliesCommand extends Command{
 							e.sendMessage("I couldn't find a custom smilie matching '$name.'")
 						}
 					}
-				}else if(arg in["list","all"]){
+				}else if(arg=='list'){
 					List smilers=new File("images/cs").listFiles().findAll{it.name.endsWith('_'+e.guild.id+'.png')}
 					if(smilers){
 						e.sendMessage("**__${e.guild.name.capitalize()}'s Custom Smilies ($smilers.size)__:**\n${smilers.collect{"(${it.name.replaceAll(/_\d+.png$/,'')})"}.join(',  ')}")
 					}else{
 						e.sendMessage("**__${e.guild.name.capitalize()}'s Custom Smilies (0)__:**\nThis server doesn't have any custom smilies.")
 					}
-				}else if(arg in["xatlist","xlist"]){
+				}else if(arg=='xatlist'){
 					e.sendTyping()
 					File ass=new File("temp/smilies.png")
 					OutputStream os=ass.newOutputStream()
@@ -3877,7 +3920,7 @@ class SmiliesCommand extends Command{
 					}
 					graphics.dispose()
 					ByteArrayOutputStream baos=new ByteArrayOutputStream()
-					ImageIO.write(image,"png",baos)
+					ImageIO.write(image,'png',baos)
 					baos.writeTo(os)
 					os.close()
 					e.sendTyping()
@@ -3975,37 +4018,37 @@ class AccessCommand extends Command{
 		if(d.args||e.message.attachments){
 			if(d.args.toLowerCase().containsAny(['avatar','icon'])){
 				d.args=d.args.replaceAny(['avatar','icon'],'').trim()
-				d.bot.commands.find{it.aliases[0]=="avatar"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='avatar'}.run(d,e)
 			}else if(e.message.mentions){
-				d.bot.commands.find{it.aliases[0]=="userinfo"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='userinfo'}.run(d,e)
 			}else if(e.message.mentionedChannels){
-				d.bot.commands.find{it.aliases[0]=="channelinfo"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='channelinfo'}.run(d,e)
 			}else if(e.message.mentionedRoles){
-				d.bot.commands.find{it.aliases[0]=="roleinfo"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='roleinfo'}.run(d,e)
 			}else if(e.message.emotes){
-				d.bot.commands.find{it.aliases[0]=="emoteinfo"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='emoteinfo'}.run(d,e)
 			}else if(d.args.containsAny(['everyone','here'])){
-				d.bot.commands.find{it.aliases[0]=="scope"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='scope'}.run(d,e)
 			}else if(d.args.toLowerCase()in d.tags*.key.findAll{it.length()>1}){
-				d.bot.commands.find{it.aliases[0]=="tag"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='tag'}.run(d,e)
 			}else if(e.message.attachments){
-				d.bot.commands.find{it.aliases[0]=="wordcount"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='wordcount'}.run(d,e)
 			}else if(d.args=~/\w\.\w/){
-				d.bot.commands.find{it.aliases[0]=="website"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='website'}.run(d,e)
 			}else if(d.args.startsWith('#')){
-				d.bot.commands.find{it.aliases[0]=="colour"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='colour'}.run(d,e)
 			}else if(d.args.toLowerCase().containsAny(['youtube','videos'])){
 				d.args=d.args.replaceAny(['youtube','videos'],'').trim()
-				d.bot.commands.find{it.aliases[0]=="youtube"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='youtube'}.run(d,e)
 			}else if(d.args.toLowerCase().containsAny(['images','pictures'])){
 				d.args=d.args.replaceAny(['images','pictures'],'').trim()
-				d.bot.commands.find{it.aliases[0]=="image"}.run(d,e)
-			}else if((d.args.toLowerCase()+" ")in d.bot.commands.findAll{!it.dev}.aliases*.getAt(0).flatten()*.plus(" ")){
-				Command cmd=d.bot.commands.find{(d.args+" ").startsWith(it.aliases[0]+" ")}
+				d.bot.commands.find{it.aliases[0]=='image'}.run(d,e)
+			}else if((d.args.toLowerCase()+' ')in d.bot.commands.findAll{!it.dev}.aliases*.getAt(0).flatten()*.plus(' ')){
+				Command cmd=d.bot.commands.find{(d.args+" ").startsWith(it.aliases[0]+' ')}
 				d.args=d.args.replace(cmd.aliases[0],'').trim()
 				cmd.run(d,e)
 			}else{
-				d.bot.commands.find{it.aliases[0]=="google"}.run(d,e)
+				d.bot.commands.find{it.aliases[0]=='google'}.run(d,e)
 			}
 		}else{
 			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}access [query]`.")
@@ -4015,6 +4058,7 @@ class AccessCommand extends Command{
 	String help="""`access [query]` will make me use the best command for your query.
 Now there's a Beaconville artifact if I've ever seen one."""
 }
+
 
 class TrackerCommand extends Command{
 	List aliases=['tracker']
@@ -4034,7 +4078,7 @@ class TrackerCommand extends Command{
 							d.tracker.join.remove(e.guild.id)
 							e.sendMessage("The join message has been cleared. I will no longer welcome new users to this server.")
 						}
-						d.json.save(d.tracker,"tracker")
+						d.json.save(d.tracker,'tracker')
 					}else if(d.args[0]=="leave"){
 						if(message){
 							d.tracker.leave[e.guild.id]=message
@@ -4043,7 +4087,7 @@ class TrackerCommand extends Command{
 							d.tracker.leave.remove(e.guild.id)
 							e.sendMessage("The leave message has been cleared. I will no longer send off formers of this server.")
 						}
-						d.json.save(d.tracker,"tracker")
+						d.json.save(d.tracker,'tracker')
 					}else{
 						e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}tracker join/leave [message]`")
 					}
@@ -4074,9 +4118,9 @@ class IsupCommand extends Command{
 			String alias=d.args.substring(d.args.indexOf('//')+2)
 			try{
 				long startTime=System.currentTimeMillis()
-				Document doc=d.web.get(d.args,"G.Chrome")
+				Document doc=d.web.get(d.args,'G.Chrome')
 				long stopTime=System.currentTimeMillis()
-				Element title=doc.getElementsByTag("title")[0]
+				Element title=doc.getElementsByTag('title')[0]
 				e.sendMessage("It's just you. **${title?title.text():alias}** is up and running. (${(stopTime-startTime)/1000}s)")
 			}catch(ex){
 				if(ex.class==org.jsoup.HttpStatusException){
@@ -4134,4 +4178,129 @@ class TopCommand extends Command{
 `top games [page]` will make me tell you the most played games right now.
 `top bots [page]` will make me tell you which bots are in the most servers.
 This is only as far as I can see, though. Imagine the global statistic."""
+}
+
+
+class CleanCommand extends Command{
+	List aliases=['clean']
+	void run(Map d,Event e){
+		int amount=(d.args==~/\d+/)?d.args.toInteger():50
+		amount+=1
+		if(amount<2)amount=2
+		if(amount>50)amount=50
+		List history=e.channel.history.retrieve(amount)
+		List messages=history.findAll{it.author.id==d.bot.id}
+		boolean permission=(e.guild&&e.guild.userRoles[e.jda.selfInfo].any{"MESSAGE_MANAGE"in it.permissions*.toString()})
+		List invokers=history.findAll{it.id in d.messages*.id}.findAll{it.author.id==e.author.id}
+		invokers.each{Message invoker->
+			d.messages-=d.messages.find{it.id==invoker.id}
+		}
+		if(permission)messages+=invokers
+		if((messages.size()>1)&&permission){
+			e.channel.deleteMessages(messages)
+			d.messages-=d.messages.find{it.id==e.message.id}
+		}else{
+			messages.each{
+				it.delete()
+				Thread.sleep(500)
+			}
+		}
+		if(permission){
+			Thread.sleep(3000)
+			e.message.delete()
+		}
+	}
+	String category="General"
+	String help="""`clean [number]` will make me remove my messages and your commands back that far.
+Quick and painless, before they start saying 'GO TO TESTING!!'"""
+}
+
+
+class NoteCommand extends Command{
+	List aliases=['note','notes']
+	void run(Map d,Event e){
+		d.args=d.args.tokenize()
+		d.args[0]=d.args[0]?.toLowerCase()
+		List discrims=('0'..'9')+('a'..'z')
+		String id=discrims.randomItem()+discrims.randomItem()
+		if(d.args[0]=='list'){
+			List total=d.notes*.value.flatten().findAll{it.user==e.author.id}
+			if(total){
+				e.sendMessage(total.collect{"`$it.id` \"${it.content.length()>100?it.content.substring(0,100):it.content}\""}.join('\n'))
+			}else{
+				e.sendMessage("No notes found, add some!")
+			}
+		}else if(d.args[0]in['remove','delete']){
+			List total=d.notes*.value.flatten().findAll{it.user==e.author.id}
+			Map note=total.find{it.id==d.args[1].toLowerCase()}
+			if(!note)note=total.find{it.content.contains(d.args[1])}
+			if(note){
+				d.notes.generic-=note
+				d.notes.timed-=note
+				d.notes.user-=note
+				e.sendMessage("That note has been removed.")
+				d.json.save(d.notes,'notes')
+			}else{
+				e.sendMessage("I couldn't find a note matching '${d.args[1]}.'")
+			}
+		}else if(d.args[0]=='clear'){
+			List total=d.notes*.value.flatten().findAll{it.user==e.author.id}
+			total.each{
+				d.notes.generic-=it
+				d.notes.timed-=it
+				d.notes.user-=it
+			}
+			e.sendMessage("A shiny clean desk emerges.")
+			d.json.save(d.notes,'notes')
+		}else if(d.args[0]in['generic','create']){
+			if(d.args[1]){
+				d.notes.generic+=[
+					id:id,
+					user:e.author.id,
+					content:d.args[1..-1].join(' ')
+				]
+				e.sendMessage("A generic note has been created at `$id`.")
+				d.json.save(d.notes,'notes')
+			}else{
+				e.sendMessage("Please add some text for the note.")
+			}
+		}else if((d.args[0]==~/<@\d+>/)&&e.message.mentions||e.guild&&e.guild.findUser(d.args[0])){
+			User user=e.guild?.findUser(d.args[0])?:e.message.mentions[-1]
+			if(user.bot){
+				e.sendMessage("Oh no, anyone but them.")
+			}else{
+				d.notes.user+=[
+					id:id,
+					user:e.author.id,
+					mention:user.id,
+					content:d.args[1]?d.args[1..-1].join(' '):""
+				]
+				e.sendMessage("A status note has been created at `$id`.")
+				d.json.save(d.notes,'notes')
+			}
+		}else if(d.args[0]=~/\d+\w/){
+			def time=d.args[0].formatTime()
+			if((time-System.currentTimeMillis())>Integer.MAX_VALUE){
+				e.sendMessage("I think the paper would rot by then.")
+			}else{
+				d.notes.timed+=[
+					id:id,
+					user:e.author.id,
+					time:time,
+					content:d.args[1]?d.args[1..-1].join(' '):""
+				]
+				e.sendMessage("A timed note has been created at `$id`.")
+				d.json.save(d.notes,'notes')
+			}
+		}else{
+			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}note [generic/@mention/time/list/remove/clear] ..`")
+		}
+	}
+	String category="General"
+	String help="""`note generic [text]` will make me create a note that never triggers.
+`note [@mention] [text]` will make me create a note that triggers when the user comes online.
+`note [time] [text]` will make me create a note that triggers in time.
+`note list` will make me list your notes.
+`note remove [number/text]` will make me remove that note.
+`note clear` will make me remove all your notes."""
 }

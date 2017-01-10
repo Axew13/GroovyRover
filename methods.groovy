@@ -52,9 +52,9 @@ User.metaClass.getAvatar={delegate.avatarUrl}
 User.metaClass.getMention={delegate.asMention}
 User.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 User.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
-User.metaClass.getAvatarUrl={delegate.avatarId?"https://cdn.discordapp.com/avatars/$delegate.id/$delegate.avatarId${if(delegate.avatarId.startsWith('a_')){".gif"}else{".jpg"}}":null}
+User.metaClass.getAvatarUrl={delegate.avatarId?"https://cdn.discordapp.com/avatars/$delegate.id/$delegate.avatarId${if(delegate.avatarId.startsWith('a_')){".gif"}else{".jpg"}}":delegate.defaultAvatarUrl}
+User.metaClass.getDefaultAvatar={delegate.defaultAvatarUrl}
 User.metaClass.getAvatar={delegate.avatarUrl}
-User.metaClass.getDefeaultAvatar={delegate.defaultAvatarUrl}
 User.metaClass.isMember={Guild guild->
 	guild.userRoles[delegate]||(delegate==guild.owner)||(delegate.id==owner)
 }
@@ -158,7 +158,7 @@ String.metaClass.formatTime={
 	  int weeks=(taimu.findAll(/(\d+)w/){full,num->num.toInteger()})[0]?:0
 	  int months=(taimu.findAll(/(\d+)n/){full,num->num.toInteger()})[0]?:0
 	  int years=(taimu.findAll(/(\d+)y/){full,num->num.toInteger()})[0]?:0
-	  long time=System.currentTimeMillis()
+	  def time=System.currentTimeMillis()
 	  seconds.times{time+=1000}
 	  minutes.times{time+=60000}
 	  hours.times{time+=3600000}
@@ -281,6 +281,7 @@ import java.awt.List as AWTList
 import java.util.List
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
+import com.mashape.unirest.http.Unirest
 @Grab(group='org.jsoup', module='jsoup', version='1.8.3')
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
