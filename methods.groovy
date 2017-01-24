@@ -7,7 +7,6 @@ import net.dv8tion.jda.events.message.*
 import net.dv8tion.jda.events.guild.member.*
 import net.dv8tion.jda.utils.AvatarUtil
 import net.dv8tion.jda.audio.*
-import java.net.URL
 @Grab(group='org.jsoup', module='jsoup', version='1.8.3')
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -26,11 +25,11 @@ JDA.metaClass.getChannels={delegate.channelMap*.value}
 
 Event.metaClass.getJda={delegate.JDA}
 
-MessageReceivedEvent.metaClass.sendMessage={String content->delegate.channel.sendMessage("\u200b"+content?.replaceAll(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
+MessageReceivedEvent.metaClass.sendMessage={String content->delegate.channel.sendMessage("\u200b"+content?.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
 MessageReceivedEvent.metaClass.sendTyping={Thread.start{delegate.channel.sendTyping()}}
 MessageReceivedEvent.metaClass.sendFile={File file->delegate.channel.sendFile(file,null)}
 
-GenericGuildMemberEvent.metaClass.sendMessage={String content->delegate.guild.defaultChannel.sendMessage("\u200b"+content?.replaceAll(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
+GenericGuildMemberEvent.metaClass.sendMessage={String content->delegate.guild.defaultChannel.sendMessage("\u200b"+content?.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
 
 Message.metaClass.getAttachment={delegate.attachments[0]}
 Message.metaClass.edit={String content->delegate.updateMessage(content)}
@@ -44,7 +43,6 @@ Message.metaClass.isTts={delegate.TTS}
 Message.Attachment.metaClass.getName={delegate.fileName}
 Message.Attachment.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Message.Attachment.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
-Message.Attachment.metaClass.download={String laura->new File(laura)<<delegate.url.toURL().newInputStream(requestProperties:["User-Agent":"groovy/2.4.3 DiscordBot (https://github.com/DV8FromTheWorld/JDA, 2.2.1)",Accept:"*/*"])}
 
 User.metaClass.getStatus={delegate.onlineStatus.toString().toLowerCase()}
 User.metaClass.getName={delegate.username}
@@ -183,7 +181,7 @@ Closure addVariables={String group,String data,String args,Event e->
 		}
 	}else if(group.startsWith('range;')){
 		try{
-			returned=group.substring(6).tokenize(';')*.toBigDecimal()
+			returned=group.substring(6).tokenize(';')*.toLong()
 		}catch(ex){
 			returned=group.substring(6).tokenize(';')
 		}
@@ -199,8 +197,8 @@ Closure addVariables={String group,String data,String args,Event e->
 		if(!ass)ass=e.jda.users.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
 		returned=ass?ass.id:"???"
 	}else if(group.startsWith('dbof;')){
-		User ass=e.jda.users.find{it.id==group.substring(7).replaceAll(/\D+/,'')}
-		if(!ass)ass=e.jda.users.find{it.name.toLowerCase()==group.substring(7).toLowerCase()}
+		User ass=e.jda.users.find{it.id==group.substring(5).replaceAll(/\D+/,'')}
+		if(!ass)ass=e.jda.users.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
 		returned=ass?ass.identity:"???"
 	}else if(group.startsWith('avatarof;')){
 		User ass=e.jda.users.find{it.id==group.substring(9).replaceAll(/\D+/,'')}
@@ -258,7 +256,7 @@ Range.metaClass.randomItem={delegate.toList().randomItem()}
 String.metaClass.randomItem={delegate.toList().randomItem()}
 
 
-String.metaClass.strip={delegate.replaceAll(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}
+String.metaClass.strip={delegate.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}
 String.metaClass.addImports={"""import net.dv8tion.jda.JDA
 import net.dv8tion.jda.JDABuilder
 import net.dv8tion.jda.MessageHistory
@@ -275,7 +273,6 @@ import net.dv8tion.jda.utils.AvatarUtil
 import net.dv8tion.jda.audio.*
 import net.dv8tion.jda.player.*
 import net.dv8tion.jda.player.source.*
-import java.net.URL
 import java.awt.*
 import java.awt.List as AWTList
 import java.util.List

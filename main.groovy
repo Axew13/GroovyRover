@@ -60,7 +60,7 @@ class Bot{
 		new FeedCommand(),new ClearCommand(),new SetChannelCommand(),new SetRoleCommand(),new VotePinCommand(),
 		new RadioCommand(),new ConfigCommand(),new SingCommand(),new BanCommand(),new SmiliesCommand(),
 		new CloneCommand(),new AccessCommand(),new TrackerCommand(),new IsupCommand(),new TopCommand(),
-		new CleanCommand(),new NoteCommand()
+		new CleanCommand(),new NoteCommand(),new ProfileCommand()
 	]
 	List ignored=[]
 	String oauth='https://discordapp.com/oauth2/authorize?client_id=170646931641466882&scope=bot&permissions=268443670'
@@ -118,13 +118,17 @@ class Web{
 	Map agents=[
 		'G.Chrome':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36',
 		'M.Firefox':'Mozilla/5.0 (Windows NT 6.1; rv:50.0) Gecko/20100101 Firefox/50.0',
-		'N.3DS':'Mozilla/5.0 (Nintendo 3DS; U; ; en) Version/1.7498.US'
+		'N.3DS':'Mozilla/5.0 (Nintendo 3DS; U; ; en) Version/1.7498.US',
+		'API':'groovy/2.4.3 DiscordBot (https://github.com/DV8FromTheWorld/JDA, 2.2.1)'
 	]
 	Document get(String url,String agent='G.Chrome'){
 		Jsoup.connect(url).userAgent(agents[agent]).get()
 	}
 	String sendStats(Event e){
 		Unirest.post("https://bots.discord.pw/api/bots/$e.jda.selfInfo.id/stats").header('Content-Type','application/json').header('Authorization',new File("token").readLines()[4]).body(JsonOutput.toJson(server_count:e.jda.guilds.size())).asString().body
+	}
+	File download(String from,String to){
+		new File(to)<<from.toURL().newInputStream(requestProperties:["User-Agent":agents["API"],Accept:"*/*"])
 	}
 }
 
@@ -202,40 +206,30 @@ class GRover extends ListenerAdapter{
 	
 	// Ready Event
 	void onReady(ReadyEvent e){
-		Role rainbow=e.jda.guilds.find{it.id=="145904657833787392"}.roles.find{it.name=="Rainbow"}
 		Thread.start{
 			e.jda.guilds.findAll{!roles.member[it.id]}.each{roles.member[it.id]=it.roles.findAll{!it.managed&&!it.colour&&!it.config}.max{Role role->role.guild.userRoles.findAll{role in it.value}*.key.size()}?.id}
 			e.jda.guilds.findAll{!roles.mute[it.id]}.each{roles.mute[it.id]=it.roles.findAll{!it.managed&&it.name.toLowerCase().containsAny(['mute','shun','naughty','punish'])}.max{Role role->role.guild.userRoles.findAll{role in it.value}*.key.size()}?.id}
 			json.save(roles,'roles')
-			List grad=[0xFF0000,0xFF2A00,0xFF5400,0xFF7F00,0xFFAA00,0xFFD400,0xFFFF00,0xD4FF00,0xAAFF00,0x7FFF00,0x54FF00,0x2AFF00,0x00FF00,0x00FF2A,0x00FF55,0x00FF7F,0x00FFA9,0x00FFD4,0x00FFFF,0x00D4FF,0x00A9FF,0x007FFF,0x0055FF,0x002AFF,0x0000FF,0x2A00FF,0x5400FF,0x7F00FF,0xAA00FF,0xD400FF,0xFF00FF,0xFF00D4,0xFF00AA,0xFF007F,0xFF0054,0xFF002A]
 			while(true){
-				grad.each{
-					long now=System.currentTimeMillis()
-					e.jda.users.findAll{it.status!='offline'}.each{
-						seen[it.id]=[
-							time:now,
-							game:it.game?.name
-						]
-					}
-					json.save(seen,'lastseen')
+				long now=System.currentTimeMillis()
+				e.jda.users.findAll{it.status!='offline'}.each{
+					seen[it.id]=[
+						time:now,
+						game:it.game?.name
+					]
+				}
+				json.save(seen,'lastseen')
+				List sticky=notes.timed.findAll{it.time<now}
+				sticky.each{Map note->
+					notes.timed-=note
 					try{
-						rainbow.manager.setColor(it)
-						rainbow.manager.update()
+						e.jda.users.find{it.id==note.user}.privateChannel.sendMessage("It is ${new Date().format('HH:mm:ss, d MMMM YYYY').formatBirthday()}. You asked me to remind you${if(note.content){":\n\n$note.content"}else{"."}}")
 					}catch(ex){
 						ex.printStackTrace()
 					}
-					List sticky=notes.timed.findAll{it.time<now}
-					sticky.each{Map note->
-						notes.timed-=note
-						try{
-							e.jda.users.find{it.id==note.user}.privateChannel.sendMessage("It is ${new Date().format('HH:mm:ss, d MMMM YYYY').formatBirthday()}. You asked me to remind you${if(note.content){":\n\n$note.content"}else{"."}}")
-						}catch(ex){
-							ex.printStackTrace()
-						}
-						json.save(notes,'notes')
-					}
-					Thread.sleep(180000)
+					json.save(notes,'notes')
 				}
+				Thread.sleep(180000)
 			}
 		}
 		Thread.start{
@@ -265,10 +259,12 @@ class GRover extends ListenerAdapter{
 				db=json.database()
 				try{
 					List channels=e.jda.textChannels+e.jda.privateChannels
+					Map cache=[:]
 					feeds.youtube.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=web.get(feed.link,'G.Chrome')
+							Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
+							cache[feed.link]=doc
 							String id=doc.getElementsByClass('yt-lockup-title')[0].getElementsByTag('a')[0].attr('href')
 							if(id!=feed.last){
 								String title=doc.getElementsByTag('title').text().tokenize().join(' ')
@@ -282,7 +278,8 @@ class GRover extends ListenerAdapter{
 					feeds.animelist.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=web.get(feed.link,'G.Chrome')
+							Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
+							cache[feed.link]=doc
 							Element anime=doc.getElementsByTag('item')[0]
 							List data=anime.getElementsByTag('description')[0].text().replace(' episodes','').split(' - ')
 							String name=anime.getElementsByTag('title')[0].text().split(' - ')[0]
@@ -300,7 +297,8 @@ class GRover extends ListenerAdapter{
 					feeds.twitter.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=web.get(feed.link,'G.Chrome')
+							Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
+							cache[feed.link]=doc
 							String link=doc.getElementsByClass('tweet-timestamp')[0].attr('href')
 							String id=link.substring(link.lastIndexOf('/'))
 							if(id!=feed.last){
@@ -315,7 +313,8 @@ class GRover extends ListenerAdapter{
 					feeds.levelpalace.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=web.get(feed.link,'G.Chrome')
+							Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
+							cache[feed.link]=doc
 							Elements level=doc.getElementsByClass('levels-table')[0].getElementsByTag('a')
 							String id=level[0].attr('href')
 							if(id!=feed.last){
@@ -328,6 +327,7 @@ class GRover extends ListenerAdapter{
 							feeds.levelpalace.remove(feed)
 						}
 					}
+					cache=[:]
 					json.save(feeds,'feeds')
 				}catch(ex){
 					ex.printStackTrace()
@@ -348,16 +348,6 @@ class GRover extends ListenerAdapter{
 				radio.play(player,playlist,channel)
 			}
 		}
-		Thread.start{
-			while(true){
-				Scanner scanner=new Scanner(System.in)
-				if(scanner.nextLine()=='stop'){
-					rainbow.manager.setColor(0x000000)
-					rainbow.manager.update()
-					System.exit(0)
-				}
-			}
-		}
 	}
 	
 	
@@ -374,6 +364,7 @@ class GRover extends ListenerAdapter{
 						Closure command={List aliases->(args.toLowerCase()+' ').startsWithAny(aliases*.plus(' '))?.trim()}
 						Command cmd=bot.commands.find{command(it.aliases)}
 						if(cmd){
+							Exception error
 							try{
 								args=args.substring(command(cmd.aliases).length()).trim()
 								Map binding=[bot:bot,radio:radio,json:json,web:web,prefix:prefix,args:args,db:db,tags:tags,seen:seen,channels:channels,roles:roles,info:info,colours:colours,misc:misc,conversative:conversative,feeds:feeds,settings:settings,temp:temp,audio:audio,tracker:tracker,notes:notes,lastReply:lastReply,tableTimeout:tableTimeout,started:started,errorMessage:errorMessage,permissionMessage:permissionMessage,failMessage:failMessage,messages:messages]
@@ -381,8 +372,17 @@ class GRover extends ListenerAdapter{
 							}catch(ex){
 								e.sendMessage(failMessage()+"Error: `$ex.message`")
 								ex.printStackTrace()
+								error=ex
 							}
 							messages+=e.message
+							e.jda.textChannels.find{it.id=="270998683003125760"}.sendMessage("""\u200b
+<:grover:234242699211964417> `Command Log`
+**Server**: ${e.guild?.name?:"Direct Messages"} (${e.guild?.id?:e.jda.selfInfo.id})
+**Channel**: ${e.guild?e.channel.name:e.channel.user.name} ($e.channel.id)
+**User**: $e.author.identity ($e.author.id)
+**Command**: ${cmd.aliases.join('/')}
+**Arguments**: $args
+**Status**: ${error?error.class.simpleName:"Executed"}""")
 						}else if(e.guild){
 							if(command(tags*.key*.replaceAll(/\d+:/,''))){
 								args=args.tokenize()
@@ -396,6 +396,14 @@ class GRover extends ListenerAdapter{
 									tags[args[0]].uses+=1
 									json.save(tags,'tags')
 									messages+=e.message
+									e.jda.textChannels.find{it.id=="270998683003125760"}.sendMessage("""\u200b
+<:grover:234242699211964417> `Command Log`
+**Server**: ${e.guild?.name?:"Direct Messages"} (${e.guild?.id?:e.jda.selfInfo.id})
+**Channel**: ${e.guild?e.channel.name:e.channel.user.name} ($e.channel.id)
+**User**: $e.author.identity ($e.author.id)
+**Command**: ${args[0]} (Tag Command)
+**Arguments**: ${args[1]?args[1..-1].join(' '):''}
+**Status**: Executed""")
 								}
 							}
 						}
@@ -788,7 +796,7 @@ class AvatarCommand extends Command{
 		if(e.message.mentions.size()>1){
 			List mens=e.message.mentions
 			if(mens.size()>5)mens=mens[0..4]
-			String list=e.message.mens.collect{"**${it.identity.capitalize()}**: ${it.avatar?it.avatar+"?size=512":it.defaultAvatarUrl}"}.join('\n')
+			String list=e.message.mens.collect{"**${it.identity.capitalize()}**: ${it.avatar?it.avatar.replace('.jpg','.png')+"?size=512":it.defaultAvatarUrl}"}.join('\n')
 			e.sendMessage(list)
 		}else if(e.message.emotes){
 			String list=e.message.emotes.collect{"**${it.name.capitalize()}**: $it.imageUrl"}.join('\n')
@@ -797,13 +805,13 @@ class AvatarCommand extends Command{
 			User user=e.author
 			if(d.args&&e.guild)user=e.message.mentions?e.message.mentions[-1]:e.guild.findUser(d.args)
 			if(user){
-				e.sendMessage("**${user.identity.capitalize()}**'s avatar:\n${user.avatar?user.avatar+"?size=512":user.defaultAvatarUrl}")
+				e.sendMessage("**${user.identity.capitalize()}**'s avatar:\n${user.avatar?user.avatar.replace('.jpg','.png')+"?size=512":user.defaultAvatarUrl}")
 			}else{
 				Guild guild
 				if(d.args)guild=e.jda.findGuild(d.args)
 				if(guild){
 					if(guild.icon){
-						e.sendMessage("**${guild.name.capitalize()}**'s icon:\n$guild.icon?size=512")
+						e.sendMessage("**${guild.name.capitalize()}**'s icon:\n${guild.icon.replace('.jpg','.png')}?size=512")
 					}else{
 						e.sendMessage("**${guild.name.capitalize()}**'s icon:\n`${guild.name.abbreviate()}`")
 					}
@@ -823,9 +831,9 @@ class InfoCommand extends Command{
 	List aliases=['info']
 	void run(Map d,Event e){
 		String info="""**About GR\\\u2699VER**:
-Created by <@$d.bot.owner>. Java JDA by <@107562988810027008>.
+Created by <@$d.bot.owner>. Java JDA by <@107562988810027008>. <@98457401363025920> helped too.
 
-GRover \u2018the DOGBOT Project\u2019 is a bot with an ever-expanding database recording the Internet identity of every user on Discord.
+GRover \u2018the DOGBOT Project\u2019 is a bot with an ever-expanding database recording the Internet identity of everyone on Discord.
 GRover is based on the xat FEXBot and was designed to remedy the issue of recognising users who change their name.
 
 Use `${d.prefix}help` to get a list of commands.
@@ -1049,7 +1057,7 @@ class NsfwCommand extends Command{
 				}
 			}
 			if(pages>476)pages=476
-			if(!doc.text().contains('Nobody here')){
+			if(!doc?.text()?.contains('Nobody here')){
 				cache[d.args]=pages
 				page=(((Math.floor((Math.random()*pages)+1)*42)as int)-42).toString()
 				String ass="$link&pid=$page"
@@ -1064,7 +1072,7 @@ class NsfwCommand extends Command{
 			}
 		}else{
 			TextChannel nsfwChannel=e.guild.textChannels.find{it.nsfw}
-			e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(nsfwChannel){", `Use in #$nsfwChannel.name`"}else{""}}.")
+			e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(nsfwChannel){", `Use in #$nsfwChannel.name`"}else{""}}.\nStaff can set song channels with `${d.prefix}setchannel song`.")
 		}
 	}
 	String category="Online"
@@ -1401,7 +1409,7 @@ class TagCommand extends Command{
 						]],
 						uses:0
 					]
-					e.sendMessage("The tag **${d.args[1]}** has been created. You can now use `${d.prefix}tag ${d.args[1]}`.")
+					e.sendMessage("The tag **${d.args[1]}** has been created. You can now use `${d.prefix}tag ${e.guild?d.args[1].replaceAll(/^$e.guild.id:/,''):d.args[1]}`.")
 					d.json.save(d.tags,"tags")
 				}
 			}else{
@@ -1478,8 +1486,10 @@ class TagCommand extends Command{
 			d.args+=""
 			List list
 			String ass
-			if(!e.guild||(d.args[1].toLowerCase()=="me")||e.message.mentions){
+			User heck=d.args[1]?e.guild?.findUser(d.args[1]):null
+			if(!e.guild||e.message.mentions||heck){
 				User user=e.message.mentions?e.message.mentions[-1]:e.author
+				if(heck&&!e.message.mentions)user=heck
 				list=d.tags.findAll{it.value.history[0].author==user.id}*.key
 				ass="**__${user.identity.capitalize()}'s Tags ($list.size)__:**\n"
 			}else{
@@ -1735,7 +1745,7 @@ class MiscCommand extends Command{
 				if(!thing)thing=e.jda.guilds.find{it.id==d.args[1]}
 				if(!thing)thing=e.jda.channels.find{it.id==d.args[1]}
 				if(!thing)thing=e.jda.guilds*.roles.flatten().find{it.id==d.args[1]}
-				if(!thing)thing=e.jda.emotes.flatten().find{it.id==d.args[1]}
+				if(!thing)thing=e.jda.guilds*.emotes.flatten().find{it.id==d.args[1]}
 				if(thing){
 					String ass=thing.class.simpleName.replace('Impl','')
 					e.sendMessage("$thing.name ($ass)")
@@ -1799,17 +1809,17 @@ class TextCommand extends Command{
 			if(output&&manipulatives.containsAny(['space','expand','reverse','backward','super','upper','bold','block','italic','cursive','compress','trim','bubble','circle','small','mini','full','fw','strike','line','random','shuffle','emoji','regional','fancy','handwritten'])){
 				if(manipulatives.containsAny(['space','expand']))output=output.replace('',' ')
 				if(manipulatives.containsAny(['reverse','backward']))output=output.reverse()
-				if(manipulatives.containsAny(['super','upper']))output=output.replaceAll(('a'..'z')+('1'..'9')+['0','!','$','%','&','*','(',')','-','=',';',':','.','?']+('A'..'Z')+['\u03b2'],["\u1d43","\u1d47","\u1d9c","\u1d48","\u1d49","\u1da0","\u1d4d","\u02b0","\u1da6","\u02b2","\u1d4f","\u1dab","\u1d50","\u1db0","\u1d52","\u1d56","\u146b","\u02b3","\u02e2","\u1d57","\u1d58","\u1d5b","\u02b7","\u02e3","\u02b8","\u1dbb","\u00b9","\u00b2","\u00b3","\u2074","\u2075","\u2076","\u2077","\u2078","\u2079","\u2070","\ufe57","\ufe69","\ufe6a","\ufe60","\ufe61","\u207d","\u207e","\u207b","\u207c","\ufe54","\ufe55","\u22c5","\ufe56","\u1d2c","\u1d2e","\u1d9c","\u1d30","\u1d31","\u1da0","\u1d33","\u1d34","\u1d35","\u1d36","\u1d37","\u1d38","\u1d39","\u1d3a","\u1d3c","\u1d3e","\u146b","\u1d3f","\u02e2","\u1d40","\u1d41","\u2c7d","\u1d42","\u02e3","\u02b8","\u1dbb","\u1d5d"])
-				if(manipulatives.containsAny(['bold','block']))output=output.replaceAll(('a'..'z')+('1'..'9')+['0']+('A'..'Z'),["\ud835\udc1a","\ud835\udc1b","\ud835\udc1c","\ud835\udc1d","\ud835\udc1e","\ud835\udc1f","\ud835\udc20","\ud835\udc21","\ud835\udc22","\ud835\udc23","\ud835\udc24","\ud835\udc25","\ud835\udc26","\ud835\udc27","\ud835\udc28","\ud835\udc29","\ud835\udc2a","\ud835\udc2b","\ud835\udc2c","\ud835\udc2d","\ud835\udc2e","\ud835\udc2f","\ud835\udc30","\ud835\udc31","\ud835\udc32","\ud835\udc33","\ud835\udfcf","\ud835\udfd0","\ud835\udfd1","\ud835\udfd2","\ud835\udfd3","\ud835\udfd4","\ud835\udfd5","\ud835\udfd6","\ud835\udfd7","\ud835\udfce","\ud835\udc00","\ud835\udc01","\ud835\udc02","\ud835\udc03","\ud835\udc04","\ud835\udc05","\ud835\udc06","\ud835\udc07","\ud835\udc08","\ud835\udc09","\ud835\udc0a","\ud835\udc0b","\ud835\udc0c","\ud835\udc0d","\ud835\udc0e","\ud835\udc0f","\ud835\udc10","\ud835\udc11","\ud835\udc12","\ud835\udc13","\ud835\udc14","\ud835\udc15","\ud835\udc16","\ud835\udc17","\ud835\udc18","\ud835\udc19"])
-				if(manipulatives.containsAny(['italic','cursive']))output=output.replaceAll(('a'..'z')+('A'..'Z'),["\ud835\udc4e","\ud835\udc4f","\ud835\udc50","\ud835\udc51","\ud835\udc52","\ud835\udc53","\ud835\udc54","\ud835\udc55","\ud835\udc56","\ud835\udc57","\ud835\udc58","\ud835\udc59","\ud835\udc5a","\ud835\udc5b","\ud835\udc5c","\ud835\udc5d","\ud835\udc5e","\ud835\udc5f","\ud835\udc60","\ud835\udc61","\ud835\udc62","\ud835\udc63","\ud835\udc64","\ud835\udc65","\ud835\udc66","\ud835\udc67","\ud835\udc34","\ud835\udc35","\ud835\udc36","\ud835\udc37","\ud835\udc38","\ud835\udc39","\ud835\udc3a","\ud835\udc3b","\ud835\udc3c","\ud835\udc3d","\ud835\udc3e","\ud835\udc3f","\ud835\udc40","\ud835\udc41","\ud835\udc42","\ud835\udc43","\ud835\udc44","\ud835\udc45","\ud835\udc46","\ud835\udc47","\ud835\udc48","\ud835\udc49","\ud835\udc4a","\ud835\udc4b","\ud835\udc4c","\ud835\udc4d"])
-				if(manipulatives.containsAny(['compress','trim']))output=output.replaceAll([' ','\u3000'],'')
-				if(manipulatives.containsAny(['bubble','circle']))output=output.replaceAll(('A'..'Z')+('a'..'z')+('1'..'9'),['\u24b6','\u24b7','\u24b8','\u24b9','\u24ba','\u24bb','\u24bc','\u24bd','\u24be','\u24bf','\u24c0','\u24c1','\u24c2','\u24c3','\u24c4','\u24c5','\u24c6','\u24c7','\u24c8','\u24c9','\u24ca','\u24cb','\u24cc','\u24cd','\u24ce','\u24cf','\u24d0','\u24d1','\u24d2','\u24d3','\u24d4','\u24d5','\u24d6','\u24d7','\u24d8','\u24d9','\u24da','\u24db','\u24dc','\u24dd','\u24de','\u24df','\u24e0','\u24e1','\u24e2','\u24e3','\u24e4','\u24e5','\u24e6','\u24e7','\u24e8','\u24e9','\u2780','\u2781','\u2782','\u2783','\u2784','\u2785','\u2786','\u2787','\u2788'])
-				if(manipulatives.containsAny(['small','mini']))output=output.replaceAll('a'..'z',['\u1d00','\u0299','\u1d04','\u1d05','\u1d07','\u0493','\u0262','\u029c','\u026a','\u1d0a','\u1d0b','\u029f','\u1d0d','\u0274','\u1d0f','\u1d18','\u01eb','\u0280','s','\u1d1b','\u1d1c','\u1d20','\u1d21','x','\u028f','\u1d22'])
-				if(manipulatives.containsAny(['full','fw']))output=output.replaceAll(('A'..'Z')+('a'..'z')+('1'..'9')+['0','!','"','$','%','^','&','*','(',')','-','_','+','=','[','{',']','}',';',':','Ã‚Â£','@','#','|',',','<','.','>','?','~',' '],['\uff21','\uff22','\uff23','\uff24','\uff25','\uff26','\uff27','\uff28','\uff29','\uff2a','\uff2b','\uff2c','\uff2d','\uff2e','\uff2f','\uff30','\uff31','\uff32','\uff33','\uff34','\uff35','\uff36','\uff37','\uff38','\uff39','\uff3a','\uff41','\uff42','\uff43','\uff44','\uff45','\uff46','\uff47','\uff48','\uff49','\uff4a','\uff4b','\uff4c','\uff4d','\uff4e','\uff4f','\uff50','\uff51','\uff52','\uff53','\uff54','\uff55','\uff56','\uff57','\uff58','\uff59','\uff5a','\uff11','\uff12','\uff13','\uff14','\uff15','\uff16','\uff17','\uff18','\uff19','\uff10','\uff01','\u201d','\uff04','\uff05','\uff3e','\uff06','\uff0a','\uff08','\uff09','\uff0d','\uff3f','\uff0b','\uff1d','\u300c','\uff5b','\u300d','\uff5d','\uff1b','\uff1a','\uffe5','\uff20','\uff03','\uff5c','\uff0c','\uff1c','\uff0e','\uff1e','\uff1f','\uff5e','\u3000'])
+				if(manipulatives.containsAny(['super','upper']))output=output.replaceEach(('a'..'z')+('1'..'9')+['0','!','$','%','&','*','(',')','-','=',';',':','.','?']+('A'..'Z')+['\u03b2'],["\u1d43","\u1d47","\u1d9c","\u1d48","\u1d49","\u1da0","\u1d4d","\u02b0","\u1da6","\u02b2","\u1d4f","\u1dab","\u1d50","\u1db0","\u1d52","\u1d56","\u146b","\u02b3","\u02e2","\u1d57","\u1d58","\u1d5b","\u02b7","\u02e3","\u02b8","\u1dbb","\u00b9","\u00b2","\u00b3","\u2074","\u2075","\u2076","\u2077","\u2078","\u2079","\u2070","\ufe57","\ufe69","\ufe6a","\ufe60","\ufe61","\u207d","\u207e","\u207b","\u207c","\ufe54","\ufe55","\u22c5","\ufe56","\u1d2c","\u1d2e","\u1d9c","\u1d30","\u1d31","\u1da0","\u1d33","\u1d34","\u1d35","\u1d36","\u1d37","\u1d38","\u1d39","\u1d3a","\u1d3c","\u1d3e","\u146b","\u1d3f","\u02e2","\u1d40","\u1d41","\u2c7d","\u1d42","\u02e3","\u02b8","\u1dbb","\u1d5d"])
+				if(manipulatives.containsAny(['bold','block']))output=output.replaceEach(('a'..'z')+('1'..'9')+['0']+('A'..'Z'),["\ud835\udc1a","\ud835\udc1b","\ud835\udc1c","\ud835\udc1d","\ud835\udc1e","\ud835\udc1f","\ud835\udc20","\ud835\udc21","\ud835\udc22","\ud835\udc23","\ud835\udc24","\ud835\udc25","\ud835\udc26","\ud835\udc27","\ud835\udc28","\ud835\udc29","\ud835\udc2a","\ud835\udc2b","\ud835\udc2c","\ud835\udc2d","\ud835\udc2e","\ud835\udc2f","\ud835\udc30","\ud835\udc31","\ud835\udc32","\ud835\udc33","\ud835\udfcf","\ud835\udfd0","\ud835\udfd1","\ud835\udfd2","\ud835\udfd3","\ud835\udfd4","\ud835\udfd5","\ud835\udfd6","\ud835\udfd7","\ud835\udfce","\ud835\udc00","\ud835\udc01","\ud835\udc02","\ud835\udc03","\ud835\udc04","\ud835\udc05","\ud835\udc06","\ud835\udc07","\ud835\udc08","\ud835\udc09","\ud835\udc0a","\ud835\udc0b","\ud835\udc0c","\ud835\udc0d","\ud835\udc0e","\ud835\udc0f","\ud835\udc10","\ud835\udc11","\ud835\udc12","\ud835\udc13","\ud835\udc14","\ud835\udc15","\ud835\udc16","\ud835\udc17","\ud835\udc18","\ud835\udc19"])
+				if(manipulatives.containsAny(['italic','cursive']))output=output.replaceEach(('a'..'z')+('A'..'Z'),["\ud835\udc4e","\ud835\udc4f","\ud835\udc50","\ud835\udc51","\ud835\udc52","\ud835\udc53","\ud835\udc54","\ud835\udc55","\ud835\udc56","\ud835\udc57","\ud835\udc58","\ud835\udc59","\ud835\udc5a","\ud835\udc5b","\ud835\udc5c","\ud835\udc5d","\ud835\udc5e","\ud835\udc5f","\ud835\udc60","\ud835\udc61","\ud835\udc62","\ud835\udc63","\ud835\udc64","\ud835\udc65","\ud835\udc66","\ud835\udc67","\ud835\udc34","\ud835\udc35","\ud835\udc36","\ud835\udc37","\ud835\udc38","\ud835\udc39","\ud835\udc3a","\ud835\udc3b","\ud835\udc3c","\ud835\udc3d","\ud835\udc3e","\ud835\udc3f","\ud835\udc40","\ud835\udc41","\ud835\udc42","\ud835\udc43","\ud835\udc44","\ud835\udc45","\ud835\udc46","\ud835\udc47","\ud835\udc48","\ud835\udc49","\ud835\udc4a","\ud835\udc4b","\ud835\udc4c","\ud835\udc4d"])
+				if(manipulatives.containsAny(['compress','trim']))output=output.replaceEach([' ','\u3000'],'')
+				if(manipulatives.containsAny(['bubble','circle']))output=output.replaceEach(('A'..'Z')+('a'..'z')+('1'..'9'),['\u24b6','\u24b7','\u24b8','\u24b9','\u24ba','\u24bb','\u24bc','\u24bd','\u24be','\u24bf','\u24c0','\u24c1','\u24c2','\u24c3','\u24c4','\u24c5','\u24c6','\u24c7','\u24c8','\u24c9','\u24ca','\u24cb','\u24cc','\u24cd','\u24ce','\u24cf','\u24d0','\u24d1','\u24d2','\u24d3','\u24d4','\u24d5','\u24d6','\u24d7','\u24d8','\u24d9','\u24da','\u24db','\u24dc','\u24dd','\u24de','\u24df','\u24e0','\u24e1','\u24e2','\u24e3','\u24e4','\u24e5','\u24e6','\u24e7','\u24e8','\u24e9','\u2780','\u2781','\u2782','\u2783','\u2784','\u2785','\u2786','\u2787','\u2788'])
+				if(manipulatives.containsAny(['small','mini']))output=output.replaceEach('a'..'z',['\u1d00','\u0299','\u1d04','\u1d05','\u1d07','\u0493','\u0262','\u029c','\u026a','\u1d0a','\u1d0b','\u029f','\u1d0d','\u0274','\u1d0f','\u1d18','\u01eb','\u0280','s','\u1d1b','\u1d1c','\u1d20','\u1d21','x','\u028f','\u1d22'])
+				if(manipulatives.containsAny(['full','fw']))output=output.replaceEach(('A'..'Z')+('a'..'z')+('1'..'9')+['0','!','"','$','%','^','&','*','(',')','-','_','+','=','[','{',']','}',';',':','Ã‚Â£','@','#','|',',','<','.','>','?','~',' '],['\uff21','\uff22','\uff23','\uff24','\uff25','\uff26','\uff27','\uff28','\uff29','\uff2a','\uff2b','\uff2c','\uff2d','\uff2e','\uff2f','\uff30','\uff31','\uff32','\uff33','\uff34','\uff35','\uff36','\uff37','\uff38','\uff39','\uff3a','\uff41','\uff42','\uff43','\uff44','\uff45','\uff46','\uff47','\uff48','\uff49','\uff4a','\uff4b','\uff4c','\uff4d','\uff4e','\uff4f','\uff50','\uff51','\uff52','\uff53','\uff54','\uff55','\uff56','\uff57','\uff58','\uff59','\uff5a','\uff11','\uff12','\uff13','\uff14','\uff15','\uff16','\uff17','\uff18','\uff19','\uff10','\uff01','\u201d','\uff04','\uff05','\uff3e','\uff06','\uff0a','\uff08','\uff09','\uff0d','\uff3f','\uff0b','\uff1d','\u300c','\uff5b','\u300d','\uff5d','\uff1b','\uff1a','\uffe5','\uff20','\uff03','\uff5c','\uff0c','\uff1c','\uff0e','\uff1e','\uff1f','\uff5e','\u3000'])
 				if(manipulatives.containsAny(['strike','line']))output=output.replace('','\u0336')
 				if(manipulatives.containsAny(['random','shuffle']))output=output.randomize()
-				if(manipulatives.containsAny(['emoji','regional']))output=output.replaceAll(('A'..'Z'),('a'..'z')).replaceAll(('a'..'z')+('0'..'9')+['!','?','+','-','\u00d7','\u00f7','\$','\u221a','\u263c','*','>','<','^','.','\u2588','\u25cf','\u25cb','#','\u2605','\u2020','~'],['\ud83c\udde6 ','\ud83c\udde7 ','\ud83c\udde8 ','\ud83c\udde9 ','\ud83c\uddea ','\ud83c\uddeb ','\ud83c\uddec ','\ud83c\udded ','\ud83c\uddee ','\ud83c\uddef ','\ud83c\uddf0 ','\ud83c\uddf1 ','\ud83c\uddf2 ','\ud83c\uddf3 ','\ud83c\uddf4 ','\ud83c\uddf5 ','\ud83c\uddf6 ','\ud83c\uddf7 ','\ud83c\uddf8 ','\ud83c\uddf9 ','\ud83c\uddfa ','\ud83c\uddfb ','\ud83c\uddfc ','\ud83c\uddfd ','\ud83c\uddfe ','\ud83c\uddff ','0\u20e3 ','1\u20e3 ','2\u20e3 ','3\u20e3 ','4\u20e3 ','5\u20e3 ','6\u20e3 ','7\u20e3 ','8\u20e3 ','9\u20e3 ','\u2757 ','\u2753 ','\u2795 ','\u2796 ','\u2716 ','\u2797 ','\ud83d\udcb2 ','\u2714 ','\ud83d\udd06 ','*\u20e3 ','\u25b6 ','\u25c0 ','\ud83d\udd3c ','\u25aa ','\u23f9 ','\u26ab ','\u23fa ','#\u20e3','\u2b50','\u271d','\u3030'])
-				if(manipulatives.containsAny(['fancy','handwritten']))output=output.replaceAll(('a'..'z')+('A'..'Z'),['\ud835\udcea','\ud835\udceb','\ud835\udcec','\ud835\udced','\ud835\udcee','\ud835\udcef','\ud835\udcf0','\ud835\udcf1','\ud835\udcf2','\ud835\udcf3','\ud835\udcf4','\ud835\udcf5','\ud835\udcf6','\ud835\udcf7','\ud835\udcf8','\ud835\udcf9','\ud835\udcfa','\ud835\udcfb','\ud835\udcfc','\ud835\udcfd','\ud835\udcfe','\ud835\udcff','\ud835\udd00','\ud835\udd03','\ud835\udd02','\ud835\udd03','\ud835\udcd0','\ud835\udcd1','\ud835\udcd2','\ud835\udcd3','\ud835\udcd4','\ud835\udcd5','\ud835\udcd6','\ud835\udcd7','\ud835\udcd8','\ud835\udcd9','\ud835\udcda','\ud835\udcdb','\ud835\udcdc','\ud835\udcdd','\ud835\udcde','\ud835\udcdf','\ud835\udce0','\ud835\udce1','\ud835\udce2','\ud835\udce3','\ud835\udce4','\ud835\udce5','\ud835\udce6','\ud835\udce7','\ud835\udce8','\ud835\udce9'])
+				if(manipulatives.containsAny(['emoji','regional']))output=output.replaceEach(('A'..'Z'),('a'..'z')).replaceEach(('a'..'z')+('0'..'9')+['!','?','+','-','\u00d7','\u00f7','\$','\u221a','\u263c','*','>','<','^','.','\u2588','\u25cf','\u25cb','#','\u2605','\u2020','~'],['\ud83c\udde6 ','\ud83c\udde7 ','\ud83c\udde8 ','\ud83c\udde9 ','\ud83c\uddea ','\ud83c\uddeb ','\ud83c\uddec ','\ud83c\udded ','\ud83c\uddee ','\ud83c\uddef ','\ud83c\uddf0 ','\ud83c\uddf1 ','\ud83c\uddf2 ','\ud83c\uddf3 ','\ud83c\uddf4 ','\ud83c\uddf5 ','\ud83c\uddf6 ','\ud83c\uddf7 ','\ud83c\uddf8 ','\ud83c\uddf9 ','\ud83c\uddfa ','\ud83c\uddfb ','\ud83c\uddfc ','\ud83c\uddfd ','\ud83c\uddfe ','\ud83c\uddff ','0\u20e3 ','1\u20e3 ','2\u20e3 ','3\u20e3 ','4\u20e3 ','5\u20e3 ','6\u20e3 ','7\u20e3 ','8\u20e3 ','9\u20e3 ','\u2757 ','\u2753 ','\u2795 ','\u2796 ','\u2716 ','\u2797 ','\ud83d\udcb2 ','\u2714 ','\ud83d\udd06 ','*\u20e3 ','\u25b6 ','\u25c0 ','\ud83d\udd3c ','\u25aa ','\u23f9 ','\u26ab ','\u23fa ','#\u20e3','\u2b50','\u271d','\u3030'])
+				if(manipulatives.containsAny(['fancy','handwritten']))output=output.replaceEach(('a'..'z')+('A'..'Z'),['\ud835\udcea','\ud835\udceb','\ud835\udcec','\ud835\udced','\ud835\udcee','\ud835\udcef','\ud835\udcf0','\ud835\udcf1','\ud835\udcf2','\ud835\udcf3','\ud835\udcf4','\ud835\udcf5','\ud835\udcf6','\ud835\udcf7','\ud835\udcf8','\ud835\udcf9','\ud835\udcfa','\ud835\udcfb','\ud835\udcfc','\ud835\udcfd','\ud835\udcfe','\ud835\udcff','\ud835\udd00','\ud835\udd03','\ud835\udd02','\ud835\udd03','\ud835\udcd0','\ud835\udcd1','\ud835\udcd2','\ud835\udcd3','\ud835\udcd4','\ud835\udcd5','\ud835\udcd6','\ud835\udcd7','\ud835\udcd8','\ud835\udcd9','\ud835\udcda','\ud835\udcdb','\ud835\udcdc','\ud835\udcdd','\ud835\udcde','\ud835\udcdf','\ud835\udce0','\ud835\udce1','\ud835\udce2','\ud835\udce3','\ud835\udce4','\ud835\udce5','\ud835\udce6','\ud835\udce7','\ud835\udce8','\ud835\udce9'])
 				output.trim().split(1999).each{
 					e.sendMessage(it)
 					Thread.sleep(1000)
@@ -1854,10 +1864,10 @@ class ChatBoxCommand extends Command{
 			List vc=guild.voiceChannels.toList().sort{it.position}
 			if(vc.size()>15)vc=vc[0..14]
 			vc.each{
-				String channelName="#$it.name".cut(14)
+				String channelName="\ud83d\udd3d$it.name".cut(14)
 				if(it.userLimit){
 					String limit="${it.users.size()}/$it.userLimit"
-					channelName="${"#$it.name".cut(14-(limit.length+1))} $limit"
+					channelName="${"\ud83d\udd3d$it.name".cut(14-(limit.length+1))} $limit"
 				}
 				channels+="$channelName${" "*(14-channelName.length)}"
 			}
@@ -2667,7 +2677,7 @@ class WordCountCommand extends Command{
 	List aliases=['wordcount','words']
 	void run(Map d,Event e){
 		String input=d.args
-		if(e.message.attachment)input+=e.message.attachment.download("temp/wordcount.txt").text
+		if(e.message.attachment)input+=web.download(e.message.attachment.url,"temp/wordcount.txt")
 		if(input){
 			List words=input.replace('\r\n','\r').replace('\n\r','\n').replaceAll(['\r','\n','-','_','\u3000','\u30fc','\uff3f','\u00a1','?','!','\uff1f','\uff01','(',')','+','=',':',';','{','}','[',']','/','<','>','.',',','\u3002','\u3001'],' ').tokenize()
 			List lines=input.replace('\r\n','\r').replace('\n\r','\n').tokenize('\r')*.tokenize('\n').flatten()
@@ -2717,7 +2727,7 @@ class MemberCommand extends Command{
 								e.guild.textChannels.findAll{it.log}*.sendMessage("**${e.author.identity.capitalize()}**: ${if(type){"Promoted"}else{"Demoted"}} $user.identity to ${if(type){"member"}else{"guest"}}.")
 							}
 						}catch(ex){
-							e.sendMessage("This server doesn't seem to have a suitable member role.")
+							e.sendMessage("This server doesn't seem to have a suitable member role.\nStaff can set a member role with `{d.prefix}setrole member`.")
 							ex.printStackTrace()
 						}
 					}
@@ -2792,7 +2802,7 @@ class MuteCommand extends Command{
 									]
 								}
 							}catch(fucked){
-								e.sendMessage("This server doesn't seem to have a suitable mute role.")
+								e.sendMessage("This server doesn't seem to have a suitable mute role.\nStaff can set a mute role with `{d.prefix}setrole mute`.")
 								fucked.printStackTrace()
 							}
 							boolean type=(id in e.guild.userRoles[user]*.id)
@@ -2879,20 +2889,8 @@ class LogCommand extends Command{
 		if(size<2)size=2
 		String log="${new Date().format('d MMMM YYYY').formatBirthday()}, #${if(e.guild){e.channel.name}else{e.author.name}} in ${try{e.guild.name}catch(DM){"Direct Messages"}}:\r\n"
 		List logs=e.channel.history.retrieve(size).reverse()-e.message
-		for(l in logs)log+="\r\n[${l.createTime.format('HH:mm:ss')}] [$l.author.identity]: ${l.content.replace('\r\n','\n').replace('\r','\r\n   ').replace('\n','\r\n   ')}${if(l.attachments){"${if(l.content){"\r\n"}else{""}}${l.attachments*.name}"}else{""}}"
-//		try{
-			e.sendMessage(Unirest.post('https://puush.me/api/up').field('k',new File("token").readLines()[5]).field('z','dogbot').field('f',log.bytes,"archive-${e.author.id}.log").asString().body.split(',')[1])
-/*		}catch(puush){
-			puush.printStackTrace()
-			File archive=new File("temp/archive.txt")
-			archive.write(log,'Unicode')
-			try{
-				e.sendFile(archive)
-			}catch(ex){
-				ex.printStackTrace()
-				e.sendMessage("I need to be able to upload files to do that...")
-			}
-		}*/
+		for(l in logs)log+="\r\n[${l.createTime.format('HH:mm:ss')}] [$l.author.identity]: ${l.content.replace('\r\n','\n').replace('\r','\r\n   ').replace('\n','\r\n   ').replace('\u200b','')}${if(l.attachments){"${if(l.content){"\r\n"}else{""}}${l.attachments*.name}"}else{""}}"
+		e.sendMessage(Unirest.post('https://puush.me/api/up').field('k',new File("token").readLines()[5]).field('z','dogbot').field('f',log.bytes,"archive-${e.author.id}.log").asString().body.split(',')[1])
 	}
 	String category="General"
 	String help="""`log [number]` will make me generate a log of the channel history to up to 5000 messages ago.
@@ -2903,7 +2901,7 @@ It's too late to take back what you said."""
 class ScopeCommand extends Command{
 	List aliases=['scope','online']
 	void run(Map d,Event e){
-		Map emotes=[online:":o:212789758110334977",away:":i:212789859071426561",do_not_disturb:":d:236744731088912384"]
+		Map emotes=[online:":o:212789758110334977",away:":i:212789859071426561",do_not_disturb:":d:236744731088912384",offline:":o:212790005943369728"]
 		if(e.guild){
 			try{
 				List used=[]
@@ -3308,7 +3306,9 @@ class VotePinCommand extends Command{
 								e.sendMessage("Please enter a number.")
 							}
 						}else{
-							if(e.channel.pinnedMessages.size()==50){
+							if(e.author.rawIdentity.endsWithAny(['\'s Incognito','\'s Alternate Account'])){
+								e.sendMessage("Sorry, incognito can't vote. :^)").queue()
+							}else if(e.channel.pinnedMessages.size()==50){
 								e.sendMessage("Your channel has 50 pins. I am unable to pin a message now.")
 							}else{
 								Message message
@@ -3420,10 +3420,11 @@ Volume: ${(player.volume*75).toInteger()}```""")
 							list="https://www.youtube.com/playlist?list=PLk3_aBglmcQP-WmJGQIM9at3uEVsRfo3C"
 						}
 						try{
+							if((1..75).randomItem()==1)list="https://www.youtube.com/watch?v=8veTn8YZ0_E"
 							Playlist playlist=Playlist.getPlaylist(list)
-							e.sendMessage("The radio station has been changed.${if(d.audio.toggle[e.guild.id]){" Please wait a moment..."}else{""}}")
+							e.sendMessage("The radio station has been changed. ${if(d.audio.toggle[e.guild.id]){"Please wait a moment..."}else{"Start it with `${d.prefix}radio toggle`."}}")
 							d.audio.station[e.guild.id]=list
-							d.json.save(d.audio,"audio")
+							d.json.save(d.audio,'audio')
 							player.stop()
 							player.audioQueue=[]
 							if(d.audio.toggle[e.guild.id]){
@@ -3552,9 +3553,9 @@ Volume: ${(player.volume*75).toInteger()}```""")
 	}
 	String category="General"
 	String help="""`radio now` will make me tell you about the song that is currently playing.
-`radio station nintendo/anime/electric/[playlist]` will make me change the playlist. (Staff)
+`radio station [playlist]` will make me change the playlist. This can be a YouTube playlist, video or mp3. (Staff)
 `radio skip` will make me skip the current song. (Staff)
-`radio channel` will make me change voice channel. (Staff)
+`radio channel [channel]` will make me change voice channel. (Staff)
 `radio pause` will make me pause or unpause the radio. (Staff)
 `radio repeat` will make me enable or disable repeating. (Staff)
 `radio volume` will make me change the radio's volume. (Staff)
@@ -3686,7 +3687,7 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 				}
 			}else{
 				TextChannel songChannel=e.guild.textChannels.find{it.song}
-				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(songChannel){", `Use in #$songChannel.name`"}else{""}}.")
+				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(songChannel){", `Use in #$songChannel.name`"}else{""}}.\nStaff can set NSFW channels with `${d.prefix}setchannel nsfw`.")
 			}
 		}else{
 			if(venue?.guild){
@@ -4226,7 +4227,9 @@ class NoteCommand extends Command{
 		if(d.args[0]=='list'){
 			List total=d.notes*.value.flatten().findAll{it.user==e.author.id}
 			if(total){
-				e.sendMessage(total.collect{"`$it.id` \"${it.content.length()>100?it.content.substring(0,100):it.content}\""}.join('\n'))
+				e.sendMessage(total.collect{Map note->
+					"`$note.id` \"${note.content.length()>100?note.content.substring(0,100)+'...':note.content}\" ${if(note.time){"(${new Date(note.time).format('H:mm d/M/YYYY')})"}else if(note.mention){"(${e.jda.users.find{it.id==note.mention}?.identity?:note.mention})"}else{''}}"
+				}.join('\n'))
 			}else{
 				e.sendMessage("No notes found, add some!")
 			}
@@ -4264,7 +4267,7 @@ class NoteCommand extends Command{
 			}else{
 				e.sendMessage("Please add some text for the note.")
 			}
-		}else if((d.args[0]==~/<@\d+>/)&&e.message.mentions||e.guild&&e.guild.findUser(d.args[0])){
+		}else if((d.args[0]==~/<@!?\d+>/)&&e.message.mentions||e.guild&&e.guild.findUser(d.args[0])){
 			User user=e.guild?.findUser(d.args[0])?:e.message.mentions[-1]
 			if(user.bot){
 				e.sendMessage("Oh no, anyone but them.")
@@ -4280,7 +4283,7 @@ class NoteCommand extends Command{
 			}
 		}else if(d.args[0]=~/\d+\w/){
 			def time=d.args[0].formatTime()
-			if((time-System.currentTimeMillis())>Integer.MAX_VALUE){
+			if(time>Long.MAX_VALUE){
 				e.sendMessage("I think the paper would rot by then.")
 			}else{
 				d.notes.timed+=[
@@ -4303,4 +4306,77 @@ class NoteCommand extends Command{
 `note list` will make me list your notes.
 `note remove [number/text]` will make me remove that note.
 `note clear` will make me remove all your notes."""
+}
+
+
+class PuushCommand extends Command{
+	List aliases=['puush','push']
+	void run(Map d,Event e){
+		
+	}
+	String category="Online"
+	String help="""`puush [url/attachment]` will make me upload a file to Puush.
+Sketchy puushes and abuse will be removed. Careful what you share."""
+}
+
+
+
+class ProfileCommand extends Command{
+	List aliases=['profile']
+	void run(Map d,Event e){
+		User user=e.author
+		if(d.args&&e.guild)user=e.message.mentions?e.message.mentions[-1]:e.guild.findUser(d.args)
+		if(user){
+			if(d.db[user.id]){
+				e.sendTyping()
+				File ass=new File("temp/profile.png")
+				OutputStream os=ass.newOutputStream()
+				BufferedImage image=new BufferedImage(251,229,BufferedImage.TYPE_INT_RGB)
+				Graphics2D graphics=image.createGraphics()
+				graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+				graphics.drawImage(ImageIO.read(new File("images/profile.png")),0,0,null)
+				graphics.color=new Color(0x191919)
+				graphics.font=new Font("WhitneyBold",Font.PLAIN,16)
+				File avatar=new File("temp/avatars/${user.avatarId?:user.defaultAvatarId}.png")
+				if(!avatar.exists())avatar=d.web.download("${user.avatar.replace('.jpg','.png')}?size=64","temp/avatars/${user.avatarId}.png")
+				graphics.drawImage(ImageIO.read(avatar),5,22,null)
+				String title="$user.identity's Profile"
+				if(d.db[user.id].aka)title+=" (${d.db[user.id].aka})"
+				graphics.drawString(title,3,15)
+				graphics.font=new Font("Calibri",Font.PLAIN,13)
+				List area=d.db[user.id].area.split(', ')
+				graphics.drawString(area[0,-1].unique().join(', '),96,34)
+				graphics.drawString(d.db[user.id].age,96,54)
+				graphics.drawString(d.db[user.id].mc?:"none",96,73)
+				graphics.font=new Font("Calibri",Font.BOLD,15)
+				graphics.drawString("Communities",3,103)
+				graphics.font=new Font("Whitney Book",Font.PLAIN,14)
+				int down=108
+				List guilds=e.jda.guilds.findAll{user.id in it.users*.id}.sort{-it.members.size()}
+				if(guilds.size()>7)guilds=guilds[0..6]
+				guilds.each{
+					if(it.icon){
+						File icon=new File("temp/icons/${it.iconId}.png")
+						if(!icon.exists())icon=d.web.download("${it.iconUrl.replace('.jpg','.png')}?size=16","temp/icons/${it.iconId}.png")
+						graphics.drawImage(ImageIO.read(icon),3,down,null)
+					}
+					graphics.drawString(it.name,21,down+13)
+					down+=17
+				}
+				graphics.dispose()
+				ByteArrayOutputStream baos=new ByteArrayOutputStream()
+				ImageIO.write(image,'png',baos)
+				baos.writeTo(os)
+				os.close()
+				e.sendFile(ass)
+			}else{
+				e.sendMessage("There is no information in my database for $user.name.")
+			}
+		}else{
+			e.sendMessage("I couldn't find a user matching '$d.args.'")
+		}
+	}
+	String category="Database"
+	String help="""`profile [@mention] will make me post their profile.
+This is a compiled image containing their information. And it uses bandwidth."""
 }
