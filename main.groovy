@@ -263,13 +263,18 @@ class GRover extends ListenerAdapter{
 					feeds.youtube.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
-							cache[feed.link]=doc
-							String id=doc.getElementsByClass('yt-lockup-title')[0].getElementsByTag('a')[0].attr('href')
-							if(id!=feed.last){
-								String title=doc.getElementsByTag('title').text().tokenize().join(' ')
-								channel.sendMessage("**New video from $title**:\nhttps://www.youtube.com$id")
-								feeds.youtube.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
+							try{
+								Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
+								cache[feed.link]=doc
+								String id=doc.getElementsByClass('yt-lockup-title')[0].getElementsByTag('a')[0].attr('href')
+								if(id!=feed.last){
+									String title=doc.getElementsByTag('title').text().tokenize().join(' ')
+									channel.sendMessage("**New video from $title**:\nhttps://www.youtube.com$id")
+									feeds.youtube.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
+								}
+							}catch(bad){
+								feeds.youtube.remove(feed)
+								channel.sendMessage("$feed.link is not a valid YouTube channel and has been removed from the feed for this channel.\nThe channel may have been deleted or terminated.")
 							}
 						}else{
 							feeds.youtube.remove(feed)
@@ -278,17 +283,22 @@ class GRover extends ListenerAdapter{
 					feeds.animelist.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
-							cache[feed.link]=doc
-							Element anime=doc.getElementsByTag('item')[0]
-							List data=anime.getElementsByTag('description')[0].text().replace(' episodes','').split(' - ')
-							String name=anime.getElementsByTag('title')[0].text().split(' - ')[0]
-							String id="$name/${data[1].tokenize()[0]}"
-							if(id!=feed.last){
-								String title=doc.getElementsByTag('title')[0].text().tokenize()[0]
-								String link=anime.getElementsByTag('link')[0].text()
-								channel.sendMessage("**New episode on $title anime list**:\n${data[0]}: Episode ${data[1]} of $name.\n<$link>")
-								feeds.animelist.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
+							try{
+								Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
+								cache[feed.link]=doc
+								Element anime=doc.getElementsByTag('item')[0]
+								List data=anime.getElementsByTag('description')[0].text().replace(' episodes','').split(' - ')
+								String name=anime.getElementsByTag('title')[0].text().split(' - ')[0]
+								String id="$name/${data[1].tokenize()[0]}"
+								if(id!=feed.last){
+									String title=doc.getElementsByTag('title')[0].text().tokenize()[0]
+									String link=anime.getElementsByTag('link')[0].text()
+									channel.sendMessage("**New episode on $title anime list**:\n${data[0]}: Episode ${data[1]} of $name.\n<$link>")
+									feeds.animelist.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
+								}
+							}catch(bad){
+								feeds.animelist.remove(feed)
+								channel.sendMessage("$feed.link is not a valid anime list and has been removed from the feed for this channel.\nThe list may have been privated or changed username.")
 							}
 						}else{
 							feeds.animelist.remove(feed)
@@ -297,14 +307,19 @@ class GRover extends ListenerAdapter{
 					feeds.twitter.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
-							cache[feed.link]=doc
-							String link=doc.getElementsByClass('tweet-timestamp')[0].attr('href')
-							String id=link.substring(link.lastIndexOf('/'))
-							if(id!=feed.last){
-								String title=doc.getElementsByClass('ProfileHeaderCard-nameLink').text()
-								channel.sendMessage("**New tweet from $title**:\nhttps://twitter.com$link")
-								feeds.twitter.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
+							try{
+								Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
+								cache[feed.link]=doc
+								String link=doc.getElementsByClass('tweet-timestamp')[0].attr('href')
+								String id=link.substring(link.lastIndexOf('/'))
+								if(id!=feed.last){
+									String title=doc.getElementsByClass('ProfileHeaderCard-nameLink').text()
+									channel.sendMessage("**New tweet from $title**:\nhttps://twitter.com$link")
+									feeds.twitter.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
+								}
+							}catch(bad){
+								feeds.twitter.remove(feed)
+								channel.sendMessage("$feed.link is not a valid Twitter handle and has been removed from the feed for this channel.\nThe Twitter handle may have been privated or deleted.")
 							}
 						}else{
 							feeds.twitter.remove(feed)
@@ -313,15 +328,20 @@ class GRover extends ListenerAdapter{
 					feeds.levelpalace.each{Map feed->
 						def channel=channels.find{it.id==feed.channel}
 						if(channel){
-							Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
-							cache[feed.link]=doc
-							Elements level=doc.getElementsByClass('levels-table')[0].getElementsByTag('a')
-							String id=level[0].attr('href')
-							if(id!=feed.last){
-								String title=level[1].text()
-								String name=level[0].text()
-								channel.sendMessage("**New level from $title**:\n$name.\n<https://levelpalace.com/$id>")
-								feeds.levelpalace.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
+							try{
+								Document doc=cache[feed.link]?:web.get(feed.link,'G.Chrome')
+								cache[feed.link]=doc
+								Elements level=doc.getElementsByClass('levels-table')[0].getElementsByTag('a')
+								String id=level[0].attr('href')
+								if(id!=feed.last){
+									String title=level[1].text()
+									String name=level[0].text()
+									channel.sendMessage("**New level from $title**:\n$name.\n<https://levelpalace.com/$id>")
+									feeds.levelpalace.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
+								}
+							}catch(bad){
+								feeds.levelpalace.remove(feed)
+								channel.sendMessage("$feed.link is not a valid Level Palace account and has been removed from the feed for this channel.\nThe account may have been banned or cleared.")
 							}
 						}else{
 							feeds.levelpalace.remove(feed)
@@ -421,18 +441,18 @@ class GRover extends ListenerAdapter{
 							List entry=conversative.findAll{chat.contains(" $it.key ")}*.key
 							if(lastReply?.length()>1){
 								User client=e.jda.users.find{it.id==bot.id}
-								String add=e.message.content.capitalize().replaceAll([client.name,client.id,client.identity],['[name]','[id]','[identity]'])
+								String add=e.message.content.capitalize().replaceEach([client.name,client.id,client.identity],['[name]','[id]','[identity]'])
 								if(!add.endsWithAny(['.','!','?',')']))add+=['.','!','?','...'].randomItem()
 								if(!conversative[lastReply])conversative[lastReply]=[]
 								conversative[lastReply]+=add
 								json.save(conversative,'conversative')
 							}
 							if(entry){
-								String response=conversative[entry.randomItem()].randomItem().replaceAll(['[name]','[id]','[identity]'],[e.author.name,e.author.id,e.author.identity])
+								String response=conversative[entry.randomItem()].randomItem().replaceEach(['[name]','[id]','[identity]'],[e.author.name,e.author.id,e.author.identity])
 								lastReply=response.toLowerCase().replaceAll(['.',',','!','?','\'',':',';','(',')','"','-'],'').trim()
 								e.sendMessage(response)
 							}else{
-								String response=conversative*.value.randomItem().randomItem().replaceAll(['[name]','[id]','[identity]'],[e.author.name,e.author.id,e.author.identity])
+								String response=conversative*.value.randomItem().randomItem().replaceEach(['[name]','[id]','[identity]'],[e.author.name,e.author.id,e.author.identity])
 								lastReply=response.toLowerCase().replaceAll(['.',',','!','?','\'',':',';','(',')','"','-'],'').trim()
 								e.sendMessage(response)
 							}
@@ -842,7 +862,7 @@ OAuth invite: $d.bot.oauth
 Official server: $d.bot.server"""
 		try{
 			e.author.privateChannel.sendMessage(info)
-			if(e.guild)e.sendMessage("Information has been sent! <@$e.author.id>").deleteAfter(3000)
+			if(e.guild)e.sendMessage("Information has been sent! <@$e.author.id>").deleteAfter(5000)
 		}catch(ex){
 			e.sendMessage(info)
 		}
@@ -867,7 +887,7 @@ class HelpCommand extends Command{
 				list.split(1999).each{
 					e.author.privateChannel.sendMessage(it)
 				}
-				if(e.guild)e.sendMessage("Help has been sent! <@$e.author.id>").deleteAfter(3000)
+				if(e.guild)e.sendMessage("Help has been sent! <@$e.author.id>").deleteAfter(5000)
 			}catch(ex){
 				list.split(1999).each{
 					e.sendMessage(it)
@@ -1333,7 +1353,7 @@ class DefineCommand extends Command{
 					}catch(none){
 						
 					}
-					e.sendMessage("${result.replaceAll(['?.','!.'],['?','!'])}\n\n<$link>")
+					e.sendMessage("${result.replaceEach(['?.','!.'],['?','!'])}\n\n<$link>")
 				}
 			}catch(ex){
 				e.sendMessage("There is no definition for '$d.args.'\n$link")
@@ -1538,7 +1558,7 @@ class TagCommand extends Command{
 							e.author.privateChannel.sendMessage(it)
 							Thread.sleep(1000)
 						}
-						if(e.guild)e.sendMessage("I have sent you that tag's history. <@$e.author.id>").deleteAfter(3000)
+						if(e.guild)e.sendMessage("I have sent you that tag's history. <@$e.author.id>").deleteAfter(5000)
 					}else{
 						e.sendMessage("You can't view that tag's history because you don't own it, nor are you in the server where it was created.")
 					}
@@ -1711,7 +1731,8 @@ class MiscCommand extends Command{
 			}
 		}else if(d.args[0]in['area','location']){
 			try{
-				List people=d.db.findAll{it.value.area.toLowerCase().contains(d.args[1..-1].join(' ').toLowerCase())}*.value.name.unique()
+				d.args=d.args[1..-1].join(' ').toLowerCase().replaceEach(['england','america'],['united kingdom','united states'])
+				List people=d.db.findAll{it.value.area.toLowerCase().contains(d.args)}*.value.name.unique()
 				if(people){
 					String inhabits=people.join(', ').capitalize()
 					if(inhabits.length()>1000)inhabits=inhabits.substring(0,1000)+".."
@@ -1815,7 +1836,7 @@ class TextCommand extends Command{
 				if(manipulatives.containsAny(['compress','trim']))output=output.replaceEach([' ','\u3000'],'')
 				if(manipulatives.containsAny(['bubble','circle']))output=output.replaceEach(('A'..'Z')+('a'..'z')+('1'..'9'),['\u24b6','\u24b7','\u24b8','\u24b9','\u24ba','\u24bb','\u24bc','\u24bd','\u24be','\u24bf','\u24c0','\u24c1','\u24c2','\u24c3','\u24c4','\u24c5','\u24c6','\u24c7','\u24c8','\u24c9','\u24ca','\u24cb','\u24cc','\u24cd','\u24ce','\u24cf','\u24d0','\u24d1','\u24d2','\u24d3','\u24d4','\u24d5','\u24d6','\u24d7','\u24d8','\u24d9','\u24da','\u24db','\u24dc','\u24dd','\u24de','\u24df','\u24e0','\u24e1','\u24e2','\u24e3','\u24e4','\u24e5','\u24e6','\u24e7','\u24e8','\u24e9','\u2780','\u2781','\u2782','\u2783','\u2784','\u2785','\u2786','\u2787','\u2788'])
 				if(manipulatives.containsAny(['small','mini']))output=output.replaceEach('a'..'z',['\u1d00','\u0299','\u1d04','\u1d05','\u1d07','\u0493','\u0262','\u029c','\u026a','\u1d0a','\u1d0b','\u029f','\u1d0d','\u0274','\u1d0f','\u1d18','\u01eb','\u0280','s','\u1d1b','\u1d1c','\u1d20','\u1d21','x','\u028f','\u1d22'])
-				if(manipulatives.containsAny(['full','fw']))output=output.replaceEach(('A'..'Z')+('a'..'z')+('1'..'9')+['0','!','"','$','%','^','&','*','(',')','-','_','+','=','[','{',']','}',';',':','√É‚Äö√Ç¬£','@','#','|',',','<','.','>','?','~',' '],['\uff21','\uff22','\uff23','\uff24','\uff25','\uff26','\uff27','\uff28','\uff29','\uff2a','\uff2b','\uff2c','\uff2d','\uff2e','\uff2f','\uff30','\uff31','\uff32','\uff33','\uff34','\uff35','\uff36','\uff37','\uff38','\uff39','\uff3a','\uff41','\uff42','\uff43','\uff44','\uff45','\uff46','\uff47','\uff48','\uff49','\uff4a','\uff4b','\uff4c','\uff4d','\uff4e','\uff4f','\uff50','\uff51','\uff52','\uff53','\uff54','\uff55','\uff56','\uff57','\uff58','\uff59','\uff5a','\uff11','\uff12','\uff13','\uff14','\uff15','\uff16','\uff17','\uff18','\uff19','\uff10','\uff01','\u201d','\uff04','\uff05','\uff3e','\uff06','\uff0a','\uff08','\uff09','\uff0d','\uff3f','\uff0b','\uff1d','\u300c','\uff5b','\u300d','\uff5d','\uff1b','\uff1a','\uffe5','\uff20','\uff03','\uff5c','\uff0c','\uff1c','\uff0e','\uff1e','\uff1f','\uff5e','\u3000'])
+				if(manipulatives.containsAny(['full','fw']))output=output.replaceEach(('A'..'Z')+('a'..'z')+('1'..'9')+['0','!','"','$','%','^','&','*','(',')','-','_','+','=','[','{',']','}',';',':','A?AÅí','@','#','|',',','<','.','>','?','~',' '],['\uff21','\uff22','\uff23','\uff24','\uff25','\uff26','\uff27','\uff28','\uff29','\uff2a','\uff2b','\uff2c','\uff2d','\uff2e','\uff2f','\uff30','\uff31','\uff32','\uff33','\uff34','\uff35','\uff36','\uff37','\uff38','\uff39','\uff3a','\uff41','\uff42','\uff43','\uff44','\uff45','\uff46','\uff47','\uff48','\uff49','\uff4a','\uff4b','\uff4c','\uff4d','\uff4e','\uff4f','\uff50','\uff51','\uff52','\uff53','\uff54','\uff55','\uff56','\uff57','\uff58','\uff59','\uff5a','\uff11','\uff12','\uff13','\uff14','\uff15','\uff16','\uff17','\uff18','\uff19','\uff10','\uff01','\u201d','\uff04','\uff05','\uff3e','\uff06','\uff0a','\uff08','\uff09','\uff0d','\uff3f','\uff0b','\uff1d','\u300c','\uff5b','\u300d','\uff5d','\uff1b','\uff1a','\uffe5','\uff20','\uff03','\uff5c','\uff0c','\uff1c','\uff0e','\uff1e','\uff1f','\uff5e','\u3000'])
 				if(manipulatives.containsAny(['strike','line']))output=output.replace('','\u0336')
 				if(manipulatives.containsAny(['random','shuffle']))output=output.randomize()
 				if(manipulatives.containsAny(['emoji','regional']))output=output.replaceEach(('A'..'Z'),('a'..'z')).replaceEach(('a'..'z')+('0'..'9')+['!','?','+','-','\u00d7','\u00f7','\$','\u221a','\u263c','*','>','<','^','.','\u2588','\u25cf','\u25cb','#','\u2605','\u2020','~'],['\ud83c\udde6 ','\ud83c\udde7 ','\ud83c\udde8 ','\ud83c\udde9 ','\ud83c\uddea ','\ud83c\uddeb ','\ud83c\uddec ','\ud83c\udded ','\ud83c\uddee ','\ud83c\uddef ','\ud83c\uddf0 ','\ud83c\uddf1 ','\ud83c\uddf2 ','\ud83c\uddf3 ','\ud83c\uddf4 ','\ud83c\uddf5 ','\ud83c\uddf6 ','\ud83c\uddf7 ','\ud83c\uddf8 ','\ud83c\uddf9 ','\ud83c\uddfa ','\ud83c\uddfb ','\ud83c\uddfc ','\ud83c\uddfd ','\ud83c\uddfe ','\ud83c\uddff ','0\u20e3 ','1\u20e3 ','2\u20e3 ','3\u20e3 ','4\u20e3 ','5\u20e3 ','6\u20e3 ','7\u20e3 ','8\u20e3 ','9\u20e3 ','\u2757 ','\u2753 ','\u2795 ','\u2796 ','\u2716 ','\u2797 ','\ud83d\udcb2 ','\u2714 ','\ud83d\udd06 ','*\u20e3 ','\u25b6 ','\u25c0 ','\ud83d\udd3c ','\u25aa ','\u23f9 ','\u26ab ','\u23fa ','#\u20e3','\u2b50','\u271d','\u3030'])
@@ -2208,7 +2229,7 @@ class TimeCommand extends Command{
 		}else if(d.args.toLowerCase()=="earth"){
 			e.sendMessage("<:mfw:259384457772007443>")
 		}else{
-			d.args=d.args.toLowerCase().replaceAll(['england','america'],['united kingdom','united states'])
+			d.args=d.args.toLowerCase().replaceEach(['england','america'],['united kingdom','united states'])
 			List keys=d.misc.time*.key.sort{it.length()}
 			String key=keys.find{it.abbreviate().toLowerCase()==d.args}
 			if(!key)key=keys.find{it.toLowerCase().endsWith(d.args)}?:keys.find{it.toLowerCase().startsWith(d.args)}
@@ -2456,6 +2477,7 @@ class StatsCommand extends Command{
 		}
 		int musics=e.jda.guilds.findAll{it.audioManager.sendingHandler?.stopped==false}.size()
 		int playlists=d.audio.station*.value.unique().size()
+		Runtime runtime=Runtime.runtime
 		String stats="""Connected to `${e.jda.guilds.size()}` servers with `${e.jda.channels.size()}` channels and `${e.jda.users.size()}` users.
 Total `${d.db*.key.size}` database entries, `${d.tags*.key.size}` tags and `${new File("images/xat").listFiles().size()+new File("images/cs").listFiles().size()}` smilies.
 Playing music in `$musics` server${if(musics!=1){"s"}else{""}} with `$playlists` unique playlist${if(playlists!=1){"s"}else{""}}.
@@ -2468,6 +2490,7 @@ Online for `${uptime[0]}` hour${if(uptime[0]!=1){"s"}else{""}} and `${uptime[1]}
 			stats+="""
 Recieving `$e.responseNumber` messages over a `v6` doggy door.
 I'm a Microsoft fanboy using ${os[0]} (${os[1]}) ${os[2]} ${os[3]}.
+Remembering where I buried ${((runtime.totalMemory()-runtime.freeMemory())/1000000)as int} out of ${(runtime.totalMemory()/1000000)as int} bones.
 DOSing `${d.feeds*.value.link.flatten().unique().size()}` different webpages for feed purposes. Sorry!
 I have my coffee with `$jave` sugars which raises my groove to `$groove`.
 I've successfully taken `${d.messages.size()}` command${if(d.messages.size()!=1){"s"}else{""}} this session. Woof!"""
@@ -2577,7 +2600,7 @@ class SetPrefixCommand extends Command{
 	}
 	String category="Moderation"
 	String help="""`setprefix [prefixes]` will make me set my prefix. Separate with spaces.
-Finally, my bot can respond to !"¬£\$%^&*()_+help."""
+Finally, my bot can respond to !"Åí\$%^&*()_+help."""
 }
 
 
@@ -2643,7 +2666,6 @@ class ConfigCommand extends Command{
 		if(e.author.id==d.bot.owner){
 			Guild ass=e.jda.guilds.find{it.id==d.args}?:e.guild
 			e.sendMessage("""```css
-SERVER-CONFIGURATION:
 Owners: ${ass.users.findAll{it.isOwner(ass)}*.identity.join(', ')}
 Staff: ${(ass.users.findAll{it.isStaff(ass)}-ass.users.findAll{it.isOwner(ass)})*.identity.join(', ')}
 Spam Channels: ${ass.channels.findAll{it.spam}*.name.join(', ')}
@@ -3155,10 +3177,12 @@ class ClearCommand extends Command{
 				e.sendTyping()
 				d.args=d.args.toLowerCase().tokenize()
 				int amount=50
-				if(d.args[-1]==~/\d+/){
+				try{
 					amount=d.args[-1].toInteger()+1
 					if(amount>100)amount=100
 					if(amount<2)amount=2
+				}catch(ex){
+					
 				}
 				List messages=e.channel.history.retrieve(amount)-e.message
 				if(users)messages=messages.findAll{it.author.id in users*.id}
@@ -3171,7 +3195,7 @@ class ClearCommand extends Command{
 					Message message=e.sendMessage("Cleared ${messages.size()} messages.")
 					if(e.author.isStaff(e.guild)){
 //						e.guild.textChannels.findAll{it.log}*.sendMessage("**${e.author.identity.capitalize()}**: Cleared ${messages.size()} messages by ${if(users){users*.identity.join(', ')}else{"everyone"}} in the last ${amount-1} message${if((amount-1)==1){""}else{"s"}} in #$e.channel.name.")
-						Thread.sleep(3000)
+						Thread.sleep(5000)
 						e.message.delete()
 						message.delete()
 					}
@@ -3307,38 +3331,39 @@ class VotePinCommand extends Command{
 							}
 						}else{
 							if(e.author.rawIdentity.endsWithAny(['\'s Incognito','\'s Alternate Account'])){
-								e.sendMessage("Sorry, incognito can't vote. :^)").queue()
-							}else if(e.channel.pinnedMessages.size()==50){
-								e.sendMessage("Your channel has 50 pins. I am unable to pin a message now.")
+								e.sendMessage("Sorry, incognito can't vote. :^)")
 							}else{
-								Message message
-								if(d.args==~/\d+/){
-									message=e.channel.getMessageById(d.args)
-								}else{
-									List logs=e.channel.history.retrieve(100).findAll{!it.content.startsWithAny(d.bot.prefixes*.plus('v'))}
-									message=logs.find{it.content.toLowerCase().contains(d.args.toLowerCase())}
-								}
-								if(message){
-									int max=d.settings.votepin[e.guild.id]?:3
-									if(message.pinned){
-										e.sendMessage("That message is already pinned.")
-									}else if(e.author.id in votes[message.id]){
-										votes[message.id]-=e.author.id
-										e.sendMessage("Unvoted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)")
-									}else if(message.author.id==e.author.id){
-										e.sendMessage("Wow, shameless self-promotion.")
+								try{
+									Message message
+									if(d.args==~/\d+/){
+										message=e.channel.getMessageById(d.args)
 									}else{
-										if(!votes[message.id])votes[message.id]=[]
-										votes[message.id]+=e.author.id
-										if(votes[message.id].size()>=max){
-											message.pin()
-											//e.sendMessage("${message.author.identity.capitalize()}'s message has been pinned.")
-										}else{
-											e.sendMessage("Voted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)")
-										}
+										List logs=e.channel.history.retrieve(100).findAll{!it.content.startsWithAny(d.bot.prefixes*.plus('v'))}
+										message=logs.find{it.content.toLowerCase().contains(d.args.toLowerCase())}
 									}
-								}else{
-									e.sendMessage("I couldn't find a message like that in the last 100 messages. Use IDs to fetch any message in the channel.")
+									if(message){
+										int max=d.settings.votepin[e.guild.id]?:3
+										if(message.pinned){
+											e.sendMessage("That message is already pinned.")
+										}else if(e.author.id in votes[message.id]){
+											votes[message.id]-=e.author.id
+											e.sendMessage("Unvoted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)")
+										}else if(message.author.id==e.author.id){
+											e.sendMessage("Wow, shameless self-promotion.")
+										}else{
+											if(!votes[message.id])votes[message.id]=[]
+											votes[message.id]+=e.author.id
+											if(votes[message.id].size()>=max){
+												message.pin()
+											}else{
+												e.sendMessage("Voted to pin $message.author.identity's message. (${votes[message.id].size()}/$max)")
+											}
+										}
+									}else{
+										e.sendMessage("I couldn't find a message like that in the last 100 messages. Use IDs to fetch any message in the channel.")
+									}
+								}catch(ex){
+									e.sendMessage("Your channel has 50 pins. I am unable to pin a message now.")
 								}
 							}
 						}
@@ -3362,10 +3387,8 @@ class VotePinCommand extends Command{
 							e.sendMessage("That message is already pinned.")
 						}else{
 							message.pin()
-							e.sendMessage("${message.author.identity.capitalize()}'s message has been pinned.")
 						}
 					}catch(ex){
-						ex.printStackTrace()
 						e.sendMessage("Our channel has 50 pins. I am unable to pin a message now.")
 					}
 				}else{
@@ -4206,10 +4229,6 @@ class CleanCommand extends Command{
 				Thread.sleep(500)
 			}
 		}
-		if(permission){
-			Thread.sleep(3000)
-			e.message.delete()
-		}
 	}
 	String category="General"
 	String help="""`clean [number]` will make me remove my messages and your commands back that far.
@@ -4331,11 +4350,11 @@ class ProfileCommand extends Command{
 				e.sendTyping()
 				File ass=new File("temp/profile.png")
 				OutputStream os=ass.newOutputStream()
-				BufferedImage image=new BufferedImage(251,229,BufferedImage.TYPE_INT_RGB)
+				BufferedImage image=new BufferedImage(251,229,BufferedImage.TYPE_INT_ARGB)
 				Graphics2D graphics=image.createGraphics()
 				graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
 				graphics.drawImage(ImageIO.read(new File("images/profile.png")),0,0,null)
-				graphics.color=new Color(0x191919)
+				graphics.color=new Color(0x010101)
 				graphics.font=new Font("WhitneyBold",Font.PLAIN,16)
 				File avatar=new File("temp/avatars/${user.avatarId?:user.defaultAvatarId}.png")
 				if(!avatar.exists())avatar=d.web.download("${user.avatar.replace('.jpg','.png')}?size=64","temp/avatars/${user.avatarId}.png")
@@ -4363,6 +4382,10 @@ class ProfileCommand extends Command{
 					graphics.drawString(it.name,21,down+13)
 					down+=17
 				}
+				graphics.color=new Color(0xCDCDCD)
+				graphics.font=new Font("Calibri",Font.PLAIN,8)
+				graphics.drawString(user.id,76,86)
+				graphics.drawImage(ImageIO.read(new File("images/${d.db[user.id].gender.toLowerCase()}.png")),236,78,null)
 				graphics.dispose()
 				ByteArrayOutputStream baos=new ByteArrayOutputStream()
 				ImageIO.write(image,'png',baos)
