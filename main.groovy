@@ -374,8 +374,8 @@ class GRover extends ListenerAdapter{
 	// Message Create Event
 	void onMessageReceived(MessageReceivedEvent e){
 		if(e.author){
-			def args=e.message.rawContent
 			if(!(e.author.bot||(e.author.id in bot.ignored)||e.channel.ignored)){
+				def args=e.message.rawContent
 				String prefix=args.startsWithAny(e.guild?(settings.prefix[e.guild.id]?:bot.prefixes)+bot.mention:bot.prefixes)
 				if(prefix!=null){
 					args=args.substring(prefix.size())
@@ -390,9 +390,17 @@ class GRover extends ListenerAdapter{
 								Map binding=[bot:bot,radio:radio,json:json,web:web,prefix:prefix,args:args,db:db,tags:tags,seen:seen,channels:channels,roles:roles,info:info,colours:colours,misc:misc,conversative:conversative,feeds:feeds,settings:settings,temp:temp,audio:audio,tracker:tracker,notes:notes,lastReply:lastReply,tableTimeout:tableTimeout,started:started,errorMessage:errorMessage,permissionMessage:permissionMessage,failMessage:failMessage,messages:messages]
 								cmd.run(binding,e)
 							}catch(ex){
-								e.sendMessage(failMessage()+"Error: `$ex.message`")
-								ex.printStackTrace()
-								error=ex
+								try{
+									e.sendMessage(failMessage()+"Error: `$ex.message`")
+									ex.printStackTrace()
+									error=ex
+								}catch(ex2){
+									try{
+										e.author.privateChannel.sendMessage("Looks like I don't have permission to bark up this tree. Ask an administrator to let me speak in <#$e.channel.id>.")
+									}catch(ex3){
+										ex3.printStackTrace()
+									}
+								}
 							}
 							messages+=e.message
 							e.jda.textChannels.find{it.id=="270998683003125760"}.sendMessage("""\u200b
@@ -579,7 +587,7 @@ Useful for getting someone to insult himself, but why am I telling you that?"""
 
 
 class PlayCommand extends Command{
-	List aliases=['play']
+	List aliases=['play','setgame']
 	void run(Map d,Event e){
 		String old=d.info.game
 		d.info.game=d.args
@@ -851,7 +859,7 @@ class InfoCommand extends Command{
 	List aliases=['info']
 	void run(Map d,Event e){
 		String info="""**About GR\\\u2699VER**:
-Created by <@$d.bot.owner>. Java JDA by <@107562988810027008>. <@98457401363025920> helped too.
+Created by <@$d.bot.owner>. Java JDA by <@107562988810027008>.
 
 GRover \u2018the DOGBOT Project\u2019 is a bot with an ever-expanding database recording the Internet identity of everyone on Discord.
 GRover is based on the xat FEXBot and was designed to remedy the issue of recognising users who change their name.
@@ -1063,7 +1071,7 @@ class NsfwCommand extends Command{
 			}else{
 				doc=d.web.get(link,'G.Chrome')
 				if(doc.toString().contains('Nobody here')){
-					e.sendMessage("Sorry, no results. ;_;\nRemember Gelbooru is for hentai, so keywords should use underlines, names should be reversed and you won't find western porn.\n$link")
+					e.sendMessage("Sorry, no results. ;_;\nRemember Gelbooru is for hentai, so keywords should use underlines and names are reversed (${["kaname_madoka","aisaka_taiga","izumi_konata"].randomItem()}).\n$link")
 				}else{
 					Element pagination=doc.getElementsByClass('pagination')[0]
 					Element lastpagebtn=pagination.getElementsByTag('a').last()
@@ -1092,7 +1100,7 @@ class NsfwCommand extends Command{
 			}
 		}else{
 			TextChannel nsfwChannel=e.guild.textChannels.find{it.nsfw}
-			e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(nsfwChannel){", `Use in #$nsfwChannel.name`"}else{""}}.\nStaff can set song channels with `${d.prefix}setchannel song`.")
+			e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(nsfwChannel){", `Use in #$nsfwChannel.name`"}else{""}}.\nStaff can set NSFW channels with `${d.prefix}setchannel nsfw`.")
 		}
 	}
 	String category="Online"
@@ -1204,7 +1212,7 @@ class WebsiteCommand extends Command{
 			String link="http://website.informer.com/${URLEncoder.encode(d.args,'UTF-8')}"
 			try{
 				Document doc=d.web.get(link,'G.Chrome')
-				String title=doc.getElementById("title")?doc.getElementById("title").text().capitalize():args
+				String title=doc.getElementById("title")?doc.getElementById("title").text().capitalize():d.args
 				String description=doc.getElementById("description")?"\n${doc.getElementById("description").text().capitalize()}":""
 				String keywords=doc.getElementById("keywords")?.text()?.length()>9?"\n_${doc.getElementById("keywords").text().replace('Keywords: ','')}_":""
 				String alexa=doc.getElementById("alexa_rank")?"     #${doc.getElementById("alexa_rank").getElementsByTag("b").text()}":""
@@ -1405,7 +1413,7 @@ A place formerly used to find out about slang, and now a place that teens with n
 class TagCommand extends Command{
 	List aliases=['tag','tags']
 	void run(Map d,Event e){
-		d.args=d.args.tokenize(' ')
+		d.args=d.args.split('( |\n|\r)',3).toList()
 		d.args[0]=d.args[0]?.toLowerCase()
 		if(e.message.attachment)d.args+=e.message.attachment.url
 		if(d.args[0]=='create'){
@@ -2261,9 +2269,9 @@ class SeenCommand extends Command{
 				String key=d.misc.time*.key.sort{it.length()}.find{area.endsWith(it)}
 				int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time['United States']
 				if(d.seen[user.id].game){
-					e.sendMessage("**${user.identity.capitalize()}** was last seen online at ${new Date(d.seen[user.id].time+(zone*3600000)).format('HH:mm:ss, d MMMM YYYY').formatBirthday()} (${key.abbreviate()} time) playing ${d.seen[user.id].game}.\nCurrently, $address $user.status.")
+					e.sendMessage("**${user.identity.capitalize()}** was last seen at ${new Date(d.seen[user.id].time+(zone*3600000)).format('HH:mm:ss, d MMMM YYYY').formatBirthday()} (${key.abbreviate()} time) playing ${d.seen[user.id].game}.\nCurrently, $address $user.status.")
 				}else{
-					e.sendMessage("**${user.identity.capitalize()}** was last seen online at ${new Date(d.seen[user.id].time+(zone*3600000)).format('HH:mm:ss, d MMMM YYYY').formatBirthday()} (${key.abbreviate()} time.)\nCurrently, $address $user.status.")
+					e.sendMessage("**${user.identity.capitalize()}** was last seen at ${new Date(d.seen[user.id].time+(zone*3600000)).format('HH:mm:ss, d MMMM YYYY').formatBirthday()} (${key.abbreviate()} time.)\nCurrently, $address $user.status.")
 				}
 			}else{
 				e.sendMessage("I have not seen $user.identity online.")
@@ -2305,7 +2313,7 @@ class EventsCommand extends Command{
 							}
 						}
 					}
-					for(s in e.jda.guilds)if(s.createTime.format('d MMMM')==upcomingDate)eventsUpcoming+="\u2022 ${s.name.capitalize()}\'s ${((upcomingYear-s.createTime.format('YYYY').toInteger()).toString()+" ").formatBirthday()}anniversary (${upcomingDate.formatBirthday()})"
+					for(s in e.jda.guilds.findAll{it.users.size()>249})if(s.createTime.format('d MMMM')==upcomingDate)eventsUpcoming+="\u2022 ${s.name.capitalize()}\'s ${((upcomingYear-s.createTime.format('YYYY').toInteger()).toString()+" ").formatBirthday()}anniversary (${upcomingDate.formatBirthday()})"
 					if(specials[upcomingDate])eventsUpcoming+="\u2022 ${specials[upcomingDate]} (${upcomingDate.formatBirthday()})"
 				}
 				eventsUpcoming=eventsUpcoming.unique()
@@ -2337,7 +2345,7 @@ class EventsCommand extends Command{
 							eventsToday+="\u2022 ${b.value.name.capitalize()}\'s ${((todaysYear-birthYear).toString()+" ").formatBirthday()}birthday"
 						}
 					}
-					for(s in e.jda.guilds)if(s.createTime.format('d MMMM')=~/\b$todaysDate\b/)eventsToday+="\u2022 ${s.name.capitalize()}\'s ${((todaysYear-s.createTime.format('YYYY').toInteger()).toString()+" ").formatBirthday()}anniversary"
+					for(s in e.jda.guilds.findAll{it.users.size()>249})if(s.createTime.format('d MMMM')=~/\b$todaysDate\b/)eventsToday+="\u2022 ${s.name.capitalize()}\'s ${((todaysYear-s.createTime.format('YYYY').toInteger()).toString()+" ").formatBirthday()}anniversary"
 					if(specials.find{it.key=~/\b$todaysDate\b/})eventsToday+="\u2022 ${specials.find{it.key=~/\b$todaysDate\b/}.value}"
 				}
 				eventsToday=eventsToday.unique()
@@ -2358,7 +2366,7 @@ class EventsCommand extends Command{
 						eventsToday+="\u2022 ${b.value.name.capitalize()}\'s ${((todaysYear-birthYear).toString()+" ").formatBirthday()}birthday"
 					}
 				}
-				for(s in e.jda.guilds)if(s.createTime.format('d MMMM')==todaysDate)eventsToday+="\u2022 ${s.name.capitalize()}\'s ${((todaysYear-s.createTime.format('YYYY').toInteger()).toString()+" ").formatBirthday()}anniversary"
+				for(s in e.jda.guilds.findAll{it.users.size()>249})if(s.createTime.format('d MMMM')==todaysDate)eventsToday+="\u2022 ${s.name.capitalize()}\'s ${((todaysYear-s.createTime.format('YYYY').toInteger()).toString()+" ").formatBirthday()}anniversary"
 				if(specials[todaysDate])eventsToday+="\u2022 ${specials[todaysDate]}"
 			}
 			eventsToday=eventsToday.unique()
@@ -2381,7 +2389,7 @@ class EventsCommand extends Command{
 						}
 					}
 				}
-				for(s in e.jda.guilds)if(s.createTime.format('d MMMM')==upcomingDate)eventsUpcoming+="\u2022 ${s.name.capitalize()}\'s ${((upcomingYear-s.createTime.format('YYYY').toInteger()).toString()+" ").formatBirthday()}anniversary (${upcomingDate.formatBirthday()})"
+				for(s in e.jda.guilds.findAll{it.users.size()>249})if(s.createTime.format('d MMMM')==upcomingDate)eventsUpcoming+="\u2022 ${s.name.capitalize()}\'s ${((upcomingYear-s.createTime.format('YYYY').toInteger()).toString()+" ").formatBirthday()}anniversary (${upcomingDate.formatBirthday()})"
 				if(specials[upcomingDate])eventsUpcoming+="\u2022 ${specials[upcomingDate]} (${upcomingDate.formatBirthday()})"
 			}
 			eventsUpcoming=eventsUpcoming.unique()
@@ -2484,13 +2492,12 @@ Playing music in `$musics` server${if(musics!=1){"s"}else{""}} with `$playlists`
 Online for `${uptime[0]}` hour${if(uptime[0]!=1){"s"}else{""}} and `${uptime[1]}` minute${if(uptime[1]!=1){"s"}else{""}}."""
 		if(d.args.toLowerCase()=="full"){
 			List os=[System.getProperty('os.name'),System.getProperty('os.version'),System.getProperty('os.arch'),System.getProperty('sun.os.patch.level')]
-			String groove=System.getProperty('java.class.path').replace('.jar','')
-			groove=groove.substring(groove.lastIndexOf('-')+1)
-			String jave=System.getProperty('java.class.version')
+			String groove=GroovySystem.version
+			String jave=System.getProperty('java.version').split('_')[0]
 			stats+="""
 Recieving `$e.responseNumber` messages over a `v6` doggy door.
 I'm a Microsoft fanboy using ${os[0]} (${os[1]}) ${os[2]} ${os[3]}.
-Remembering where I buried ${((runtime.totalMemory()-runtime.freeMemory())/1000000)as int} out of ${(runtime.totalMemory()/1000000)as int} bones.
+Remembering where I buried `${((runtime.totalMemory()-runtime.freeMemory())/1000000)as int}` out of `${(runtime.totalMemory()/1000000)as int}` bones.
 DOSing `${d.feeds*.value.link.flatten().unique().size()}` different webpages for feed purposes. Sorry!
 I have my coffee with `$jave` sugars which raises my groove to `$groove`.
 I've successfully taken `${d.messages.size()}` command${if(d.messages.size()!=1){"s"}else{""}} this session. Woof!"""
@@ -3710,7 +3717,7 @@ Cover: $coverLink ``` ${lyricsLink.attr('href')}""")
 				}
 			}else{
 				TextChannel songChannel=e.guild.textChannels.find{it.song}
-				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(songChannel){", `Use in #$songChannel.name`"}else{""}}.\nStaff can set NSFW channels with `${d.prefix}setchannel nsfw`.")
+				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(songChannel){", `Use in #$songChannel.name`"}else{""}}.\nStaff can set song channels with `${d.prefix}setchannel song`.")
 			}
 		}else{
 			if(venue?.guild){
