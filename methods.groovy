@@ -1,38 +1,33 @@
-import net.dv8tion.jda.JDA
-import net.dv8tion.jda.entities.*
-import net.dv8tion.jda.entities.impl.*
-import net.dv8tion.jda.managers.*
-import net.dv8tion.jda.events.*
-import net.dv8tion.jda.events.message.*
-import net.dv8tion.jda.events.guild.member.*
-import net.dv8tion.jda.utils.AvatarUtil
-import net.dv8tion.jda.audio.*
-@Grab(group='org.jsoup', module='jsoup', version='1.8.3')
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import org.jsoup.select.Elements
-import org.jsoup.Jsoup
+import net.dv8tion.jda.core.*
+import net.dv8tion.jda.core.entities.*
+import net.dv8tion.jda.core.entities.impl.*
+import net.dv8tion.jda.core.managers.*
+import net.dv8tion.jda.core.events.*
+import net.dv8tion.jda.core.events.message.*
+import net.dv8tion.jda.core.events.message.react.*
+import net.dv8tion.jda.core.events.guild.member.*
 import java.time.OffsetDateTime
 
-String id="119184325219581952"
+String id="155684861770858496"
 String owner="107894146617868288"
 
 
-JDA.metaClass.play={String game->delegate.accountManager.setGame(game)}
-JDA.metaClass.setAvatar={String avatar->delegate.accountManager.avatar=AvatarUtil.getAvatar(new File(avatar))}
-JDA.metaClass.getEmotes={delegate.guilds*.emotes.sum()}
-JDA.metaClass.getChannels={delegate.channelMap*.value}
+JDA.metaClass.play={String game->delegate.presence.setGame(Game.of(game))}
+JDA.metaClass.setName={String name->delegate.selfUser.manager.setName(name)}
+JDA.metaClass.setAvatar={String avatar->delegate.selfUser.manager.setAvatar(Icon.from(new File(avatar)))}
+JDA.metaClass.getChannels={delegate.textChannels+delegate.voiceChannels+delegate.privateChannels}
 
 Event.metaClass.getJda={delegate.JDA}
 
 MessageReceivedEvent.metaClass.sendMessage={String content->delegate.channel.sendMessage("\u200b"+content?.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
-MessageReceivedEvent.metaClass.sendTyping={Thread.start{delegate.channel.sendTyping()}}
+MessageReceivedEvent.metaClass.sendTyping={delegate.channel.sendTyping()}
+MessageReceivedEvent.metaClass.sendFile={String file->delegate.channel.sendFile(new File(file),null)}
 MessageReceivedEvent.metaClass.sendFile={File file->delegate.channel.sendFile(file,null)}
 
 GenericGuildMemberEvent.metaClass.sendMessage={String content->delegate.guild.defaultChannel.sendMessage("\u200b"+content?.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
 
 Message.metaClass.getAttachment={delegate.attachments[0]}
-Message.metaClass.edit={String content->delegate.updateMessage(content)}
+Message.metaClass.edit={String content->delegate.editMessage(content)}
 Message.metaClass.delete={delegate.deleteMessage()}
 Message.metaClass.getGuild={delegate.channel?.guild}
 Message.metaClass.getMentions={delegate.mentionedUsers}
@@ -44,8 +39,8 @@ Message.Attachment.metaClass.getName={delegate.fileName}
 Message.Attachment.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Message.Attachment.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
 
-User.metaClass.getStatus={delegate.onlineStatus.toString().toLowerCase()}
-User.metaClass.getName={delegate.username}
+Member.metaClass.getStatus={delegate.onlineStatus.toString().toLowerCase()}
+
 User.metaClass.getAvatar={delegate.avatarUrl}
 User.metaClass.getMention={delegate.asMention}
 User.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
@@ -54,13 +49,13 @@ User.metaClass.getAvatarUrl={delegate.avatarId?"https://cdn.discordapp.com/avata
 User.metaClass.getDefaultAvatar={delegate.defaultAvatarUrl}
 User.metaClass.getAvatar={delegate.avatarUrl}
 User.metaClass.isMember={Guild guild->
-	guild.userRoles[delegate]||(delegate==guild.owner)||(delegate.id==owner)
+	guild.membersMap[delegate.id].roles||(delegate==guild.owner)||(delegate.id==owner)
 }
 User.metaClass.isStaff={Guild guild->
-	("Trainer"in guild.userRoles[delegate]*.name)||guild.userRoles[delegate].any{"MESSAGE_MANAGE"in it.permissions*.toString()}||(delegate==guild.owner)||(delegate.id==owner)
+	("Trainer"in guild.membersMap[delegate.id].roles*.name)||guild.membersMap[delegate.id].roles.any{'MESSAGE_MANAGE'in it.permissions*.toString()}||(delegate==guild.owner)||(delegate.id==owner)
 }
 User.metaClass.isOwner={Guild guild->
-	("Bot Commander"in guild.userRoles[delegate]*.name)||guild.userRoles[delegate].any{"ADMINISTRATOR"in it.permissions*.toString()}||(delegate==guild.owner)||(delegate.id==owner)
+	("Bot Commander"in guild.membersMap[delegate.id].roles*.name)||guild.membersMap[delegate.id].roles.any{'ADMINISTRATOR'in it.permissions*.toString()}||(delegate==guild.owner)||(delegate.id==owner)
 }
 
 Channel.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
@@ -72,12 +67,11 @@ Channel.metaClass.edit={Map data->
 	if(data.userLimit!=null)delegate.manager.setUserLimit(data.userLimit)
 }
 
-TextChannel.metaClass.getLogs={Number amount->
-	delegate.history.retrieve(amount)
-}
+TextChannel.metaClass.getUsers={delegate.members*.user}
 
-VoiceChannel.metaClass.join={delegate.server.audioManager.openAudioConnection(delegate)}
-VoiceChannel.metaClass.leave={delegate.server.audioManager.closeAudioConnection()}
+VoiceChannel.metaClass.join={delegate.guild.audioManager.openAudioConnection(delegate)}
+VoiceChannel.metaClass.leave={delegate.guild.audioManager.closeAudioConnection()}
+VoiceChannel.metaClass.getUsers={delegate.members*.user}
 
 PrivateChannel.metaClass.isSpam={true}
 PrivateChannel.metaClass.isLog={false}
@@ -90,13 +84,6 @@ PrivateChannel.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>2
 
 Role.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Role.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
-Role.metaClass.edit={Map data->
-	  if(data.name!=null)delegate.manager.setName(data.name)
-	  if(data.color!=null)delegate.manager.setColor(data.color)
-	  if(data.mentionable!=null)delegate.manager.setMentionable(data.mentionable)
-	  delegate.manager.update()
-	  delegate.manager.role
-}
 Role.metaClass.isColour={(delegate.name==~/#?[A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9]/)&&!delegate.name.toLowerCase().containsAny('g'..'z')}
 Role.metaClass.isConfig={delegate.name in["Bot Commander","Assist Owner","Trainer","Literally Hitler","spoo.py colorful","Spectra","spoo.py admin","spoo.py mod","Nadeko","Baka","regall commander","Ender","KOSMOS","Discoid Admin","Watchr Commander","Discone Admin","Living Meme","Bot Pony Commander","Beemo Music","Mop Staff"]}
 
@@ -108,24 +95,15 @@ Guild.metaClass.getChannels={delegate.textChannels+delegate.voiceChannels}
 Guild.metaClass.getIcon={delegate.iconUrl}
 Guild.metaClass.getDefaultChannel={delegate.publicChannel}
 Guild.metaClass.getDefaultRole={delegate.publicRole}
-Guild.metaClass.getAfkChannel={delegate.voiceChannels.find{it.id==delegate.afkChannelId}}
+//Guild.metaClass.getAfkChannel={delegate.voiceChannels.find{it.id==delegate.afkChannelId}}
 Guild.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Guild.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
-Guild.metaClass.getMembers={delegate.users}
-Guild.metaClass.edit={Map data->
-	  if(data.name!=null)delegate.manager.setName(data.name)
-	  if(data.icon!=null)delegate.manager.setIcon(data.icon)
-	  if(data.verificationLevel!=null)delegate.manager.setVerificationLevel(data.verificationLevel)
-	  if(data.afkChannel!=null)delegate.manager.setAfkChannel(data.afkChannel)
-	  if(data.afkTimeout!=null)delegate.manager.setAfkTimeout(data.afkTimeout)
-}
-
-SelfInfo.metaClass.getGame={delegate.currentGame}
+Guild.metaClass.getUsers={delegate.members*.user}
 
 
 JDA.metaClass.findGuild={String args->delegate.guilds.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
-JDA.metaClass.findUser={String args->delegate.users.toList().sort{it.identity.length()}.find{[it.name.toLowerCase(),it.identity.toLowerCase(),it.identity.abbreviate().toLowerCase()].findAll{it}.any{it.contains(args.toLowerCase())}}}
-Guild.metaClass.findUser={String args->delegate.users.toList().sort{it.identity.length()}.find{[it.name.toLowerCase(),delegate.nickMap[it]?.toLowerCase(),it.identity.toLowerCase(),it.identity.abbreviate().toLowerCase()].findAll{it}.any{it.contains(args.toLowerCase())}}}
+JDA.metaClass.findUser={String args->delegate.users.toList().sort{it.name.length()}.find{[it.name.toLowerCase(),it.identity.toLowerCase(),it.identity.abbreviate().toLowerCase()].findAll{it}.any{it.contains(args.toLowerCase())}}}
+Guild.metaClass.findUser={String args->delegate.users.toList().sort{it.name.length()}.find{[it.name.toLowerCase(),delegate.membersMap[it.id].nickname?.toLowerCase(),it.identity.toLowerCase(),it.identity.abbreviate().toLowerCase()].findAll{it}.any{it.contains(args.toLowerCase())}}}
 JDA.metaClass.findChannel={String args->delegate.channels.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 Guild.metaClass.findChannel={String args->delegate.channels.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 JDA.metaClass.findTextChannel={String args->delegate.textChannels.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
@@ -181,14 +159,14 @@ Closure addVariables={String group,String data,String args,Event e->
 		}
 	}else if(group.startsWith('range;')){
 		try{
-			returned=group.substring(6).tokenize(';')*.toLong()
+			returned=group.substring(6).tokenize(';')*.toBigDecimal()
 		}catch(ex){
 			returned=group.substring(6).tokenize(';')
 		}
 		returned=(returned[0]..returned[-1]).toList().randomItem()
 	}else if(group.startsWith('urlify;')){
-		returned=URLEncoder.encode(group.substring(7),"UTF-8")
-	}else if(group.startsWith('date;')){
+		returned=URLEncoder.encode(group.substring(7),'UTF-8')
+	}else if(group.startsWith('date')){
 		try{
 			returned=new Date().format(group.substring(5))
 		}catch(ex){
@@ -224,11 +202,11 @@ String.metaClass.addVariables={MessageReceivedEvent e,String args->
 			Channel channel=e.guild.channels.toList().randomItem()
 			data=data.replaceAll(['{channel}','{channelname}'],e.channel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
 		}else{
-			user=[e.author,e.jda.selfInfo].randomItem()
+			user=[e.author,e.jda.selfUser].randomItem()
 			PrivateChannel channel=e.jda.privateChannels.toList().randomItem()
-			data=data.replaceAll(['{channel}','{channelname}'],e.channel.user.name).replaceAll(['{server}','{servername}'],"Direct Messages").replace('{serverid}',id).replace('{servericon}',e.jda.selfInfo.avatar).replaceAll(['{serverchannel}','{serverchannelname}'],channel.user.name).replace('{serverchannelid}',channel.user.id)
+			data=data.replaceAll(['{channel}','{channelname}'],e.channel.user.name).replaceAll(['{server}','{servername}'],"Direct Messages").replace('{serverid}',id).replace('{servericon}',e.jda.selfUser.avatar).replaceAll(['{serverchannel}','{serverchannelname}'],channel.user.name).replace('{serverchannelid}',channel.user.id)
 		}
-		data=data.replaceAll(['{author}','{authordb}'],e.author.identity).replace('{authorname}',e.author.name).replace('{authorid}',e.author.id).replace('{authoravatar}',e.author.avatar?:e.author.defaultAvatar).replace('{channelid}',e.channel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
+		data=data.replace('{id}',e.message.id).replaceAll(['{author}','{authordb}'],e.author.identity).replace('{authorname}',e.author.name).replace('{authorid}',e.author.id).replace('{authoravatar}',e.author.avatar?:e.author.defaultAvatar).replace('{channelid}',e.channel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
 		if(data.containsAll(['{','}'])){
 			List groups=data.range('{','}').split(/\}([^\{.+\}]+)?\{/)
 			groups.each{
@@ -244,7 +222,7 @@ String.metaClass.addVariables={GenericGuildMemberEvent e,String args->
 		User user=e.guild.users.toList().randomItem()
 		Channel channel=e.guild.channels.toList().randomItem()
 		data=data.replaceAll(['{channel}','{channelname}'],e.guild.defaultChannel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
-		data=data.replaceAll(['{author}','{authordb}'],e.user.identity).replace('{authorname}',e.user.name).replace('{authorid}',e.user.id).replace('{authoravatar}',e.user.avatar?:e.user.defaultAvatar).replace('{channelid}',e.guild.defaultChannel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
+		data=data.replace('{id}',((System.currentTimeMillis()-1420070400000)<<22).toString()).replaceAll(['{author}','{authordb}'],e.member.user.identity).replace('{authorname}',e.member.user.name).replace('{authorid}',e.member.user.id).replace('{authoravatar}',e.member.user.avatar?:e.member.user.defaultAvatar).replace('{channelid}',e.guild.defaultChannel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',e.member.user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
 		if(data.containsAll(['{','}'])){
 			List groups=data.range('{','}').split(/\}([^\{.+\}]+)?\{/)
 			groups.each{
@@ -262,21 +240,19 @@ Range.metaClass.randomItem={delegate.toList().randomItem()}
 String.metaClass.randomItem={delegate.toList().randomItem()}
 
 
-String.metaClass.strip={delegate.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}
-String.metaClass.addImports={"""import net.dv8tion.jda.JDA
-import net.dv8tion.jda.JDABuilder
-import net.dv8tion.jda.MessageHistory
-import net.dv8tion.jda.OnlineStatus
-import net.dv8tion.jda.core.*
-import net.dv8tion.jda.hooks.ListenerAdapter
-import net.dv8tion.jda.entities.*
-import net.dv8tion.jda.entities.impl.*
-import net.dv8tion.jda.managers.*
-import net.dv8tion.jda.events.*
-import net.dv8tion.jda.events.message.*
-import net.dv8tion.jda.events.guild.member.*
-import net.dv8tion.jda.utils.AvatarUtil
-import net.dv8tion.jda.audio.*
+String.metaClass.strip={delegate.replaceAll(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}
+String.metaClass.addImports={"""import net.dv8tion.jda.core.*
+import net.dv8tion.jda.core.hooks.ListenerAdapter
+import net.dv8tion.jda.core.entities.*
+import net.dv8tion.jda.core.entities.impl.*
+import net.dv8tion.jda.core.managers.*
+import net.dv8tion.jda.core.events.*
+import net.dv8tion.jda.core.events.message.*
+import net.dv8tion.jda.core.events.message.react.*
+import net.dv8tion.jda.core.events.guild.*
+import net.dv8tion.jda.core.events.guild.member.*
+import net.dv8tion.jda.core.events.user.*
+import net.dv8tion.jda.core.audio.*
 import net.dv8tion.jda.player.*
 import net.dv8tion.jda.player.source.*
 import java.awt.*
@@ -285,15 +261,11 @@ import java.util.List
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
 import com.mashape.unirest.http.Unirest
-@Grab(group='org.jsoup', module='jsoup', version='1.8.3')
+@Grab(group='org.jsoup',module='jsoup',version='1.8.3')
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import org.jsoup.Jsoup
 import groovy.json.*
 $delegate"""}
-Message.metaClass.deleteAfter={
-  long ms->Thread.sleep(ms)
-  delegate.delete()
-}
 JDA.metaClass.getLegitimateGuilds={delegate.guilds.findAll{it.users.size()/2>=it.users.count{it.bot}}}
