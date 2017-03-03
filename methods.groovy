@@ -3,6 +3,7 @@ import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.entities.impl.*
 import net.dv8tion.jda.core.managers.*
 import net.dv8tion.jda.core.events.*
+import net.dv8tion.jda.core.events.guild.*
 import net.dv8tion.jda.core.events.message.*
 import net.dv8tion.jda.core.events.message.react.*
 import net.dv8tion.jda.core.events.guild.member.*
@@ -222,7 +223,23 @@ String.metaClass.addVariables={GenericGuildMemberEvent e,String args->
 		User user=e.guild.users.toList().randomItem()
 		Channel channel=e.guild.channels.toList().randomItem()
 		data=data.replaceAll(['{channel}','{channelname}'],e.guild.defaultChannel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
-		data=data.replace('{id}',((System.currentTimeMillis()-1420070400000)<<22).toString()).replaceAll(['{author}','{authordb}'],e.member.user.identity).replace('{authorname}',e.member.user.name).replace('{authorid}',e.member.user.id).replace('{authoravatar}',e.member.user.avatar?:e.member.user.defaultAvatar).replace('{channelid}',e.guild.defaultChannel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',e.member.user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
+		data=data.replace('{id}',((System.currentTimeMillis()-1420070400000)<<22).toString()).replaceAll(['{author}','{authordb}'],e.member.user.identity).replace('{authorname}',e.member.user.name).replace('{authorid}',e.member.user.id).replace('{authoravatar}',e.member.user.avatar?:e.member.user.defaultAvatar).replace('{channelid}',e.guild.defaultChannel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
+		if(data.containsAll(['{','}'])){
+			List groups=data.range('{','}').split(/\}([^\{.+\}]+)?\{/)
+			groups.each{
+				data=addVariables(it,data,args,e)
+			}
+		}
+	}
+	data
+}
+String.metaClass.addVariables={GenericGuildEvent e,String args->
+	String data=delegate.replace('{args}',args).replaceAll(/\/\*.+\*\//,'')
+	if(data.containsAll(['{','}'])){
+		User user=e.guild.users.toList().randomItem()
+		Channel channel=e.guild.channels.toList().randomItem()
+		data=data.replaceAll(['{channel}','{channelname}'],e.guild.defaultChannel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
+		data=data.replace('{id}',((System.currentTimeMillis()-1420070400000)<<22).toString()).replaceAll(['{author}','{authordb}'],e.user.identity).replace('{authorname}',e.user.name).replace('{authorid}',e.user.id).replace('{authoravatar}',e.user.avatar?:e.user.defaultAvatar).replace('{channelid}',e.guild.defaultChannel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
 		if(data.containsAll(['{','}'])){
 			List groups=data.range('{','}').split(/\}([^\{.+\}]+)?\{/)
 			groups.each{
