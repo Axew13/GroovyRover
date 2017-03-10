@@ -53,9 +53,8 @@ class Bot{
 		new FeedCommand(),new ClearCommand(),new SetChannelCommand(),new SetRoleCommand(),new VotePinCommand(),
 		new ConfigCommand(),new SingCommand(),new BanCommand(),new SmiliesCommand(),new CloneCommand(),
 		new AccessCommand(),new TrackerCommand(),new IsupCommand(),new TopCommand(),new CleanCommand(),
-		new NoteCommand(),new ProfileCommand(),new CustomCommand(),new PwnedCommand()
+		new NoteCommand(),new ProfileCommand(),new CustomCommand(),new PwnedCommand(),new MathCommand()
 	]
-	List ignored=[]
 	String oauth='https://discordapp.com/oauth2/authorize?client_id=170646931641466882&scope=bot&permissions=268443670'
 	String server='https://discord.gg/0vJZEroWHiGWWQc7'
 }
@@ -93,27 +92,13 @@ class Web{
 
 class JSON{
 	String root='data/'
+	String end='.json'
 	Map load(String donkey){
-		new JsonSlurper().parse(new File(root+donkey+'.json'),'UTF-8')
+		new JsonSlurper().parse(new File(root+donkey+end),'UTF-8')
 	}
 	void save(Map diddy,String dixie){
-		new File(root+dixie+".json").write(JsonOutput.prettyPrint(JsonOutput.toJson(diddy)))
+		new File(root+dixie+end).write(JsonOutput.prettyPrint(JsonOutput.toJson(diddy)))
 	}
-	Map database(){load('database')}
-	Map tags(){load('tags')}
-	Map lastseen(){load('lastseen')}
-	Map channels(){load('channels')}
-	Map roles(){load('roles')}
-	Map properties(){load('properties')}
-	Map colours(){load('colours')}
-	Map misc(){load('misc')}
-	Map conversative(){load('conversative')}
-	Map feeds(){load('feeds')}
-	Map settings(){load('settings')}
-	Map temp(){load('temp')}
-	Map tracker(){load('tracker')}
-	Map notes(){load('notes')}
-	Map customs(){load('customs')}
 }
 
 
@@ -122,21 +107,21 @@ class GRover extends ListenerAdapter{
 	Bot bot=new Bot()
 	Web web=new Web()
 	JSON json=new JSON()
-	Map db=json.database()
-	Map tags=json.tags()
-	Map seen=json.lastseen()
-	Map channels=json.channels()
-	Map roles=json.roles()
-	Map info=json.properties()
-	Map colours=json.colours()
-	Map misc=json.misc()
-	Map conversative=json.conversative()
-	Map feeds=json.feeds()
-	Map settings=json.settings()
-	Map temp=json.temp()
-	Map tracker=json.tracker()
-	Map notes=json.notes()
-	Map customs=json.customs()
+	Map db=json.load('database')
+	Map tags=json.load('tags')
+	Map seen=json.load('lastseen')
+	Map channels=json.load('channels')
+	Map roles=json.load('roles')
+	Map info=json.load('properties')
+	Map colours=json.load('colours')
+	Map misc=json.load('misc')
+	Map conversative=json.load('conversative')
+	Map feeds=json.load('feeds')
+	Map settings=json.load('settings')
+	Map temp=json.load('temp')
+	Map tracker=json.load('tracker')
+	Map notes=json.load('notes')
+	Map customs=json.load('customs')
 	String lastReply
 	boolean tableTimeout
 	long started=System.currentTimeMillis()
@@ -177,13 +162,13 @@ class GRover extends ListenerAdapter{
 				json.save(seen,'lastseen')
 				List sticky=notes.timed.findAll{it.time<now}
 				sticky.each{Map note->
-					notes.timed-=note
 					try{
 						e.jda.users.find{it.id==note.user}.openPrivateChannel().block()
-						e.jda.users.find{it.id==note.user}.privateChannel.sendMessage("It is ${new Date().format('HH:mm:ss, d MMMM YYYY').formatBirthday()}. You asked me to remind you${if(note.content){":\n\n$note.content"}else{"."}}").queue()
+						e.jda.users.find{it.id==note.user}.privateChannel.sendMessage("It is ${new Date().format('HH:mm:ss, d MMMM YYYY').formatBirthday()}. You asked me to remind you${if(note.content){":\n\n$note.content"}else{'.'}}").queue()
 					}catch(ex){
 						ex.printStackTrace()
 					}
+					notes.timed-=note
 					json.save(notes,'notes')
 				}
 				Thread.sleep(180000)
@@ -193,27 +178,27 @@ class GRover extends ListenerAdapter{
 			while(true){
 				if(info.game){
 					e.jda.play(info.game)
-					Thread.sleep(80000)
+					Thread.sleep(160000)
 				}
 				e.jda.play("levelpalace.com")
-				Thread.sleep(40000)
+				Thread.sleep(80000)
 				if(info.game){
 					e.jda.play(info.game)
-					Thread.sleep(80000)
+					Thread.sleep(160000)
 				}
 				e.jda.play("with ${db*.key.size()} DB entries")
-				Thread.sleep(40000)
+				Thread.sleep(80000)
 				if(info.game){
 					e.jda.play(info.game)
-					Thread.sleep(80000)
+					Thread.sleep(160000)
 				}
 				e.jda.play("${bot.prefixes.randomItem()}${bot.commands.findAll{!it.dev}.randomItem().aliases[0]}")
-				Thread.sleep(40000)
+				Thread.sleep(80000)
 			}
 		}
 		Thread.start{
 			while(true){
-				db=json.database()
+				db=json.load('database')
 				try{
 					List channels=e.jda.textChannels+e.jda.privateChannels
 					Map cache=[:]
@@ -313,7 +298,7 @@ class GRover extends ListenerAdapter{
 	
 	// Message Create Event
 	void onMessageReceived(MessageReceivedEvent e){
-		if(!(e.author.bot||e.channel.ignored||(e.author.id in bot.ignored))){
+		if(!(e.author.bot||e.channel.ignored)){
 			def args=e.message.rawContent
 			String prefix=args.startsWithAny(e.guild?(settings.prefix[e.guild.id]?:bot.prefixes)+bot.mention:bot.prefixes)
 			if(prefix!=null){
@@ -395,7 +380,7 @@ class GRover extends ListenerAdapter{
 				
 				// DM Conversative
 				if(!e.guild){
-					String chat=" "+e.message.content.toLowerCase().replaceAll(['.',',','!','?','\'',':',';','(',')','"','-'],'')+" "
+					String chat=' '+e.message.content.toLowerCase().replaceAll(['.',',','!','?','\'',':',';','(',')','"','-'],'')+' '
 					if(e.message.attachment)chat+="$e.message.attachment.url "
 					if(chat.contains('discordgg')){
 						e.sendMessage("I can't accept this. Please use this instead:\n$bot.oauth").queue()
@@ -423,15 +408,15 @@ class GRover extends ListenerAdapter{
 					Thread.start{
 						if(e.message.content=='(\u256f\u00b0\u25a1\u00b0\uff09\u256f\ufe35 \u253b\u2501\u253b'){
 							if(!tableTimeout){
-								e.sendMessage("(\u256f\u00b0\u2302\u00b0)\u256f\ufe35 \u253b\u2501\u2501\u253b").queue()
+								e.sendMessage('(\u256f\u00b0\u2302\u00b0)\u256f\ufe35 \u253b\u2501\u2501\u2501\u253b').queue()
 								tableTimeout=1
 								Thread.sleep(8000)
 								tableTimeout=0
 							}else{
-								e.sendMessage("(-\u00b0 \u00b7\u00b0)-  \u252c\u2500\u2500\u252c\nHow do you think the table feels?")
+								e.sendMessage('(-\u00b0 \u00b7\u00b0)-  \u252c\u2500\u2500\u252c\nHow do you think the table feels?')
 							}
 						}else if(e.message.content=='\u252c\u2500\u252c\ufeff \u30ce( \u309c-\u309c\u30ce)'){
-							e.sendMessage("-\u252c\u2500\u2500\u252c\u256f\u30ce( o\u200b_o\u30ce)").queue()
+							e.sendMessage('-\u252c\u2500\u2500\u252c\u256f\u30ce( o\u200b_o\u30ce)').queue()
 							tableTimeout=1
 							Thread.sleep(8000)
 							tableTimeout=0
@@ -445,16 +430,14 @@ class GRover extends ListenerAdapter{
 				
 				// Smilies
 				if(e.message.rawContent.containsAll(['(',')'])){
-					Thread.start{
-						String tag=e.message.rawContent.lastRange('(',')')
-						if(tag==~/\w+/){
-							File image=new File("images/xat/${tag}_xat.png")
-							if(image.exists()&&(!e.guild||settings.smilies[e.guild.id])){
-								e.sendFile(image)
-							}else if(e.guild){
-								image=new File("images/cs/${tag}_${e.guild.id}.png")
-								if(image.exists())e.sendFile(image).queue()
-							}
+					String tag=e.message.rawContent.lastRange('(',')')
+					if(tag==~/\w+/){
+						File image=new File("images/xat/${tag}_xat.png")
+						if(image.exists()&&(!e.guild||settings.smilies[e.guild.id])){
+							e.sendFile(image)
+						}else if(e.guild){
+							image=new File("images/cs/${tag}_${e.guild.id}.png")
+							if(image.exists())e.sendFile(image).queue()
 						}
 					}
 				}
@@ -574,7 +557,7 @@ class PlayCommand extends Command{
 		d.info.game=d.args
 		if(d.args){
 			e.jda.play(d.args)
-			e.sendMessage("I am now playing $d.args.").queue()
+			e.sendMessage("I am now playing $d.args. Check my game status!").queue()
 		}else{
 			e.sendMessage("I have finished playing $old.").queue()
 		}
@@ -662,7 +645,7 @@ class ServerinfoCommand extends Command{
 			if(d.args)guild=e.jda.findGuild(d.args)
 			if(guild){
 				int timeout=guild.afkTimeout.seconds/60
-				e.sendMessage("""**${guild.name.capitalize()}**, owned by $guild.owner.user.identity: ```css
+				e.sendMessage("""**${guild.name.capitalize()}** owned by $guild.owner.user.identity: ```css
 ID: $guild.id
 Icon: $guild.icon
 Region: $guild.region
@@ -679,7 +662,7 @@ ${if(guild.users.size()>249){"Large"}else{"Small"}}```""").queue()
 			}
 		}else{
 			User user=e.jda.selfUser
-			e.sendMessage("""**Direct Messages**, owned by $user.identity: ```css
+			e.sendMessage("""**Direct Messages** owned by $user.identity: ```css
 ID: $user.id
 Icon: $user.avatar
 Region: London
@@ -847,7 +830,7 @@ class InfoCommand extends Command{
 	List aliases=['info']
 	def run(Map d,Event e){
 		String info="""**About GR\\\u2699VER**:
-Created by <@$d.bot.owner>. Java JDA by <@107562988810027008>. <@98457401363025920> helped too.
+Created by ${db["107562988810027008"].name}. Java JDA by ${db["107562988810027008"].name}. ${db["98457401363025920"].name} helped too.
 
 GRover \u2018the DOGBOT Project\u2019 is a bot with an ever-expanding database recording the Internet identity of everyone on Discord.
 GRover is based on the xat FEXBot and was designed to remedy the issue of recognising users who change their name.
@@ -1085,8 +1068,7 @@ class NsfwCommand extends Command{
 				if(doc.toString().contains('Nobody here')){
 					e.sendMessage("Sorry, no results. ;_;\nRemember Gelbooru is for hentai, so keywords should use underlines and names are reversed (like ${["kaname_madoka","aisaka_taiga","izumi_konata"].randomItem()}).\n$link").queue()
 				}else{
-					Element pagination=doc.getElementsByClass('pagination')[0]
-					Element lastpagebtn=pagination.getElementsByTag('a').last()
+					Element lastpagebtn=doc.getElementsByClass('pagination')[0].getElementsByTag('a').last()
 					String lastpage
 					if(lastpagebtn){
 						lastpage=lastpagebtn.attr('href')
@@ -1107,8 +1089,8 @@ class NsfwCommand extends Command{
 				cache2[ass]=previews
 				doc=d.web.get("http://gelbooru.com/${previews.randomItem().getElementsByTag('a')[0].attr('href')}",'G.Chrome')
 				String hentai=doc.getElementsByClass('sidebar3')[1].getElementsByTag('div')[2].getElementsByTag('a')[0].attr('href')
-				if(hentai=='#')hentai=doc.getElementById('image').attr('src').substring(0,doc.getElementById('image').attr('src').indexOf('?'))
-				e.sendMessage(hentai).queue()
+				if(hentai.length()<2)hentai=doc.getElementById('image').attr('src')
+				e.sendMessage("http:$hentai").queue()
 			}else{
 				404
 			}
@@ -1803,7 +1785,7 @@ class MiscCommand extends Command{
 				if(people){
 					String inhabits=people.join(', ').capitalize()
 					if(inhabits.length()>1000)inhabits=inhabits.substring(0,1000)+'..'
-					e.sendMessage("$inhabits.").queue()
+					e.sendMessage("$inhabits. (${people.size()})").queue()
 				}else{
 					e.sendMessage("Looks like I don't know anyone who lives there.").queue()
 					404
@@ -2600,7 +2582,7 @@ class StatsCommand extends Command{
 			uptime[1]-=60
 		}
 		Runtime runtime=Runtime.runtime
-		String stats="""Connected to `${e.jda.guilds.size()}` servers with `${e.jda.channels.size()}` channels and `${e.jda.users.size()}` users.
+		String stats="""Connected to ${if(e.guild?.id=='145904657833787392'){"`${e.jda.guilds.size()-1}` servers that are more important than Popcorn Plaza,"}else{"`${e.jda.guilds.size()}` servers with"}} `${e.jda.channels.size()}` channels and `${e.jda.users.size()}` users.
 Total `${d.db*.key.size}` database entries, `${d.tags*.key.size}` tags and `${new File("images/xat").listFiles().size()+new File("images/cs").listFiles().size()}` smilies.
 Online for `${uptime[0]}` hour${if(uptime[0]!=1){"s"}else{''}} and `${uptime[1]}` minute${if(uptime[1]!=1){"s"}else{''}}."""
 		if(d.args.toLowerCase()=='full'){
@@ -3330,12 +3312,11 @@ class ClearCommand extends Command{
 		if(!e.guild||e.author.isStaff(e.guild)||((users*.id==[e.author.id])&&e.author.isMember(e.guild))){
 			if(!e.guild||e.guild.selfMember.roles.any{'MESSAGE_MANAGE'in it.permissions*.toString()}||(users==[e.jda.selfUser])){
 				e.sendTyping().queue()
-				int amount=50
-				String number=d.args.findAll(/\d+/)[0]
-				if(number)amount=number.toInteger()
-				if(number<2)number=2
-				if(number>100)number=100
-				List messages=e.channel.history.retrievePast(amount).block()-e.message
+				List numbers=d.args.findAll(/\d+/)
+				long number=numbers?numbers[-1].toLong():50
+				if(number<1)number=1
+				if(number>99)number=99
+				List messages=e.channel.history.retrievePast((number+1).toInteger()).block()-e.message
 				if(d.args){
 					e.message.mentions.each{User ass->
 						messages=messages.findAll{it.author.id==ass.id}
@@ -3346,7 +3327,7 @@ class ClearCommand extends Command{
 					if(d.args.contains('embed'))messages=messages.findAll{it.embeds}
 					if(d.args.contains('command')&&e.guild){
 						List prefixes=e.guild.users.findAll{it.bot}.findAll{d.db[it.id]}.collect{d.db[it.id].tags.range('(',')')}
-						messages=messages.findAll{it.startsWithAny(prefixes)}
+						messages=messages.findAll{it.content.startsWithAny(prefixes)}
 					}
 				}
 				if(users)messages=messages.findAll{it.author.id in users*.id}
@@ -3369,7 +3350,7 @@ class ClearCommand extends Command{
 				}else{
 					messages.findAll{it.author.id==e.jda.selfUser.id}*.delete()*.queue()
 				}
-				e.sendMessage("Cleared ${messages.size()} messages.").queue()
+				e.sendMessage("Cleared ${messages.size()} message${if(messages.size()!=1){'s'}else{''}}.").queue()
 			}else{
 				e.sendMessage("I need to be able to manage messages to do that...").queue()
 				511
@@ -3632,10 +3613,9 @@ class SingCommand extends Command{
 				}
 			}
 		}else if(singing&&d.args=='info'){
-			e.sendMessage("""```css
-Title: ${lyricsLink.text()}
-Author: $author
-Cover: $coverLink ``` ${lyricsLink.attr('href')}""").queue()
+			e.sendMessage("""**${lyricsLink.text()}**, by $author:```css
+Lyrics: ${lyricsLink.attr('href')}
+Cover: $coverLink```""").queue()
 		}else if(!singing){
 			if(!e.guild||e.author.isOwner(e.guild)||e.channel.song){
 				if(d.args){
@@ -4259,7 +4239,7 @@ class TopCommand extends Command{
 					top+="`#${num+=1}` **${it.tokenize()*.capitalize().join(' ')}** (${table[it].size()} users)"
 				}
 			}else if(d.args[0].startsWith('game')){
-				Map table=e.jda.users.findAll{it.game}.groupBy{it.game.name}.sort{it.value.size()}
+				Map table=e.jda.guilds*.members.flatten().findAll{it.game}.groupBy{it.user.id}*.value*.first().groupBy{it.game.name}.sort{it.value.size()}
 				table*.key.reverse()[range].each{
 					top+="`#${num+=1}` **$it** (${table[it].size()} playing)"
 				}
@@ -4324,7 +4304,7 @@ class NoteCommand extends Command{
 	def run(Map d,Event e){
 		d.args=d.args.tokenize()
 		d.args[0]=d.args[0]?.toLowerCase()
-		String id=Long.toString((e.message.createTimeMillis/10)as long,36)
+		String id=Long.toString((e.message.createTimeMillis/100)as long,36)
 		if(d.args[0]=='list'){
 			List total=d.notes*.value.flatten().findAll{it.user==e.author.id}
 			if(total){
@@ -4411,17 +4391,6 @@ class NoteCommand extends Command{
 `note list` will make me list your notes.
 `note remove [number/text]` will make me remove that note.
 `note clear` will make me remove all your notes."""
-}
-
-
-class PuushCommand extends Command{
-	List aliases=['puush','push']
-	def run(Map d,Event e){
-		501
-	}
-	String category='Online'
-	String help="""`puush [url/attachment]` will make me upload a file to Puush.
-Sketchy puushes and abuse will be removed. Careful what you share."""
 }
 
 
@@ -4643,4 +4612,30 @@ class PwnedCommand extends Command{
 	String category="Online"
 	String help="""`pwned [email]` will make me list data breaches in which your information was stolen.
 It wasn't me this time."""
+}
+
+
+class MathCommand extends Command{
+	List aliases=['math','maths']
+	def run(Map d,Event e){
+		if(d.args){
+			String sum=d.args.replaceAll(/([A-Za-z]+)/){full,word->"Math.$word"}.replaceAll(/[\u00c0-\u00f6\u00f8-\ufffe]+/,'').replaceEach(['{','}'],['[',']']).replaceAll(['\\','\$','_'],'')
+			String ass
+			try{
+				ass=new GroovyShell().evaluate(sum).toString()
+			}catch(ex){
+				ass="$ex".replaceAll(["${ex.class.name}:",'startup failed:','Script1.groovy:'],'').replaceAll(/\d error(?:s?)/,'').trim()
+			}
+			ass.split(1997).each{
+				e.sendMessage("`$it`").queue()
+				Thread.sleep(150)
+			}
+		}else{
+			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}math [sum]`").queue()
+			400
+		}
+	}
+	String category="General"
+	String help="""`math [sum]` will make me evaluate the math sum in Groovy.
+So yes, it's a homework machine."""
 }

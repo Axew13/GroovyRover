@@ -174,21 +174,21 @@ Closure addVariables={String group,String data,String args,Event e->
 			returned=new Date().format('HH:mm:ss, dd MMMM YYYY')
 		}
 	}else if(group.startsWith('nameof;')){
-		User ass=e.jda.users.find{it.id==group.substring(7).replaceAll(/\D+/,'')}
-		if(!ass)ass=e.jda.users.find{it.identity.toLowerCase()==group.substring(7).toLowerCase()}
+		User ass=(e.guild?:e.jda).users.find{it.id==group.substring(7).replaceAll(/\D+/,'')}
+		if(!ass)ass=(e.guild?:e.jda).users.find{it.identity.toLowerCase()==group.substring(7).toLowerCase()}
 		returned=ass?ass.name:"???"
 	}else if(group.startsWith('idof;')){
-		User ass=e.jda.users.find{it.identity.toLowerCase()==group.substring(5).toLowerCase()}
-		if(!ass)ass=e.jda.users.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
+		User ass=(e.guild?:e.jda).users.find{it.identity.toLowerCase()==group.substring(5).toLowerCase()}
+		if(!ass)ass=(e.guild?:e.jda).users.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
 		returned=ass?ass.id:"???"
 	}else if(group.startsWith('dbof;')){
-		User ass=e.jda.users.find{it.id==group.substring(5).replaceAll(/\D+/,'')}
-		if(!ass)ass=e.jda.users.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
+		User ass=(e.guild?:e.jda).users.find{it.id==group.substring(5).replaceAll(/\D+/,'')}
+		if(!ass)ass=(e.guild?:e.jda).users.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
 		returned=ass?ass.identity:"???"
 	}else if(group.startsWith('avatarof;')){
-		User ass=e.jda.users.find{it.id==group.substring(9).replaceAll(/\D+/,'')}
-		if(!ass)ass=e.jda.users.find{it.name.toLowerCase()==group.substring(9).toLowerCase()}
-		if(!ass)ass=e.jda.users.find{it.identity.toLowerCase()==group.substring(9).toLowerCase()}
+		User ass=(e.guild?:e.jda).users.find{it.id==group.substring(9).replaceAll(/\D+/,'')}
+		if(!ass)ass=(e.guild?:e.jda).users.find{it.name.toLowerCase()==group.substring(9).toLowerCase()}
+		if(!ass)ass=(e.guild?:e.jda).users.find{it.identity.toLowerCase()==group.substring(9).toLowerCase()}
 		returned=ass?ass.avatar:"???"
 	}
 	if(returned)data=data.replace("{$group}",returned.toString())
