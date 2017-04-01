@@ -86,7 +86,7 @@ PrivateChannel.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>2
 Role.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Role.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
 Role.metaClass.isColour={(delegate.name==~/#?[A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9]/)&&!delegate.name.toLowerCase().containsAny('g'..'z')}
-Role.metaClass.isConfig={delegate.name in["Bot Commander","Assist Owner","Trainer","Literally Hitler","spoo.py colorful","Spectra","spoo.py admin","spoo.py mod","Nadeko","Baka","regall commander","Ender","KOSMOS","Discoid Admin","Watchr Commander","Discone Admin","Living Meme","Bot Pony Commander","Beemo Music","Mop Staff"]}
+Role.metaClass.isConfig={delegate.name in["Bot Commander","Assist Owner","Trainer","Literally Hitler","spoo.py colorful","Spectra","spoo.py admin","spoo.py mod","Nadeko","Baka","regall commander","Ender","KOSMOS","Discoid Admin","Watchr Commander","Discone Admin","Living Meme","Bot Pony Commander","Beemo Music","Mop Staff","MrMellow Creator"]}
 
 Emote.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Emote.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
@@ -165,6 +165,12 @@ Closure addVariables={String group,String data,String args,Event e->
 			returned=group.substring(6).tokenize(';')
 		}
 		returned=(returned[0]..returned[-1]).toList().randomItem()
+	}else if(group.startsWith('replace;')){
+		List ass=group.substring(8).tokenize(';')
+		returned=ass[0]
+		(((ass.size()-1)/2)as int).times{
+			returned=returned.replace(ass[((it+1)*2)-1],ass[((it+1)*2)])
+		}
 	}else if(group.startsWith('urlify;')){
 		returned=URLEncoder.encode(group.substring(7),'UTF-8')
 	}else if(group.startsWith('date')){
@@ -285,4 +291,3 @@ import org.jsoup.select.Elements
 import org.jsoup.Jsoup
 import groovy.json.*
 $delegate"""}
-JDA.metaClass.getLegitimateGuilds={delegate.guilds.findAll{it.users.size()/2>=it.users.count{it.bot}}}
