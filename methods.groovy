@@ -86,7 +86,7 @@ PrivateChannel.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>2
 Role.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Role.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
 Role.metaClass.isColour={(delegate.name==~/#?[A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9]/)&&!delegate.name.toLowerCase().containsAny('g'..'z')}
-Role.metaClass.isConfig={delegate.name in["Bot Commander","Assist Owner","Trainer","Literally Hitler","spoo.py colorful","Spectra","spoo.py admin","spoo.py mod","Nadeko","Baka","regall commander","Ender","KOSMOS","Discoid Admin","Watchr Commander","Discone Admin","Living Meme","Bot Pony Commander","Beemo Music","Mop Staff","MrMellow Creator"]}
+Role.metaClass.isConfig={delegate.name in['Bot Commander','Assist Owner','Trainer','Literally Hitler','spoo.py colorful','Spectra','spoo.py admin','spoo.py mod','Nadeko','Baka','regall commander','Ender','KOSMOS','Discoid Admin','Watchr Commander','Discone Admin','Living Meme','Bot Pony Commander','Beemo Music','Mop Staff','MrMellow Creator','TCommander']}
 
 Emote.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Emote.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
