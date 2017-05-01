@@ -56,7 +56,7 @@ class Bot{
 		new NoteCommand(),new ProfileCommand(),new CustomCommand(),new PwnedCommand(),new MathCommand(),
 		new MapCommand(),new SourceCommand()
 	]
-	String oauth='https://discordapp.com/oauth2/authorize?client_id=170646931641466882&scope=bot&permissions=268443670'
+	String oauth='https://discordapp.com/oauth2/authorize?client_id=170646931641466882&scope=bot&permissions=335932438'
 	String server='https://discord.gg/0vJZEroWHiGWWQc7'
 }
 
@@ -68,7 +68,7 @@ class Command{
 	int limit=5
 	Map pool=[:]
 	String category='Uncategorized'
-	String help="\u00af\\_(\u30c4)_/\u00af"
+	String help='\u00af\\_(\u30c4)_/\u00af'
 }
 
 
@@ -151,6 +151,7 @@ class GRover extends ListenerAdapter{
 	// Ready Event
 	void onReady(ReadyEvent e){
 		Thread.start{
+			web.sendStats(e)
 			e.jda.guilds.findAll{!roles.member[it.id]}.each{roles.member[it.id]=it.roles.findAll{!it.managed&&!it.colour&&!it.config}.max{Role role->role.guild.members*.roles.flatten()*.id.count(role.id)}?.id}
 			e.jda.guilds.findAll{!roles.mute[it.id]}.each{roles.mute[it.id]=it.roles.findAll{!it.managed&&it.name.toLowerCase().containsAny(['mute','shun','naughty','punish'])&&!it.config}.max{Role role->role.guild.members*.roles.flatten()*.id.count(role.id)}?.id}
 			json.save(roles,'roles')
@@ -326,16 +327,13 @@ class GRover extends ListenerAdapter{
 								}
 							}catch(ex){
 								try{
-									e.sendMessage(failMessage()+"Error: `$ex.message`").queue()
+									e.sendMessage(failMessage()+"Error: `$ex.message`").block()
 									ex.printStackTrace()
 									status=500
 								}catch(ex2){
-									try{
-										e.author.openPrivateChannel().block()
-										e.author.privateChannel.sendMessage("Looks like I don't have permission to bark up this tree. Ask an administrator to let me speak in <#$e.channel.id>.").queue()
-									}catch(ex3){
-										// welp
-									}
+									e.author.openPrivateChannel().block()
+									e.author.privateChannel.sendMessage("Looks like I don't have permission to bark up this tree. Ask an administrator to let me speak in <#$e.channel.id>.").queue()
+									status=416
 								}
 							}
 							messages+=e.message
@@ -460,10 +458,11 @@ class GRover extends ListenerAdapter{
 				
 			}
 		}
-/*		String log="${e.message.createTime.format('HH:mm:ss')} "
+/*
+		String log="${e.message.createTime.format('HH:mm:ss')} "
 		if(e.guild)log+=("[$e.guild.name] [${e.channel.name.capitalize()}] <$e.author.identity>:\n$e.message.content")
 		else log+=("[Direct Messages] [${e.channel.user.identity.capitalize()}] <$e.author.identity>:\n$e.message.content")
-		if(e.message.attachment)log+="${if(e.message.content){"\n"}else{''}}[$e.message.attachment.name]"
+		if(e.message.attachment)log+="${if(e.message.content){'\n'}else{''}}[$e.message.attachment.name]"
 		println(log)*/
 	}
 	
@@ -566,8 +565,12 @@ class PlayCommand extends Command{
 		String old=d.info.game
 		d.info.game=d.args
 		if(d.args){
-			e.jda.play(d.args)
-			e.sendMessage("I am now playing $d.args. Check my game status!").queue()
+			try{
+				e.jda.play(d.args)
+				e.sendMessage("I am now playing $d.args. Check my game status!").queue()
+			}catch(ex){
+				e.sendMessage("I am now playing $d.args.").queue()
+			}
 		}else{
 			e.sendMessage("I have finished playing $old.").queue()
 		}
@@ -619,7 +622,7 @@ Avatar: ${user.avatar?:user.defaultAvatar}
 Created: ${new Date(user.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (${key.abbreviate()})
 Joined: ${new Date(e.guild.membersMap[e.author.id].joinDate.toDate().time+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (${key.abbreviate()})
 Shared: ${if(shared.size()>9){shared[0..9].join(', ')+'..'}else{shared.join(', ')}} (${shared.size()})
-Seen: ${d.seen[user.id]?new Date(d.seen[user.id].time+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy'):"???"} (${key.abbreviate()})
+Seen: ${d.seen[user.id]?new Date(d.seen[user.id].time+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy'):'???'} (${key.abbreviate()})
 ${if(user.bot){'Bot'}else if(member.owner){'Owner'}else if(member.roles){'Member'}else{'Guest'}}```""").queue()
 				}else{
 					e.sendMessage("I couldn't find a user matching '$d.args.'").queue()
@@ -635,7 +638,7 @@ Name: $user.identity
 Avatar: ${user.avatar?:user.defaultAvatar}
 Created: ${new Date(user.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (${key.abbreviate()})
 Shared: ${if(shared.size()>9){shared[0..9].join(', ')+'...'}else{shared.join(', ')}} (${shared.size()})
-Seen: ${d.seen[user.id]?new Date(d.seen[user.id].time+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy'):"???"} (${key.abbreviate()})```""").queue()
+Seen: ${d.seen[user.id]?new Date(d.seen[user.id].time+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy'):'???'} (${key.abbreviate()})```""").queue()
 		}
 	}
 	String category='General'
@@ -851,7 +854,7 @@ Github code: https://github.com/Axew13/GroovyRover/blob/master/main.groovy
 Official server: $d.bot.server"""
 		try{
 			e.author.openPrivateChannel().block()
-			e.author.privateChannel.sendMessage(info).queue()
+			e.author.privateChannel.sendMessage(info).block()
 			if(e.guild){
 				e.sendMessage("Information has been sent! <@$e.author.id>").queue{
 					Thread.sleep(5000)
@@ -882,7 +885,7 @@ class HelpCommand extends Command{
 			try{
 				e.author.openPrivateChannel().block()
 				list.split(1999).each{
-					e.author.privateChannel.sendMessage(it).queue()
+					e.author.privateChannel.sendMessage(it).block()
 					Thread.sleep(150)
 				}
 				if(e.guild){
@@ -902,7 +905,8 @@ class HelpCommand extends Command{
 			400
 		}else{
 			Command cmd=d.bot.commands.find{d.args in it.aliases}
-			Map custom=d.customs[e.guild?.id]?.find{it?.name==d.args}
+			Map custom
+			if(e.guild)custom=d.customs[e.guild.id].find{it.name==d.args}
 			if(cmd){
 				e.sendMessage("**${cmd.aliases[0].capitalize()} Command**:\n$cmd.help").queue()
 			}else if(custom){
@@ -1079,8 +1083,13 @@ class NsfwCommand extends Command{
 			if(cache[d.args]){
 				pages=cache[d.args]
 			}else{
-				doc=d.web.get(link,'G.Chrome')
-				if(doc.toString().contains('Nobody here')){
+				try{
+					doc=d.web.get(link,'G.Chrome')
+				}catch(retry){
+					Thread.sleep(1500)
+					doc=d.web.get(link,'G.Chrome')
+				}
+				if(doc.text().contains('Nobody here')){
 					e.sendMessage("Sorry, no results. ;_;\nRemember Gelbooru is for hentai, so keywords should use underlines and names are reversed (like ${["kaname_madoka","aisaka_taiga","izumi_konata"].randomItem()}).\n$link").queue()
 				}else{
 					Element lastpagebtn=doc.getElementsByClass('pagination')[0].getElementsByTag('a').last()
@@ -1105,7 +1114,7 @@ class NsfwCommand extends Command{
 				doc=d.web.get("http://gelbooru.com/${previews.randomItem().getElementsByTag('a')[0].attr('href')}",'G.Chrome')
 				String hentai=doc.getElementsByClass('sidebar3')[1].getElementsByTag('div')[2].getElementsByTag('a')[0].attr('href')
 				if(hentai.length()<2)hentai=doc.getElementById('image').attr('src')
-				e.sendMessage("http:$hentai").queue()
+				e.sendMessage("http:$hentai".replace('http:http','http')).queue()
 			}else{
 				404
 			}
@@ -1117,7 +1126,7 @@ class NsfwCommand extends Command{
 	}
 	String category='Online'
 	String help="""`nsfw` will make me send a random Gelbooru image. This could be anything.
-`nsfw [tags]` will make me search Gelbooru for hentai.
+`nsfw [tags]` will make me search Gelbooru for unrestricted hentai.
 L-lewd."""
 }
 
@@ -2690,8 +2699,12 @@ class SetAvatarCommand extends Command{
 			int old=d.info.avatar
 			d.info.avatar=d.args
 			d.json.save(d.info,'properties')
-			e.jda.setAvatar("images/avatars/${d.args}.jpg").block()
-			e.sendMessage("My avatar has been changed to $d.args. My previous one was $old.").queue()
+			try{
+				e.jda.setAvatar("images/avatars/${d.args}.jpg").block()
+				e.sendMessage("My avatar has been changed to $d.args. My previous one was $old.").queue()
+			}catch(ex){
+				e.sendMessage("You are changing my avatar too fast. Try again in a bit.").queue()
+			}
 		}else{
 			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}setavatar [1..$maximum]/random`.").queue()
 			400
@@ -2721,7 +2734,7 @@ class SetPrefixCommand extends Command{
 					e.sendMessage("My prefix in this server is now `${d.args.join('`, `')}`.").queue()
 				}else{
 					d.settings.prefix[e.guild.id]=['']
-					e.sendMessage("We're going unprefixed, baby.").queue()
+					e.sendMessage("We're going unprefixed, baby. Remember you can always use ${d.bot.mentions[0]} as a prefix me.").queue()
 				}
 				d.json.save(d.settings,'settings')
 			}else{
@@ -2756,7 +2769,7 @@ class EvalCommand extends Command{
 					it.edit("$it.rawContent\n`${stopTime-startTime}ms`, `${stopTime2-startTime2}ms`").queue()
 				}
 			}catch(ex){
-				e.sendMessage("$ex").queue()
+				e.sendMessage(ex.toString()).queue()
 				ex.printStackTrace()
 				500
 			}
@@ -2852,7 +2865,7 @@ ${input.length()} length (${input.replaceAll([' ','-','_','\n','\r'],'').length(
 
 Longest word: "$longestWord"
 Longest line: line ${lines.indexOf(lines.sort{it.length()}.last())+1}""".replace('\n1 lines','\n1 line')).queue()
-			new File("temp/wordcount.txt").delete()
+			new File('temp/wordcount.txt').delete()
 		}else{
 			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}wordcount [text/file]`.").queue()
 			400
@@ -2871,30 +2884,26 @@ class MemberCommand extends Command{
 		if(e.guild){
 			if(e.author.isStaff(e.guild)){
 				if(e.guild.selfMember.roles.any{'MANAGE_ROLES'in it.permissions*.toString()}){
-					if(d.args.containsAny(['everyone','here'])){
-						e.sendMessage("You may not make everyone in the server member.")
-					}else{
-						List users=e.message.mentions?:[e.guild.findUser(d.args)]
-						if(!users)users=[e.guild.members.toList().sort{it.joinDate}[-1].user]
-						try{
-							String id=d.roles.member[e.guild.id]
-							users.each{User user->
-								Member member=e.guild.membersMap[user.id]
-								if(id in member.roles*.id){
-									e.guild.controller.removeRolesFromMember(member,[e.guild.roles.find{it.id==id}]).queue()
-									e.sendMessage("${user.identity.capitalize()} is now a guest.").queue()
-								}else{
-									e.guild.controller.addRolesToMember(member,[e.guild.roles.find{it.id==id}])
-									e.sendMessage("${user.identity.capitalize()} is now a member.").queue()
-								}
-								boolean type=(id in member.roles*.id)
-								e.guild.textChannels.findAll{it.log}*.sendMessage("**${e.author.identity.capitalize()}**: ${if(type){"Promoted"}else{"Demoted"}} $user.identity to ${if(type){"member"}else{"guest"}}.")*.queue()
+					List users=e.message.mentions?:[e.guild.findUser(d.args)]
+					if(!users)users=[e.guild.members.toList().sort{it.joinDate}[-1].user]
+					try{
+						String id=d.roles.member[e.guild.id]
+						users.each{User user->
+							Member member=e.guild.membersMap[user.id]
+							if(id in member.roles*.id){
+								e.guild.controller.removeRolesFromMember(member,[e.guild.roles.find{it.id==id}]).queue()
+								e.sendMessage("${user.identity.capitalize()} is now a guest.").queue()
+							}else{
+								e.guild.controller.addRolesToMember(member,[e.guild.roles.find{it.id==id}])
+								e.sendMessage("${user.identity.capitalize()} is now a member.").queue()
 							}
-						}catch(ex){
-							e.sendMessage("This server doesn't seem to have a suitable member role.\nStaff can set a member role with `{d.prefix}setrole member`.").queue()
-							ex.printStackTrace()
-							404
+							boolean type=(id in member.roles*.id)
+							e.guild.textChannels.findAll{it.log}*.sendMessage("**${e.author.identity.capitalize()}**: ${if(type){"Promoted"}else{"Demoted"}} $user.identity to ${if(type){"member"}else{"guest"}}.")*.queue()
 						}
+					}catch(ex){
+						e.sendMessage("This server doesn't seem to have a suitable member role.\nStaff can set a member role with `{d.prefix}setrole member`.").queue()
+						ex.printStackTrace()
+						404
 					}
 				}else{
 					e.sendMessage("I need to be able to manage roles to do that...").queue()
@@ -3416,24 +3425,24 @@ class SetChannelCommand extends Command{
 				if(!channel)channel=e.channel
 				if(d.args[0]in['spam','testing']){
 					d.channels.spam[channel.id]=channel.spam?false:true
-					e.sendMessage("**${channel.name.capitalize()}** is ${if(channel.spam){"now"}else{"no longer"}} a spam channel.").queue()
+					e.sendMessage("**${channel.name.capitalize()}** is ${if(channel.spam){'now'}else{'no longer'}} a spam channel.").queue()
 					d.json.save(d.channels,'channels')
 				}else if(d.args[0]in['log','report']){
 					d.channels.log[channel.id]=channel.log?false:true
-					e.sendMessage("**${channel.name.capitalize()}** is ${if(channel.log){"now"}else{"no longer"}} a log channel.").queue()
+					e.sendMessage("**${channel.name.capitalize()}** is ${if(channel.log){'now'}else{'no longer'}} a log channel.").queue()
 					d.json.save(d.channels,'channels')
 				}else if(d.args[0]in['nsfw','porn']){
 					d.channels.nsfw[channel.id]=channel.nsfw?false:true
-					e.sendMessage("**${channel.name.capitalize()}** is ${if(channel.nsfw){"now"}else{"no longer"}} an NSFW channel.").queue()
+					e.sendMessage("**${channel.name.capitalize()}** is ${if(channel.nsfw){'now'}else{'no longer'}} an NSFW channel.").queue()
 					d.json.save(d.channels,'channels')
 				}else if(d.args[0]in['song','music']){
 					d.channels.song[channel.id]=channel.song?false:true
-					e.sendMessage("**${channel.name.capitalize()}** is ${if(channel.song){"now"}else{"no longer"}} a song channel.").queue()
+					e.sendMessage("**${channel.name.capitalize()}** is ${if(channel.song){'now'}else{'no longer'}} a song channel.").queue()
 					d.json.save(d.channels,'channels')
 				}else if(d.args[0]in['ignored','ignore']){
 					if(e.guild.textChannels.findAll{it.ignored}.size()<(e.guild.textChannels.size()-1)){
 						d.channels.ignored[channel.id]=channel.ignored?false:true
-						e.sendMessage("**${channel.name.capitalize()}** is ${if(channel.ignored){"now"}else{"no longer"}} an ignored channel.").queue()
+						e.sendMessage("**${channel.name.capitalize()}** is ${if(channel.ignored){'now'}else{'no longer'}} an ignored channel.").queue()
 						d.json.save(d.channels,'channels')
 					}else{
 						e.sendMessage("But how will I unignore it?").queue()
@@ -3901,7 +3910,7 @@ class SmiliesCommand extends Command{
 					}
 					d.json.save(d.settings,'settings')
 				}else if(arg in['create','add']){
-					if(new File("images/cs").listFiles().findAll{it.name.endsWith('_'+e.guild.id+'_png')}.size()>49){
+					if(new File('images/cs').listFiles().findAll{it.name.endsWith("_${e.guild.id}.png")}.size()>49){
 						e.sendMessage("You can't add any more smilies because you've reached the maximum amount, which is 50. Delete some of the less important ones and come see me again.").queue()
 						403
 					}else if(!name){
@@ -3910,15 +3919,15 @@ class SmiliesCommand extends Command{
 					}else if(!d.args[2]){
 						e.sendMessage("What is the smilie supposed to be?").queue()
 						400
-					}else if(name.containsAny(['@everyone','@here'])||(name in new File("images/xat").listFiles()*.name*.replace('_xat.png',''))){
-						e.sendMessage("You can't add a smilie with that name${if(d.args[1].contains('@')){''}else{" because an xat smilie with that name already exists"}}.").queue()
+					}else if(name.containsAny(['@everyone','@here'])||(name in new File('images/xat').listFiles()*.name*.replace('_xat.png',''))){
+						e.sendMessage("You can't add a smilie with that name${if(d.args[1].contains('@')){''}else{' because an xat smilie with that name already exists'}}.").queue()
 						403
 					}else if(new File("images/cs/${name}_${e.guild.id}.png").exists()){
 						e.sendMessage("You can't add a smilie with that name because a smilie already exists with that name. Edit the smilie instead.").queue()
 						400
 					}else{
 						try{
-							InputStream input=new URL(d.args[2]).newInputStream(requestProperties:[Accept:"*/*"])
+							InputStream input=new URL(d.args[2]).newInputStream(requestProperties:[Accept:'*/*'])
 							BufferedImage smilie=ImageIO.read(input)
 							if(smilie.height>150){
 								e.sendMessage("The image is too tall. It should be less than 150 pixels in each dimension.").queue()
@@ -3956,7 +3965,7 @@ class SmiliesCommand extends Command{
 									e.sendMessage("The image is too wide. It should be less than 150 pixels in each dimension.").queue()
 									403
 								}else{
-									ImageIO.write(smilie,"png",new File("images/cs/${name}_${e.guild.id}.png"))
+									ImageIO.write(smilie,'png',new File("images/cs/${name}_${e.guild.id}.png"))
 									e.sendMessage("The smilie **$name** has been changed.").queue()
 									e.sendFile("images/cs/${name}_${e.guild.id}.png").queue()
 								}
@@ -4119,8 +4128,6 @@ class AccessCommand extends Command{
 			if(d.args.toLowerCase().containsAny(['avatar','icon'])){
 				d.args=d.args.replaceAny(['avatar','icon'],'').trim()
 				d.bot.commands.find{it.aliases[0]=='avatar'}.run(d,e)
-			}else if(e.message.mentions){
-				d.bot.commands.find{it.aliases[0]=='userinfo'}.run(d,e)
 			}else if(e.message.mentionedChannels){
 				d.bot.commands.find{it.aliases[0]=='channelinfo'}.run(d,e)
 			}else if(e.message.mentionedRoles){
@@ -4142,9 +4149,17 @@ class AccessCommand extends Command{
 				d.bot.commands.find{it.aliases[0]=='youtube'}.run(d,e)
 			}else if(d.args.toLowerCase().containsAny(['image','picture'])){
 				d.args=d.args.replaceAny(['image','picture'],'').trim()
-				d.bot.commands.find{it.aliases[0]=='image'}.run(d,e)
-			}else if((d.args.toLowerCase()+' ')in d.bot.commands.findAll{!it.dev}.aliases*.getAt(0).flatten()*.plus(' ')){
-				Command cmd=d.bot.commands.find{(d.args+' ').startsWith(it.aliases[0]+' ')}
+			}else if(d.args.toLowerCase().containsAny(['porn','hentai'])){
+				d.args=d.args.replaceAny(['porn','hentai'],'').trim()
+				d.bot.commands.find{it.aliases[0]=='nsfw'}.run(d,e)
+			}else if(d.args.toLowerCase().containsAny(['+','-','*','/'])){
+				d.bot.commands.find{it.aliases[0]=='math'}.run(d,e)
+			}else if(e.message.content.contains('://')){
+				d.bot.commands.find{it.aliases[0]=='source'}.run(d,e)
+			}else if(e.message.mentions){
+				d.bot.commands.find{it.aliases[0]=='userinfo'}.run(d,e)
+			}else if(d.args.toLowerCase()in d.bot.commands.findAll{!it.dev}.aliases*.getAt(0).flatten()){
+				Command cmd=d.bot.commands.find{d.args==it.aliases[0]}
 				d.args=d.args.replace(cmd.aliases[0],'').trim()
 				cmd.run(d,e)
 			}else{
@@ -4452,7 +4467,7 @@ class ProfileCommand extends Command{
 				BufferedImage image=new BufferedImage(251,229,BufferedImage.TYPE_INT_ARGB)
 				Graphics2D graphics=image.createGraphics()
 				graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
-				graphics.drawImage(ImageIO.read(new File("images/profile.png")),0,0,null)
+				graphics.drawImage(ImageIO.read(new File('images/profile.png')),0,0,null)
 				graphics.color=new Color(0x010101)
 				graphics.font=new Font('WhitneyBold',Font.PLAIN,16)
 				File avatar=new File("temp/avatars/${user.avatarId?:user.defaultAvatarId}.png")
@@ -4640,7 +4655,7 @@ class PwnedCommand extends Command{
 		if(d.args.containsAll(['@','.'])){
 			e.sendTyping().queue()
 			try{
-				List hecks=new JsonSlurper().parse(Unirest.get("https://haveibeenpwned.com/api/v2/breachedaccount/$d.args").asString().body.bytes).collect{Map breach->"**$breach.Title** ($breach.Domain): ${breach.DataClasses.join(', ')} ${if(breach.IsVerified){'(verified)'}else if(breach.IsFabricated){'(fabricated)'}else{''}}"}
+				List hecks=new JsonSlurper().parse(Unirest.get("https://haveibeenpwned.com/api/v2/breachedaccount/$d.args").asString().body.bytes).collect{Map breach->"**$breach.Title** ($breach.Domain): ${breach.DataClasses.join(', ')}${if(breach.IsVerified){' (verified)'}else if(breach.IsFabricated){' (fabricated)'}else{''}}"}
 				"You've been pwned $hecks.size time${if(hecks.size>1){'s'}else{''}}:\n${hecks.join('\n')}".split(1999).each{
 					e.sendMessage(it).queue()
 					Thread.sleep(150)
@@ -4666,7 +4681,7 @@ class MathCommand extends Command{
 	def run(Map d,Event e){
 		if(d.args){
 			e.sendTyping().queue()
-			String sum=d.args.replaceAll(/([A-Za-z]+)/){full,word->"Math.$word"}.replaceAll(['"',"'"],'').replaceEach(['{','}'],['[',']']).replaceAll(['\\','\$','_'],'').replaceAll(/[\u00c0-\u00f6\u00f8-\ufffe]+/,'').replaceAll(/(\/)+.+(\/)\.*\[\s+\w+.+(,|\.|\])+/,'')
+			String sum=d.args.replaceAll(/([A-Za-z]+)/){full,word->"Math.$word"}.replaceAll(['"','\''],'').replaceEach(['{','}'],['[',']']).replaceAll(['\\','\$','_'],'').replaceAll(/[\u00c0-\u00f6\u00f8-\ufffe]+/,'').replaceAll(/(\/)+.+(\/)\.*\[\s+\w+.+(,|\.|\])+/,'')
 			String ass
 			try{
 				ass=new GroovyShell().evaluate(sum).toString()
@@ -4707,11 +4722,11 @@ class MapCommand extends Command{
 			}
 			Range range=(-spread..spread)
 			List users=e.guild.users.findAll{d.db[it.id]}.sort{-it.createTimeMillis}
-			File ass=new File("temp/map.png")
+			File ass=new File('temp/map.png')
 			OutputStream os=ass.newOutputStream()
 			BufferedImage image=new BufferedImage(2023,954,BufferedImage.TYPE_INT_ARGB)
 			Graphics2D graphics=image.createGraphics()
-			graphics.drawImage(ImageIO.read(new File("images/map.png")),0,0,null)
+			graphics.drawImage(ImageIO.read(new File('images/map.png')),0,0,null)
 			users.each{User user->
 				String area=d.db[user.id].area
 				String key=d.misc.geos*.key.sort{-it.length()}.find{area.endsWith(it)}
