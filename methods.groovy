@@ -61,12 +61,6 @@ User.metaClass.isOwner={Guild guild->
 
 Channel.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Channel.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
-Channel.metaClass.edit={Map data->
-	if(data.name!=null)delegate.manager.setName(data.name)
-	if(data.topic!=null)delegate.manager.setName(data.topic)
-	if(data.bitrate!=null)delegate.manager.setName(data.bitrate)
-	if(data.userLimit!=null)delegate.manager.setUserLimit(data.userLimit)
-}
 
 TextChannel.metaClass.getUsers={delegate.members*.user}
 
@@ -207,7 +201,7 @@ String.metaClass.addVariables={MessageReceivedEvent e,String args->
 		if(e.guild){
 			user=e.guild.users.toList().randomItem()
 			Channel channel=e.guild.channels.toList().randomItem()
-			data=data.replaceAll(['{channel}','{channelname}'],e.channel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
+			data=data.replaceAll(['{channel}','{channelname}'],e.channel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon?:e.guild.name.tokenize()*.capitalize().join(' ')).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
 		}else{
 			user=[e.author,e.jda.selfUser].randomItem()
 			PrivateChannel channel=e.jda.privateChannels.toList().randomItem()
@@ -228,7 +222,7 @@ String.metaClass.addVariables={GenericGuildMemberEvent e,String args->
 	if(data.containsAll(['{','}'])){
 		User user=e.guild.users.toList().randomItem()
 		Channel channel=e.guild.channels.toList().randomItem()
-		data=data.replaceAll(['{channel}','{channelname}'],e.guild.defaultChannel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
+		data=data.replaceAll(['{channel}','{channelname}'],e.guild.defaultChannel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon?:e.guild.name.tokenize()*.capitalize().join(' ')).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
 		data=data.replace('{id}',((System.currentTimeMillis()-1420070400000)<<22).toString()).replaceAll(['{author}','{authordb}'],e.member.user.identity).replace('{authorname}',e.member.user.name).replace('{authorid}',e.member.user.id).replace('{authoravatar}',e.member.user.avatar?:e.member.user.defaultAvatar).replace('{channelid}',e.guild.defaultChannel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
 		if(data.containsAll(['{','}'])){
 			List groups=data.range('{','}').split(/\}([^\{.+\}]+)?\{/)
@@ -244,7 +238,7 @@ String.metaClass.addVariables={GenericGuildEvent e,String args->
 	if(data.containsAll(['{','}'])){
 		User user=e.guild.users.toList().randomItem()
 		Channel channel=e.guild.channels.toList().randomItem()
-		data=data.replaceAll(['{channel}','{channelname}'],e.guild.defaultChannel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
+		data=data.replaceAll(['{channel}','{channelname}'],e.guild.defaultChannel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon?:e.guild.name.tokenize()*.capitalize().join(' ')).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
 		data=data.replace('{id}',((System.currentTimeMillis()-1420070400000)<<22).toString()).replaceAll(['{author}','{authordb}'],e.user.identity).replace('{authorname}',e.user.name).replace('{authorid}',e.user.id).replace('{authoravatar}',e.user.avatar?:e.user.defaultAvatar).replace('{channelid}',e.guild.defaultChannel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
 		if(data.containsAll(['{','}'])){
 			List groups=data.range('{','}').split(/\}([^\{.+\}]+)?\{/)
