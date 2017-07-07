@@ -9,8 +9,8 @@ import net.dv8tion.jda.core.events.message.react.*
 import net.dv8tion.jda.core.events.guild.member.*
 import java.time.OffsetDateTime
 
-String id="155684861770858496"
-String owner="107894146617868288"
+String id='155684861770858496'
+String owner='107894146617868288'
 
 
 JDA.metaClass.play={String game->delegate.presence.setGame(Game.of(game))}
@@ -20,12 +20,12 @@ JDA.metaClass.getChannels={delegate.textChannels+delegate.voiceChannels+delegate
 
 Event.metaClass.getJda={delegate.JDA}
 
-MessageReceivedEvent.metaClass.sendMessage={String content->delegate.channel.sendMessage("\u200b"+content?.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
+MessageReceivedEvent.metaClass.sendMessage={String content->delegate.channel.sendMessage('\u200b'+content?.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
 MessageReceivedEvent.metaClass.sendTyping={delegate.channel.sendTyping()}
 MessageReceivedEvent.metaClass.sendFile={String file->delegate.channel.sendFile(new File(file),null)}
 MessageReceivedEvent.metaClass.sendFile={File file->delegate.channel.sendFile(file,null)}
 
-GenericGuildMemberEvent.metaClass.sendMessage={String content->delegate.guild.defaultChannel.sendMessage("\u200b"+content?.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
+GenericGuildMemberEvent.metaClass.sendMessage={String content->delegate.guild.defaultChannel.sendMessage('\u200b'+content?.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
 
 Message.metaClass.getAttachment={delegate.attachments[0]}
 Message.metaClass.edit={String content->delegate.editMessage(content)}
@@ -46,7 +46,7 @@ User.metaClass.getAvatar={delegate.avatarUrl}
 User.metaClass.getMention={delegate.asMention}
 User.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 User.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
-User.metaClass.getAvatarUrl={delegate.avatarId?"https://cdn.discordapp.com/avatars/$delegate.id/$delegate.avatarId${if(delegate.avatarId.startsWith('a_')){".gif"}else{".jpg"}}":delegate.defaultAvatarUrl}
+User.metaClass.getAvatarUrl={delegate.avatarId?"https://cdn.discordapp.com/avatars/$delegate.id/$delegate.avatarId${if(delegate.avatarId.startsWith('a_')){'.gif'}else{'.jpg'}}":delegate.defaultAvatarUrl}
 User.metaClass.getDefaultAvatar={delegate.defaultAvatarUrl}
 User.metaClass.getAvatar={delegate.avatarUrl}
 User.metaClass.isMember={Guild guild->
@@ -61,6 +61,7 @@ User.metaClass.isOwner={Guild guild->
 
 Channel.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Channel.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
+Channel.metaClass.getMention={delegate.asMention}
 
 TextChannel.metaClass.getUsers={delegate.members*.user}
 
@@ -79,18 +80,19 @@ PrivateChannel.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>2
 
 Role.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Role.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
+Role.metaClass.getMention={delegate.asMention}
 Role.metaClass.isColour={(delegate.name==~/#?[A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9]/)&&!delegate.name.toLowerCase().containsAny('g'..'z')}
 Role.metaClass.isConfig={delegate.name in['Bot Commander','Assist Owner','Trainer','Literally Hitler','spoo.py colorful','Spectra','spoo.py admin','spoo.py mod','Nadeko','Baka','regall commander','Ender','KOSMOS','Discoid Admin','Watchr Commander','Discone Admin','Living Meme','Bot Pony Commander','Beemo Music','Mop Staff','MrMellow Creator','TCommander','Dragon Tamer']}
 
 Emote.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Emote.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
+Emote.metaClass.getMention={delegate.asMention}
 Emote.metaClass.getManaged={false}
 
 Guild.metaClass.getChannels={delegate.textChannels+delegate.voiceChannels}
 Guild.metaClass.getIcon={delegate.iconUrl}
 Guild.metaClass.getDefaultChannel={delegate.publicChannel}
 Guild.metaClass.getDefaultRole={delegate.publicRole}
-//Guild.metaClass.getAfkChannel={delegate.voiceChannels.find{it.id==delegate.afkChannelId}}
 Guild.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Guild.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
 Guild.metaClass.getUsers={delegate.members*.user}
@@ -176,20 +178,20 @@ Closure addVariables={String group,String data,String args,Event e->
 	}else if(group.startsWith('nameof;')){
 		User ass=(e.guild?:e.jda).users.find{it.id==group.substring(7).replaceAll(/\D+/,'')}
 		if(!ass)ass=(e.guild?:e.jda).users.find{it.identity.toLowerCase()==group.substring(7).toLowerCase()}
-		returned=ass?ass.name:"???"
+		returned=ass?ass.name:'???'
 	}else if(group.startsWith('idof;')){
 		User ass=(e.guild?:e.jda).users.find{it.identity.toLowerCase()==group.substring(5).toLowerCase()}
 		if(!ass)ass=(e.guild?:e.jda).users.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
-		returned=ass?ass.id:"???"
+		returned=ass?ass.id:'???'
 	}else if(group.startsWith('dbof;')){
 		User ass=(e.guild?:e.jda).users.find{it.id==group.substring(5).replaceAll(/\D+/,'')}
 		if(!ass)ass=(e.guild?:e.jda).users.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
-		returned=ass?ass.identity:"???"
+		returned=ass?ass.identity:'???'
 	}else if(group.startsWith('avatarof;')){
 		User ass=(e.guild?:e.jda).users.find{it.id==group.substring(9).replaceAll(/\D+/,'')}
 		if(!ass)ass=(e.guild?:e.jda).users.find{it.name.toLowerCase()==group.substring(9).toLowerCase()}
 		if(!ass)ass=(e.guild?:e.jda).users.find{it.identity.toLowerCase()==group.substring(9).toLowerCase()}
-		returned=ass?ass.avatar:"???"
+		returned=ass?ass.avatar:'???'
 	}
 	if(returned)data=data.replace("{$group}",returned.toString())
 	data
