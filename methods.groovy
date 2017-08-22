@@ -91,7 +91,7 @@ Emote.metaClass.getManaged={false}
 
 Guild.metaClass.getChannels={delegate.textChannels+delegate.voiceChannels}
 Guild.metaClass.getIcon={delegate.iconUrl}
-Guild.metaClass.getDefaultChannel={delegate.publicChannel}
+Guild.metaClass.getDefaultChannel={delegate.publicChannel?:delegate.textChannels[0]}
 Guild.metaClass.getDefaultRole={delegate.publicRole}
 Guild.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Guild.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
