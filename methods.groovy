@@ -29,7 +29,7 @@ GenericGuildMemberEvent.metaClass.sendMessage={String content->delegate.guild.de
 
 Message.metaClass.getAttachment={delegate.attachments[0]}
 Message.metaClass.edit={String content->delegate.editMessage(content)}
-Message.metaClass.delete={delegate.deleteMessage()}
+//Message.metaClass.delete={delegate.deleteMessage()}
 Message.metaClass.getGuild={delegate.channel?.guild}
 Message.metaClass.getMentions={delegate.mentionedUsers}
 Message.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
@@ -50,18 +50,19 @@ User.metaClass.getAvatarUrl={delegate.avatarId?"https://cdn.discordapp.com/avata
 User.metaClass.getDefaultAvatar={delegate.defaultAvatarUrl}
 User.metaClass.getAvatar={delegate.avatarUrl}
 User.metaClass.isMember={Guild guild->
-	guild.membersMap[delegate.id].roles||(delegate==guild.owner)||(delegate.id==owner)
+	guild.members.find{it.user.id==delegate.id}.roles||(delegate==guild.owner)||(delegate.id==owner)
 }
 User.metaClass.isStaff={Guild guild->
-	("Trainer"in guild.membersMap[delegate.id].roles*.name)||guild.membersMap[delegate.id].roles.any{'MESSAGE_MANAGE'in it.permissions*.toString()}||(delegate==guild.owner)||(delegate.id==owner)
+	("Trainer"in guild.members.find{it.user.id==delegate.id}.roles*.name)||guild.members.find{it.user.id==delegate.id}.roles.any{'MESSAGE_MANAGE'in it.permissions*.toString()}||(delegate==guild.owner)||(delegate.id==owner)
 }
 User.metaClass.isOwner={Guild guild->
-	("Bot Commander"in guild.membersMap[delegate.id].roles*.name)||guild.membersMap[delegate.id].roles.any{'ADMINISTRATOR'in it.permissions*.toString()}||(delegate==guild.owner)||(delegate.id==owner)
+	("Bot Commander"in guild.members.find{it.user.id==delegate.id}.roles*.name)||guild.members.find{it.user.id==delegate.id}.roles.any{'ADMINISTRATOR'in it.permissions*.toString()}||(delegate==guild.owner)||(delegate.id==owner)
 }
 
 Channel.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Channel.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
 Channel.metaClass.getMention={delegate.asMention}
+Channel.metaClass.getCategory={delegate.guild?delegate.guild.categories.find{delegate in it.channels}:null}
 
 TextChannel.metaClass.getUsers={delegate.members*.user}
 
@@ -100,7 +101,7 @@ Guild.metaClass.getUsers={delegate.members*.user}
 
 JDA.metaClass.findGuild={String args->delegate.guilds.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 JDA.metaClass.findUser={String args->delegate.users.toList().sort{it.name.length()}.find{[it.name.toLowerCase(),it.identity.toLowerCase(),it.identity.abbreviate().toLowerCase()].findAll{it}.any{it.contains(args.toLowerCase())}}}
-Guild.metaClass.findUser={String args->delegate.users.toList().sort{it.name.length()}.find{[it.name.toLowerCase(),delegate.membersMap[it.id].nickname?.toLowerCase(),it.identity.toLowerCase(),it.identity.abbreviate().toLowerCase()].findAll{it}.any{it.contains(args.toLowerCase())}}}
+Guild.metaClass.findUser={String args->delegate.users.toList().sort{it.name.length()}.find{[it.name.toLowerCase(),delegate.members.find{def fuckjava->fuckjava.user.id==it.id}.nickname?.toLowerCase(),it.identity.toLowerCase(),it.identity.abbreviate().toLowerCase()].findAll{it}.any{it.contains(args.toLowerCase())}}}
 JDA.metaClass.findChannel={String args->delegate.channels.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 Guild.metaClass.findChannel={String args->delegate.channels.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 JDA.metaClass.findTextChannel={String args->delegate.textChannels.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
@@ -111,6 +112,8 @@ JDA.metaClass.findPrivateChannel={String args->delegate.privateChannels.toList()
 JDA.metaClass.findEmote={String args->delegate.emotes.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 Guild.metaClass.findEmote={String args->delegate.emotes.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 Guild.metaClass.findRole={String args->delegate.roles.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
+JDA.metaClass.findCategory={String args->delegate.categories.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
+Guild.metaClass.findCategory={String args->delegate.categories.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 
 
 String.metaClass.cut={int at->
@@ -259,7 +262,7 @@ Range.metaClass.randomItem={delegate.toList().randomItem()}
 String.metaClass.randomItem={delegate.toList().randomItem()}
 
 
-String.metaClass.strip={delegate.replaceAll(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}
+String.metaClass.strip={delegate.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}
 String.metaClass.addImports={"""import net.dv8tion.jda.core.*
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import net.dv8tion.jda.core.entities.*
