@@ -176,8 +176,8 @@ class GRover extends ListenerAdapter{
 		}
 		if(info.game)e.jda.play(info.game)
 		Thread.start{
-//			while(true){
-				try{
+			while(true){
+/*try{
 					List channels=e.jda.textChannels+e.jda.privateChannels
 					Map cache=[:]
 					feeds.youtube.clone().each{Map feed->
@@ -296,10 +296,161 @@ class GRover extends ListenerAdapter{
 					json.save(feeds,'feeds')
 				}catch(ex){
 					ex.printStackTrace()
+				}*/
+				try{
+					List channels=e.jda.textChannels+e.jda.privateChannels
+					Map cache=[:]
+					feeds.youtube.clone().each{Map feed->
+						def channel=channels.find{it.id==feed.channel}
+						if(channel){
+							try{
+								Document doc=cache[feed.link]?:web.get(feed.link)
+								cache[feed.link]=doc
+								boolean done
+								int past=0
+								List out=[]
+								String title=doc.getElementsByTag('title').text().tokenize().join(' ')
+								while(!done){
+									try{
+										String id=doc.getElementsByClass('yt-lockup-title')[past].getElementsByTag('a')[0].attr('href')
+										if(id!=feed.last){
+											out+=id
+											past+=1
+										}else{
+											done=true
+										}
+									}catch(end){
+										println(past)
+										end.printStackTrace()
+										done=true
+									}
+								}
+								if(out&&(out.size()<10)){
+									channel.sendMessage("**New video${(out.size()==1)?'':'s'} from $title**:\n"+out.collect{"https://www.youtube.com$it"}.join('\n')).queue()
+									feeds.youtube.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=out[0]
+								}
+							}catch(bad){
+								bad.printStackTrace()
+							}
+						}
+					}
+					feeds.animelist.clone().each{Map feed->
+						def channel=channels.find{it.id==feed.channel}
+						if(channel){
+							try{
+								Document doc=cache[feed.link]?:web.get(feed.link)
+								cache[feed.link]=doc
+								boolean done
+								int past=0
+								List out=[]
+								String title=doc.getElementsByTag('title')[0].text().tokenize()[0]
+								while(!done){
+									try{
+										Element anime=doc.getElementsByTag('item')[past]
+										List data=anime.getElementsByTag('description')[0].text().replace(' episodes','').split(' - ')
+										String name=anime.getElementsByTag('title')[0].text()
+										String id="$name/${data[1].tokenize()[0]}"
+										if(id!=feed.last){
+											String link=anime.getElementsByTag('link')[0].text()
+											out+=[[data[0],data[1],name,link]]
+											past+=1
+										}else{
+											done=true
+										}
+									}catch(end){
+										println(past)
+										end.printStackTrace()
+										done=true
+									}
+								}
+								if(out&&(out.size()<10)){
+									channel.sendMessage("**New episode${(out.size()==1)?'':'s'} on $title anime list**:\n"+out.collect{"${it[0]}: Episode ${it[1]} of ${it[2]}.\n<${it[3]}>"}).queue()
+									feeds.animelist.find{(it.link==feed.link)&&(it.channel==channel.id)}.last="${out[0][2]}/${out[0][1]}"
+								}
+							}catch(bad){
+								bad.printStackTrace()
+							}
+						}
+					}
+					feeds.twitter.clone().each{Map feed->
+						def channel=channels.find{it.id==feed.channel}
+						if(channel){
+							try{
+								Document doc=cache[feed.link]?:web.get(feed.link)
+								cache[feed.link]=doc
+								boolean done
+								int past=doc.getElementsByClass('js-pinned-text')?1:0
+								List out=[]
+								String title=doc.getElementsByClass('ProfileHeaderCard-nameLink').text()
+								String user=doc.getElementsByClass('u-linkComplex-target')[0].text()
+								while(!done){
+									try{
+										String id=doc.getElementsByClass('tweet-timestamp')[past].attr('data-conversation-id')
+										if(id!=feed.last){
+											out+=id
+											past+=1
+										}else{
+											done=true
+										}
+									}catch(end){
+										println(past)
+										end.printStackTrace()
+										done=true
+									}
+								}
+								if(out&&(out.size()<10)){
+									channel.sendMessage("**New tweet${(out.size()==1)?'':'s'} from $title**:\n"+out.collect{"https://twitter.com/$user/status/$it"}.join('\n')).queue()
+									feeds.twitter.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=out[0]
+								}
+							}catch(bad){
+								bad.printStackTrace()
+							}
+						}
+					}
+					feeds.levelpalace.clone().each{Map feed->
+						def channel=channels.find{it.id==feed.channel}
+						if(channel){
+							try{
+								Document doc=cache[feed.link]?:web.get(feed.link)
+								cache[feed.link]=doc
+								boolean done
+								int past=1
+								List out=[]
+								String title
+								while(!done){
+									try{
+										Elements level=doc.getElementsByClass('levels-table')[0].getElementsByTag('tr')[past].getElementsByTag('a')
+										String id=level[0].attr('href')
+										if(id!=feed.last){
+											title=level[1].text()
+											out+=[[level[0].text(),id]]
+											past+=1
+										}else{
+											done=true
+										}
+									}catch(end){
+										println(past)
+										end.printStackTrace()
+										done=true
+									}
+								}
+								if(out&&(out.size()<10)){
+									channel.sendMessage("**New level${(out.size()==1)?'':'s'} from $title**:\n"+out.collect{"${it[0]}.\n<https://levelpalace.com/${it[1]}>"}.join('\n')).queue()
+									feeds.levelpalace.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=out[0][1]
+								}
+							}catch(bad){
+								bad.printStackTrace()
+							}
+						}
+					}
+					cache=[:]
+					json.save(feeds,'feeds')
+				}catch(ex){
+					ex.printStackTrace()
 				}
 				Thread.sleep(3600000)
 				db=json.load('database')
-//			}
+			}
 		}
 	}
 	
@@ -1811,7 +1962,7 @@ class MiscCommand extends Command{
 		}else if(d.args[0]in['area','location']){
 			try{
 				d.args=d.args[1..-1].join(' ').toLowerCase().replaceEach(['england','america'],['united kingdom','united states'])
-				List people=d.db.findAll{it.value.area.toLowerCase().contains(d.args)}*.value.name.unique().findAll{!it.endsWithAny(['Incognito','Alternate Account'])}
+				List people=((d.args=='earth')?d.db:d.db.findAll{it.value.area.toLowerCase().contains(d.args)})*.value.name.unique().findAll{!it.endsWithAny(['Incognito','Alternate Account'])}
 				if(people){
 					String inhabits=people.join(', ').capitalize()
 					if(inhabits.length()>1000)inhabits=inhabits.substring(0,1000)+'...'
@@ -1837,7 +1988,7 @@ class MiscCommand extends Command{
 				e.sendMessage(['Enter a HTTP error code, like `404`.','Vul een HTTP foutcode, lijkt `404`.','Digite um codigo de erro HTTP, como `404`.'].lang(e)).queue()
 				400
 			}
-		}else if(d.args[0]in['name','reg']){
+		}else if(d.args[0]=='name'){
 			if(!d.args[1])d.args[1]=''
 			d.args[1]=d.args[1].replaceAll(/\D/,'')
 			if(d.args[1]){
@@ -2142,7 +2293,8 @@ class IrlCommand extends Command{
 			if(user){
 				try{
 					String irl=d.db[user.id].irl
-					e.sendMessage("**${user.identity.capitalize()}**'s real name is ${if(irl!='unknown'){irl}else{'not in my database'}}.${if(user.id==e.author.id){'\n\nIf you would like this information changed, please ask 107894146617868288.'}else{''}}").queue()
+					User axew=e.jda.users.find{it.id=='107894146617868288'}
+					e.sendMessage("**${user.identity.capitalize()}**'s real name is ${if(irl!='unknown'){irl}else{'not in my database'}}.${if(user.id==e.author.id){"\n\nIf you would like this information changed, please ask $axew.name#$axew.discriminator."}else{''}}").queue()
 				}catch(entry){
 					e.sendMessage(["There is no information in my database for $user.name.","Er is geen informatie in mijn databank voor $user.name.","Nao ha informacoes no meu banco de dados para $user.name.","W mojej bazie danych nie ma zadnych informacji o $user.name."].lang(e)).queue()
 					404
@@ -2182,7 +2334,8 @@ class AgeCommand extends Command{
 			if(user){
 				try{
 					String age=d.db[user.id].age
-					e.sendMessage("**${user.identity.capitalize()}**'s birthday is ${if(age!='unknown'){age}else{'not in my database'}}.${if(user.id==e.author.id){'\n\nIf you would like this information changed, please ask 107894146617868288.'}else{''}}").queue()
+					User axew=e.jda.users.find{it.id=='107894146617868288'}
+					e.sendMessage("**${user.identity.capitalize()}**'s birthday is ${if(age!='unknown'){age}else{'not in my database'}}.${if(user.id==e.author.id){"\n\nIf you would like this information changed, please ask $axew.name#$axew.discriminator."}else{''}}").queue()
 				}catch(entry){
 					e.sendMessage(["There is no information in my database for $user.name.","Er is geen informatie in mijn databank voor $user.name.","Nao ha informacoes no meu banco de dados para $user.name.","W mojej bazie danych nie ma zadnych informacji o $user.name."].lang(e)).queue()
 					404
@@ -2222,7 +2375,8 @@ class AreaCommand extends Command{
 			if(user){
 				try{
 					String area=d.db[user.id].area
-					e.sendMessage("**${user.identity.capitalize()}**'s location is ${if(area=='United States'){'the United States (or unknown)'}else if(area!='unknown'){(area.startsWith('Uni')?'the ':'')+area}else{'not in my database'}}.${if(user.id==e.author.id){'\n\nIf you would like this information changed, please ask 107894146617868288.'}else{''}}").queue()
+					User axew=e.jda.users.find{it.id=='107894146617868288'}
+					e.sendMessage("**${user.identity.capitalize()}**'s location is ${if(area=='United States'){'the United States (or unknown)'}else if(area!='unknown'){(area.startsWith('Uni')?'the ':'')+area}else{'not in my database'}}.${if(user.id==e.author.id){"\n\nIf you would like this information changed, please ask $axew.name#$axew.discriminator."}else{''}}").queue()
 				}catch(entry){
 					e.sendMessage(["There is no information in my database for $user.name.","Er is geen informatie in mijn databank voor $user.name.","Nao ha informacoes no meu banco de dados para $user.name.","W mojej bazie danych nie ma zadnych informacji o $user.name."].lang(e)).queue()
 					404
@@ -2303,7 +2457,8 @@ class MinecraftCommand extends Command{
 			}else{
 				try{
 					String mc=d.db[e.author.id].mc
-					e.sendMessage("**${e.author.identity.capitalize()}**${if(mc){"'s Minecraft username is ${mc}.\nhttps://visage.surgeplay.com/full/512/${mc}.png"}else{" does not have a Minecraft account."}}\n\nIf you would like this information changed, please ask 107894146617868288.").queue()
+					User axew=e.jda.users.find{it.id=='107894146617868288'}
+					e.sendMessage("**${e.author.identity.capitalize()}**${if(mc){"'s Minecraft username is ${mc}.\nhttps://visage.surgeplay.com/full/512/${mc}.png"}else{" does not have a Minecraft account."}}\n\nIf you would like this information changed, please ask $axew.name#$axew.discriminator.").queue()
 				}catch(entry){
 					e.sendMessage(["There is no information in my database for $user.name.","Er is geen informatie in mijn databank voor $user.name.","Nao ha informacoes no meu banco de dados para $user.name.","W mojej bazie danych nie ma zadnych informacji o $user.name."].lang(e)).queue()
 					404
@@ -3150,63 +3305,10 @@ class FeedCommand extends Command{
 			List feeds=(d.feeds.youtube+d.feeds.animelist+d.feeds.twitter+d.feeds.levelpalace).findAll{it.channel==e.channel.id}
 			if(d.args.toLowerCase()=='list'){
 				if(feeds){
-					String fed=feeds*.link.join('>\n<').replace('&client=dogbot','').replace('rss.php?type=rw&u=','animelist/')
-					e.sendMessage("**Feeds for #${e.guild?e.channel.name:e.channel.user.name}**:\n<$fed>\n\nFeeds are updated every half an hour.").queue()
+					String fed=feeds*.link.join('>\n<').replace('&client=dogbot','').replace('rss.php?type=rwe&u=','animelist/')
+					e.sendMessage("**Feeds for #${e.guild?e.channel.name:e.channel.user.name}**:\n<$fed>\n\nFeeds are updated every hour.").queue()
 				}else{
 					e.sendMessage("**Feeds for #${e.guild?e.channel.name:e.channel.user.name}**:\nNo feeds, add some!").queue()
-				}
-			}else if(d.args.toLowerCase()=='check'){
-				e.sendTyping().queue()
-				List list=[]
-				d.feeds.youtube.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=d.web.get(feed.link)
-					String id=doc.getElementsByClass('yt-lockup-title')[0].getElementsByTag('a')[0].attr('href')
-					if(id!=feed.last){
-						String title=doc.getElementsByTag('title').text().tokenize().join(' ')
-						list+="**New video from $title**:\nhttps://www.youtube.com$id"
-						d.feeds.youtube.find{(it.link==feed.link)&&(it.channel==e.channel.id)}.last=id
-					}
-				}
-				d.feeds.animelist.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=d.web.get(feed.link)
-					Element anime=doc.getElementsByTag('item')[0]
-					List data=anime.getElementsByTag('description')[0].text().replace(' episodes','').split(' - ')
-					String name=anime.getElementsByTag('title')[0].text().split(' - ')[0]
-					String id="$name/${data[1].tokenize()[0]}"
-					if(id!=feed.last){
-						String title=doc.getElementsByTag('title')[0].text().tokenize()[0]
-						String link=anime.getElementsByTag('link')[0].text()
-						list+="**New episode on $title anime list**:\n${data[0]}: Episode ${data[1]} of $name.\n<$link>"
-						d.feeds.animelist.find{(it.link==feed.link)&&(it.channel==e.channel.id)}.last=id
-					}
-				}
-				d.feeds.twitter.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=d.web.get(feed.link)
-					int ass=doc.getElementsByClass('js-pinned-text')?1:0
-					String link=doc.getElementsByClass('tweet-timestamp')[ass].attr('href')
-					String id=link.substring(link.lastIndexOf('/'))
-					if(id!=feed.last){
-						String title=doc.getElementsByClass('ProfileHeaderCard-nameLink').text()
-						list+="**New tweet from $title**:\nhttps://twitter.com$link"
-						d.feeds.twitter.find{(it.link==feed.link)&&(it.channel==e.channel.id)}.last=id
-					}
-				}
-				d.feeds.levelpalace.findAll{it.channel==e.channel.id}.each{Map feed->
-					Document doc=d.web.get(feed.link)
-					Elements level=doc.getElementsByClass('levels-table')[0].getElementsByTag('a')
-					String id=level[0].attr('href')
-					if(id!=feed.last){
-						String title=level[1].text()
-						String name=level[0].text()
-						list+="**New level from $title**:\n$name.\n<https://levelpalace.com/$id>"
-						d.feeds.levelpalace.find{(it.link==feed.link)&&(it.channel==e.channel.id)}.last=id
-					}
-				}
-				if(list){
-					e.sendMessage(list.join('\n')).queue()
-					d.json.save(d.feeds,'feeds')
-				}else{
-					e.sendMessage(['All up-to-date for this channel.','Alle relevant voor deze kanaal.','Tudo atualizado para este canal.','Wszystko aktualne dla tego kanalu.'].lang(e)).queue()
 				}
 			}else if(feeds.size()>=15){
 				e.sendMessage("You've hit the feed limit for this channel. Please consider removing a feed, or go premium for just Åí1000000!").queue()
@@ -3237,7 +3339,7 @@ class FeedCommand extends Command{
 				}
 			}else if(d.args.contains('myanimelist.net')){
 				try{
-					String link=d.args.replaceAny(['animelist/','profile/'],'rss.php?type=rw&u=')
+					String link=d.args.replaceAny(['animelist/','profile/'],'rss.php?type=rwe&u=')
 					if(!link.startsWith('http'))link="https://$link"
 					if(link in feeds*.link){
 						d.feeds.animelist-=feeds.find{(it.link==link)&&(it.channel==e.channel.id)}
@@ -3272,8 +3374,7 @@ class FeedCommand extends Command{
 						e.sendTyping().queue()
 						Document doc=d.web.get(link)
 						int ass=doc.getElementsByClass('js-pinned-text')?1:0
-						String stamp=doc.getElementsByClass('tweet-timestamp')[ass].attr('href')
-						String id=stamp.substring(stamp.lastIndexOf('/'))
+						String stamp=doc.getElementsByClass('tweet-timestamp')[ass].attr('data-conversation-id')
 						d.feeds.twitter+=[
 							channel:e.channel.id,
 							link:link,
@@ -3322,7 +3423,6 @@ class FeedCommand extends Command{
 	String category='Online'
 	String help="""`feed [youtube/levelpalace/twitter/animelist url]` will make me add or remove that feed from the list for this channel.
 `feed list` will make me tell you what feeds this channel is listening to.
-`feed check` will make me check the feeds for this channel now.
 You can feed into YouTube, MyAnimeList, Level Palace and Twitter. Isn't that neat?"""
 }
 
