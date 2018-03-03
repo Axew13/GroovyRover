@@ -51,11 +51,11 @@ class Bot{
 		new SetAvatarCommand(),new SetPrefixCommand(),new EvalCommand(),new InspectCommand(),new WordCountCommand(),
 		new MemberCommand(),new MuteCommand(),new KickCommand(),new LogCommand(),new ScopeCommand(),
 		new FeedCommand(),new ClearCommand(),new SetChannelCommand(),new SetRoleCommand(),new VotePinCommand(),
-		new ConfigCommand(),new SingCommand(),new BanCommand(),new SmiliesCommand(),new CloneCommand(),
-		new AccessCommand(),new TrackerCommand(),new IsupCommand(),new TopCommand(),new CleanCommand(),
-		new NoteCommand(),new ProfileCommand(),new CustomCommand(),new PwnedCommand(),new MathCommand(),
-		new MapCommand(),new SourceCommand(),new EmojiCommand(),new PingmodCommand()/*,new DogCommand()*/,
-		new CategoryinfoCommand(),new PingCommand()
+		new ConfigCommand(),new SingCommand(),new BanCommand(),new SmiliesCommand(),new AccessCommand(),
+		new TrackerCommand(),new IsupCommand(),new TopCommand(),new CleanCommand(),new NoteCommand(),
+		new ProfileCommand(),new CustomCommand(),new PwnedCommand(),new MathCommand(),new MapCommand(),
+		new SourceCommand(),new EmojiCommand(),new PingmodCommand()/*,new DogCommand()*/,new CategoryinfoCommand(),
+		new PingCommand(),new KawaiiCommand(),new AltdetectCommand()
 	]
 	String oauth='https://discordapp.com/oauth2/authorize?client_id=170646931641466882&scope=bot&permissions=335932438'
 	String server='https://discord.gg/0vJZEroWHiGWWQc7'
@@ -177,126 +177,6 @@ class GRover extends ListenerAdapter{
 		if(info.game)e.jda.play(info.game)
 		Thread.start{
 			while(true){
-/*try{
-					List channels=e.jda.textChannels+e.jda.privateChannels
-					Map cache=[:]
-					feeds.youtube.clone().each{Map feed->
-						def channel=channels.find{it.id==feed.channel}
-						if(channel){
-							try{
-								Document doc
-								boolean unavailable
-								try{
-									doc=cache[feed.link]?:web.get(feed.link)
-								}catch(conn){
-									conn.printStackTrace()
-									unavailable=true
-								}
-								if(!unavailable){
-									cache[feed.link]=doc
-									String id=doc.getElementsByClass('yt-lockup-title')[0].getElementsByTag('a')[0].attr('href')
-									if(id!=feed.last){
-										String title=doc.getElementsByTag('title').text().tokenize().join(' ')
-										channel.sendMessage("**New video from $title**:\nhttps://www.youtube.com$id").queue()
-										feeds.youtube.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
-									}
-								}
-							}catch(bad){
-								bad.printStackTrace()
-							}
-						}
-					}
-					feeds.animelist.clone().each{Map feed->
-						def channel=channels.find{it.id==feed.channel}
-						if(channel){
-							try{
-								Document doc
-								boolean unavailable
-								try{
-									doc=cache[feed.link]?:web.get(feed.link)
-								}catch(conn){
-									conn.printStackTrace()
-									unavailable=true
-								}
-								if(!unavailable){
-									cache[feed.link]=doc
-									Element anime=doc.getElementsByTag('item')[0]
-									List data=anime.getElementsByTag('description')[0].text().replace(' episodes','').split(' - ')
-									String name=anime.getElementsByTag('title')[0].text().split(' - ')[0]
-									String id="$name/${data[1].tokenize()[0]}"
-									if(id!=feed.last){
-										String title=doc.getElementsByTag('title')[0].text().tokenize()[0]
-										String link=anime.getElementsByTag('link')[0].text()
-										channel.sendMessage("**New episode on $title anime list**:\n${data[0]}: Episode ${data[1]} of $name.\n<$link>").queue()
-										feeds.animelist.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
-									}
-								}
-							}catch(bad){
-								bad.printStackTrace()
-							}
-						}
-					}
-					feeds.twitter.clone().each{Map feed->
-						def channel=channels.find{it.id==feed.channel}
-						if(channel){
-							try{
-								Document doc
-								boolean unavailable
-								try{
-									doc=cache[feed.link]?:web.get(feed.link)
-								}catch(conn){
-									conn.printStackTrace()
-									unavailable=true
-								}
-								if(!unavailable){
-									cache[feed.link]=doc
-									int ass=doc.getElementsByClass('js-pinned-text')?1:0
-									String link=doc.getElementsByClass('tweet-timestamp')[ass].attr('href')
-									String id=link.substring(link.lastIndexOf('/'))
-									if(id!=feed.last){
-										String title=doc.getElementsByClass('ProfileHeaderCard-nameLink').text()
-										channel.sendMessage("**New tweet from $title**:\nhttps://twitter.com$link").queue()
-										feeds.twitter.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
-									}
-								}
-							}catch(bad){
-								bad.printStackTrace()
-							}
-						}
-					}
-					feeds.levelpalace.clone().each{Map feed->
-						def channel=channels.find{it.id==feed.channel}
-						if(channel){
-							try{
-								Document doc
-								boolean unavailable
-								try{
-									doc=cache[feed.link]?:web.get(feed.link)
-								}catch(conn){
-									conn.printStackTrace()
-									unavailable=true
-								}
-								if(!unavailable){
-									cache[feed.link]=doc
-									Elements level=doc.getElementsByClass('levels-table')[0].getElementsByTag('a')
-									String id=level[0].attr('href')
-									if(id!=feed.last){
-										String title=level[1].text()
-										String name=level[0].text()
-										channel.sendMessage("**New level from $title**:\n$name.\n<https://levelpalace.com/$id>").queue()
-										feeds.levelpalace.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=id
-									}
-								}
-							}catch(bad){
-								bad.printStackTrace()
-							}
-						}
-					}
-					cache=[:]
-					json.save(feeds,'feeds')
-				}catch(ex){
-					ex.printStackTrace()
-				}*/
 				try{
 					List channels=e.jda.textChannels+e.jda.privateChannels
 					Map cache=[:]
@@ -760,7 +640,7 @@ class UserinfoCommand extends Command{
 					avatar+=man.avatarId?:man.defaultAvatarId
 					created+=new Date(man.createTimeMillis+(zone*3600000)).format('d MMMM yyyy').formatBirthday()
 				}
-				e.sendMessage("""**${mens*.name*.capitalize().join(', ')}** (${mens.size()}): ```css
+				e.sendMessage("""**${mens.collect{"$it.name#$it.discriminator"}.join(', ').capitalize()}** (${mens.size()}): ```css
 IDs: ${mens*.id.join(', ')}
 Names: ${mens*.identity.join(', ')}
 Avatars: ${avatar.join(', ')}
@@ -774,7 +654,7 @@ ${if(mens.every{!e.guild.members.find{def fuckjava->fuckjava.user.id==it.id}.rol
 				Member member=e.guild.members.find{it.user.id==user?.id}
 				if(user){
 					List shared=e.jda.guilds.findAll{user in it.users}*.name
-					e.sendMessage("""**${user.name.capitalize()}** is $member.status: ```css
+					e.sendMessage("""**${user.name.capitalize()}#$user.discriminator** is $member.status: ```css
 ID: $user.id
 Name: $user.identity
 Avatar: ${user.avatar?:user.defaultAvatar}
@@ -790,7 +670,7 @@ ${if(user.bot){'Bot'}else if(member.owner){'Owner'}else if(member.roles){'Member
 		}else{
 			User user=e.author
 			List shared=e.jda.guilds.findAll{user in it.users}*.name
-			e.sendMessage("""**${user.name.capitalize()}** is ${e.jda.guilds.find{user.id in it.users*.id}.members.find{it.id==user.id}.status}: ```css
+			e.sendMessage("""**${user.name.capitalize()}#$user.discriminator** is ${e.jda.guilds.find{user.id in it.users*.id}.members.find{it.id==user.id}.status}: ```css
 ID: $user.id
 Name: $user.identity
 Avatar: ${user.avatar?:user.defaultAvatar}
@@ -867,7 +747,7 @@ ID: $channel.id
 Created: ${new Date(channel.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (${key.abbreviate()})
 Users: ${if(channel.users.size()>4){channel.users[0..4]*.identity.join(', ')+'..'}else{channel.users*.identity.join(', ')}} (${channel.users.size()})
 ${if(channel.class==TextChannelImpl){"Last Activity: ${try{channel.history.retrievePast(1).complete()[0].createTime.format('HH:mm:ss, d MMMM yyyy')}catch(CantView){'???'}}"}else{"Bit Rate: ${channel.bitrate/1000} kbps"}}
-${if(props){"Properties: ${props.join(', ')}"}else{"No special properties"}}
+${if(props){"Properties: ${props.join(', ')}"}else{"None"}}
 ${if(channel.guild.defaultChannel==channel){'Default '}else if(channel.guild.afkChannel==channel){'AFK '}else{''}}${channel.class.simpleName-'ChannelImpl'}```""").queue()
 			}else{
 				e.sendMessage("""**${channel.user.name.capitalize()}** in Direct Messages: ```css
@@ -904,7 +784,7 @@ class RoleinfoCommand extends Command{
 ID: $role.id
 Colour: ${if(role.color){role.color.collect{"rgb($it.red,$it.blue,$it.green)"}[0]}else{'Default'}}
 Created: ${new Date(role.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (${key.abbreviate()})
-Users: ${if(collection.size()>9){collection[0..9].join(', ')+'..'}else{collection.join(', ')}} (${collection.size()})
+Users: ${if(collection.size()>9){collection[0..9].join(', ')+'..'}else if(collection){collection.join(', ')}else{'Nobody'}} (${collection.size()})
 ${if(role.managed){'Integrated'}else if(role.config){'Config'}else if(role.id==d.roles.mute[role.guild.id]){'Mute'}else if(role.id==d.roles.member[role.guild.id]){'Member'}else if(role.colour){'Colour'}else if(role==role.guild.defaultRole){'Default'}else{'Regular'}}```""").queue()
 			}else{
 				e.sendMessage(["I couldn't find a role matching '$d.args.'","Ik kon niet vind een rol vind '$d.args' leuk."].lang(e)).queue()
@@ -1222,7 +1102,7 @@ class ImageCommand extends Command{
 	def run(Map d,Event e){
 		boolean gif=d.args.contains('GIF')
 		d.args=d.args.replace('GIF','').trim()
-		if(d.args.containsAny(['dead','gore'])){
+		if(d.args.containsAny(['dead','gore','waffle','child','loli'])){
 			e.sendMessage('Like I would let you search up something like that! <:gtfo:318318593299316736>').queue()
 		}else if(d.args){
 			e.sendTyping().queue()
@@ -1292,7 +1172,7 @@ class NsfwCommand extends Command{
 			}
 		}else{
 			TextChannel nsfwChannel=e.guild.textChannels.find{it.nsfw}
-			e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(nsfwChannel){", `Use in #$nsfwChannel.name`"}else{''}}.\nStaff can set NSFW channels with `${d.prefix}setchannel nsfw`.").queue()
+			e.sendMessage(d.permissionMessage()+"Requires any: `Bot Commander' role`, `ADMINISTRATOR permission`${if(nsfwChannel){", `Use in #$nsfwChannel.name`"}else{''}}.\nStaff can set NSFW channels with `${d.prefix}setchannel nsfw`.").queue()
 			403
 		}
 	}
@@ -2868,7 +2748,7 @@ class SetPrefixCommand extends Command{
 				}
 				d.json.save(d.settings,'settings')
 			}else{
-				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`.").queue()
+				e.sendMessage(d.permissionMessage()+"Requires any: `'Bot Commander' role`, `ADMINISTRATOR permission`.").queue()
 				403
 			}
 		}else{
@@ -3040,7 +2920,7 @@ class MemberCommand extends Command{
 					511
 				}
 			}else{
-				e.sendMessage(d.permissionMessage()+"Required: `Staff (Trainer/MANAGE_MESSAGES)`.").queue()
+				e.sendMessage(d.permissionMessage()+"Requires any: `'Trainer' role`, `MANAGE MESSAGES permission`.").queue()
 				403
 			}
 		}else{
@@ -3131,7 +3011,7 @@ class MuteCommand extends Command{
 						511
 					}
 				}else{
-					e.sendMessage(d.permissionMessage()+"Required: `Staff (Trainer/MANAGE_MESSAGES)`.").queue()
+					e.sendMessage(d.permissionMessage()+"Requires any: `'Trainer' role`, `MANAGE MESSAGES permission`.").queue()
 					403
 				}
 		}else{
@@ -3181,7 +3061,7 @@ class KickCommand extends Command{
 					511
 				}
 			}else{
-				e.sendMessage(d.permissionMessage()+"Required: `Staff (Trainer/MANAGE_MESSAGES)`.").queue()
+				e.sendMessage(d.permissionMessage()+"Requires any: `'Trainer' role`, `MANAGE MESSAGES permission`.").queue()
 				403
 			}
 		}else{
@@ -3310,17 +3190,16 @@ class FeedCommand extends Command{
 				}else{
 					e.sendMessage("**Feeds for #${e.guild?e.channel.name:e.channel.user.name}**:\nNo feeds, add some!").queue()
 				}
-			}else if(feeds.size()>=15){
-				e.sendMessage("You've hit the feed limit for this channel. Please consider removing a feed, or go premium for just ’1000000!").queue()
-				403
 			}else if(d.args.contains('youtube.com')){
+				String link=d.args
+				if(!link.startsWith('http'))link="https://$link"
+				if(!link.endsWith('/videos'))link+='/videos'
 				try{
-					String link=d.args
-					if(!link.startsWith('http'))link="https://$link"
-					if(!link.endsWith('/videos'))link+='/videos'
 					if(link in feeds*.link){
 						d.feeds.youtube-=feeds.find{(it.link==link)&&(it.channel==e.channel.id)}
 						e.sendMessage("YouTube channel removed from the feed for this channel.").queue()
+					}else if(feeds.size()>=15){
+						e.sendMessage("YouTube chan- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just ’1000000!").queue()
 					}else{
 						e.sendTyping().queue()
 						Document doc=d.web.get(link)
@@ -3344,6 +3223,8 @@ class FeedCommand extends Command{
 					if(link in feeds*.link){
 						d.feeds.animelist-=feeds.find{(it.link==link)&&(it.channel==e.channel.id)}
 						e.sendMessage("Anime list removed from the feed for this channel.").queue()
+					}else if(feeds.size()>=15){
+						e.sendMessage("Anime lis- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just ’1000000!").queue()
 					}else{
 						e.sendTyping().queue()
 						Document doc=d.web.get(link)
@@ -3370,6 +3251,8 @@ class FeedCommand extends Command{
 					if(link in feeds*.link){
 						d.feeds.twitter-=feeds.find{(it.link==link)&&(it.channel==e.channel.id)}
 						e.sendMessage("Twitter handle removed from the feed for this channel.").queue()
+					}else if(feeds.size()>=15){
+						e.sendMessage("Twitter hand- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just ’1000000!").queue()
 					}else{
 						e.sendTyping().queue()
 						Document doc=d.web.get(link)
@@ -3378,7 +3261,7 @@ class FeedCommand extends Command{
 						d.feeds.twitter+=[
 							channel:e.channel.id,
 							link:link,
-							last:id
+							last:stamp
 						]
 						e.sendMessage("Twitter handle added to the feed for this channel.").queue()
 					}
@@ -3395,6 +3278,8 @@ class FeedCommand extends Command{
 					if(link in feeds*.link){
 						d.feeds.levelpalace-=feeds.find{(it.link==link)&&(it.channel==e.channel.id)}
 						e.sendMessage("Level Palace account removed from the feed for this channel.").queue()
+					}else if(feeds.size()>=15){
+						e.sendMessage("Level Palace acc- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just ’1000000!").queue()
 					}else{
 						e.sendTyping().queue()
 						Document doc=d.web.get(link)
@@ -3412,11 +3297,11 @@ class FeedCommand extends Command{
 					404
 				}
 			}else{
-				e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}feed [youtube/levelpalace/twitter/animelist url]/list/check`.","Gebruik: `${d.prefix}feed [youtube/levelpalace/twitter/animelist url]/list/check`.","Uso: `${d.prefix}feed [youtube/levelpalace/twitter/animelist url]/list/check`."].lang(e)).queue()
+				e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}feed [youtube/levelpalace/twitter/animelist url]/list`.","Gebruik: `${d.prefix}feed [youtube/levelpalace/twitter/animelist url]/list/check`.","Uso: `${d.prefix}feed [youtube/levelpalace/twitter/animelist url]/list/check`."].lang(e)).queue()
 				400
 			}
 		}else{
-			e.sendMessage(d.permissionMessage()+"Required: `Staff (Trainer/MANAGE_MESSAGES)`.").queue()
+			e.sendMessage(d.permissionMessage()+"Requires any: `'Trainer' role`, `MANAGE MESSAGES permission`.").queue()
 			403
 		}
 	}
@@ -3478,7 +3363,7 @@ class ClearCommand extends Command{
 				511
 			}
 		}else{
-			e.sendMessage(d.permissionMessage()+"Required: `Staff (Trainer/MANAGE_MESSAGES)`, `Use on self with Member (any role)`.").queue()
+			e.sendMessage(d.permissionMessage()+"Requires any: `'Trainer' role`, `MANAGE MESSAGES permission`, `Use on self with Member (any role)`.").queue()
 			400
 		}
 	}
@@ -3530,7 +3415,7 @@ class SetChannelCommand extends Command{
 					400
 				}
 			}else{
-				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`.").queue()
+				e.sendMessage(d.permissionMessage()+"Requires any: `'Bot Commander' role`, `ADMINISTRATOR permission`.").queue()
 				403
 			}
 		}else{
@@ -3577,7 +3462,7 @@ class SetRoleCommand extends Command{
 					400
 				}
 			}else{
-				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`.").queue()
+				e.sendMessage(d.permissionMessage()+"Requires any: `'Bot Commander' role`, `ADMINISTRATOR permission`.").queue()
 				403
 			}
 		}else{
@@ -3661,7 +3546,7 @@ class VotePinCommand extends Command{
 						511
 					}
 				}else{
-					e.sendMessage(d.permissionMessage()+"Required: `Member (any role)`.").queue()
+					e.sendMessage(d.permissionMessage()+"Requires: `Any role`.").queue()
 					403
 				}
 			}else{
@@ -3726,7 +3611,7 @@ class SingCommand extends Command{
 					e.sendMessage(['The song has been cancelled. Sorry folks.','Het lied heb bent geannuleerd. Sorry mensen.','A musica foi cancelada. Desculpe amigos.'].lang(e)).queue()
 				}else{
 					TextChannel songChannel=e.guild.textChannels.find{it.song}
-					e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(songChannel){", `Use in #$songChannel.name and be the starter of the song`"}else{''}}.\nStaff can set song channels with `${d.prefix}setchannel song`.").queue()
+					e.sendMessage(d.permissionMessage()+"Requires any: `'Bot Commander' role`, `ADMINISTRATOR permission`${if(songChannel){", `Use in #$songChannel.name and be the starter of the song`"}else{''}}.\nStaff can set song channels with `${d.prefix}setchannel song`.").queue()
 					403
 				}
 			}else{
@@ -3837,7 +3722,7 @@ Cover: $coverLink```""").queue()
 				}
 			}else{
 				TextChannel songChannel=e.guild.textChannels.find{it.song}
-				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`${if(songChannel){", `Use in #$songChannel.name`"}else{''}}.\nStaff can set song channels with `${d.prefix}setchannel song`.").queue()
+				e.sendMessage(d.permissionMessage()+"Requires any: `'Bot Commander' role`, `ADMINISTRATOR permission`${if(songChannel){", `Use in #$songChannel.name`"}else{''}}.\nStaff can set song channels with `${d.prefix}setchannel song`.").queue()
 				403
 			}
 		}else{
@@ -3955,7 +3840,7 @@ class BanCommand extends Command{
 					511
 				}
 			}else{
-				e.sendMessage(d.permissionMessage()+"Required: `Staff (Trainer/MANAGE_MESSAGES)`.").queue()
+				e.sendMessage(d.permissionMessage()+"Requires any: `'Trainer' role`, `MANAGE MESSAGES permission`.").queue()
 				403
 			}
 		}else{
@@ -4116,7 +4001,7 @@ class SmiliesCommand extends Command{
 					400
 				}
 			}else{
-				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`.").queue()
+				e.sendMessage(d.permissionMessage()+"Requires any: `'Bot Commander' role`, `ADMINISTRATOR permission`.").queue()
 				403
 			}
 		}else{
@@ -4132,72 +4017,6 @@ class SmiliesCommand extends Command{
 `smilies list` will make me list this server's custom smilies.
 `smilies xatlist` will make me list my xat smilies. Use sparingly.
 Not like anyone uses this now though."""
-}
-
-
-class CloneCommand extends Command{
-	List aliases=['clone']
-	int limit=25
-	def run(Map d,Event e){
-		if(e.guild){
-			if(e.author.isOwner(e.guild)){
-				if(d.args){
-					TextChannel text=e.message.mentionedChannels?e.message.mentionedChannels[-1]:e.guild.findTextChannel(d.args)
-					VoiceChannel voice=e.guild.findVoiceChannel(d.args)
-					Role role=e.message.mentionedRoles?e.message.mentionedRoles[-1]:e.guild.findRole(d.args)
-					if(text){
-						if(e.guild.selfMember.roles.any{'MANAGE_CHANNEL'in it.permissions*.toString()}){
-							ChannelManager manager=e.guild.controller.createTextChannel(text.name).complete().manager
-							manager.setTopic(text.topic).queue()
-							e.sendMessage("The channel **$text.name** has been cloned.").queue()
-						}else{
-							e.sendMessage("I need to be able to manage channels to do that...").queue()
-							511
-						}
-					}else if(voice){
-						if(e.guild.selfMember.roles.any{'MANAGE_CHANNEL'in it.permissions*.toString()}){
-							ChannelManager manager=e.guild.controller.createVoiceChannel(voice.name).complete().manager
-							manager.setBitrate(voice.bitrate).queue()
-							manager.setUserLimit(voice.userLimit).queue()
-							e.sendMessage("The channel **$voice.name** has been cloned.").queue()
-						}else{
-							e.sendMessage("I need to be able to manage channels to do that...").queue()
-							511
-						}
-					}else if(role){
-						if(e.guild.selfMember.roles.any{'MANAGE_ROLES'in it.permissions*.toString()}){
-							RoleManager manager=e.guild.controller.createRole().complete().manager
-							manager.setName(role.name).queue()
-							manager.setColor(role.color).queue()
-							manager.setHoisted(role.hoisted).queue()
-							manager.setMentionable(role.mentionable).queue()
-							manager.setPermissions(role.permissionsRaw).queue()
-							e.sendMessage("The role **$role.name** has been cloned.").queue()
-						}else{
-							e.sendMessage("I need to be able to manage roles to do that...").queue()
-							511
-						}
-					}else{
-						e.sendMessage("I couldn't find anything cloneable matching '$d.args.'").queue()
-						404
-					}
-				}else{
-					e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}clone [channel/role]`","Gebruik: `${d.prefix}clone [kanaal/rol]`","Uso: `${d.prefix}clone [canai/cargo]`"].lang(e)).queue()
-					400
-				}
-			}else{
-				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`.").queue()
-				403
-			}
-		}else{
-			e.sendMessage("No need to clone in Direct Messages.").queue()
-			405
-		}
-	}
-	String category='Moderation'
-	String help="""`clone [channel]` will make me create an identical copy of the channel.
-`clone [role]` will make me create an identical copy of the role.
-Let the clone wars begin."""
 }
 
 
@@ -4311,7 +4130,7 @@ class TrackerCommand extends Command{
 					400
 				}
 			}else{
-				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`.").queue()
+				e.sendMessage(d.permissionMessage()+"Requires any: `'Bot Commander' role`, `ADMINISTRATOR permission`.").queue()
 				403
 			}
 		}else{
@@ -4712,7 +4531,7 @@ class CustomCommand extends Command{
 					400
 				}
 			}else{
-				e.sendMessage(d.permissionMessage()+"Required: `Owner (Bot Commander/ADMINISTRATOR)`.").queue()
+				e.sendMessage(d.permissionMessage()+"Requires any: `'Bot Commander' role`, `ADMINISTRATOR permission`.").queue()
 				403
 			}
 		}else{
@@ -5050,10 +4869,86 @@ class PingCommand extends Command{
 		long startTime=System.currentTimeMillis()
 		e.sendMessage("**Ping$random**").queue{
 			long stopTime=System.currentTimeMillis()
-			it.edit("**Ping$random**\nIt took about `${stopTime-startTime}ms` to send the message.").queue()
+			it.edit(["**Ping$random**\nIt took about `${stopTime-startTime}ms` to send the message.","**Ping$random**\nHet duurde ongeveer `${stopTime-startTime}ms` tot sturen de bericht."].lang(e)).queue()
 		}
 	}
 	String category='General'
 	String help="""`ping` will test GRover's connection to the Discords.
 And it says some funny stuff I guess."""
+}
+
+
+class KawaiiCommand extends Command{
+	List aliases=['kawaii','kawaiis']
+	int limit=70
+	def run(Map d,Event e){
+		if(d.args){
+			List list=new File('C:/Users/michael/Pictures/kawaiis').listFiles().toList()*.name
+			d.args=d.args.replaceAll([' ','_'],'-').replaceAll(['!','?'],'')
+			if(d.args in list){
+				boolean done
+				e.sendTyping().queue()
+				while(!done){
+					File ass=new File("C:/Users/michael/Pictures/kawaiis/$d.args").listFiles().toList().random()
+					e.sendFile(ass).complete()
+					done=true
+				}
+			}else{
+				list=list.collect{"`$it` ("+new File("C:/Users/michael/Pictures/kawaiis/$it").listFiles().size()+')'}
+				e.sendMessage("I have images from all of the following: ${list.join(', ')}").queue()
+			}
+		}else{
+			boolean done
+			e.sendTyping().queue()
+			while(!done){
+				File ass=new File('C:/Users/michael/Pictures/kawaiis').listFiles().toList().random().listFiles().toList().random()
+				e.sendFile(ass).complete()
+				done=true
+			}
+		}
+	}
+	String category='General'
+	String help="""`kawaii` will make me post an image of a cute anime girl (most of the time).
+`kawaii [series]` will make me post from that specific series.
+`kawaii list` will make me tell you what series' I got.
+Straight from Axew's anime folders, so it's slightly bias."""
+}
+
+
+class AltdetectCommand extends Command{
+	List aliases=['altdetect','altdetector']
+	def run(Map d, Event e){
+		if(e.guild){
+			if(e.author.isStaff(e.guild)){
+				List list=e.guild.users.groupBy{it.identity.replaceAll(['(Shared) ',"'s Alternate Account","'s Incognito","'s Alt","'s Incog",'.'],'')}*.value.findAll{it.size()==2}
+				if(list.size()){
+					def ass=list.collect{List ass=it.sort{-it.createTimeMillis};"${ass[0..-2].collect{"$it.name#$it.discriminator"}.join(', ')} ${ass.size()>2?'are alts':'is an alt'} of ${"${ass[-1].name}#${ass[-1].discriminator}"}"}.join('\n')
+					try{
+						e.author.openPrivateChannel().complete()
+						ass.split(1999).each{
+							e.author.privateChannel.sendMessage(it).complete()
+						}
+						e.sendMessage(["I have sent you the list of alternate accounts. <@$e.author.id>","Ik heb stuurde je de lijst van alternatieve accounts. <@$e.author.id>"].lang(e)).queue{
+							Thread.sleep(5000)
+							it.delete().queue()
+						}
+					}catch(ex){
+						ass.split(1999).each{
+							e.sendMessage(it).queue()
+						}
+					}
+				}else{
+					e.sendMessage(["I couldn't detect any alternate accounts in this server.",'Ik kon het niet vind een alternatieve accounts in het server.'].lang(e)).queue()
+				}
+			}else{
+				e.sendMessage(d.permissionMessage()+"Requires any: `'Trainer' role`, `MANAGE MESSAGES permission`.").queue()
+				403
+			}
+		}else{
+			e.sendMessage(["We're the only ones here, dude.",'Wij bent de alleen mensen hier...'].lang(e)).queue()
+		}
+	}
+	String category='Database'
+	String help="""`altdetect` will make me list alternate accounts in the server.
+Bots don't count."""
 }
