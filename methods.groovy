@@ -13,6 +13,12 @@ String id='155684861770858496'
 String owner='107894146617868288'
 
 
+Random random=new Random()
+ArrayList.metaClass.randomItem={delegate[random.nextInt(delegate.size())]}
+Range.metaClass.randomItem={delegate.toList().randomItem()}
+String.metaClass.randomItem={delegate.toList().randomItem()}
+
+
 JDA.metaClass.play={String game->delegate.presence.setGame(Game.of(game))}
 JDA.metaClass.setName={String name->delegate.selfUser.manager.setName(name)}
 JDA.metaClass.setAvatar={String avatar->delegate.selfUser.manager.setAvatar(Icon.from(new File(avatar)))}
@@ -20,7 +26,7 @@ JDA.metaClass.getChannels={delegate.textChannels+delegate.voiceChannels+delegate
 
 Event.metaClass.getJda={delegate.JDA}
 
-MessageReceivedEvent.metaClass.sendMessage={String content->delegate.channel.sendMessage('\u200b'+content?.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re']))}
+MessageReceivedEvent.metaClass.sendMessage={String content->delegate.channel.sendMessage("\u200b${content?.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}")}
 MessageReceivedEvent.metaClass.sendTyping={delegate.channel.sendTyping()}
 MessageReceivedEvent.metaClass.sendFile={String file->delegate.channel.sendFile(new File(file),null)}
 MessageReceivedEvent.metaClass.sendFile={File file->delegate.channel.sendFile(file,null)}
@@ -254,12 +260,6 @@ String.metaClass.addVariables={GenericGuildEvent e,String args->
 	}
 	data
 }
-
-
-Random random=new Random()
-ArrayList.metaClass.randomItem={delegate[random.nextInt(delegate.size())]}
-Range.metaClass.randomItem={delegate.toList().randomItem()}
-String.metaClass.randomItem={delegate.toList().randomItem()}
 
 
 String.metaClass.strip={delegate.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}
