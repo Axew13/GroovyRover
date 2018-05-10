@@ -19,7 +19,9 @@ Range.metaClass.randomItem={delegate.toList().randomItem()}
 String.metaClass.randomItem={delegate.toList().randomItem()}
 
 
-JDA.metaClass.play={String game->delegate.presence.setGame(Game.of(game))}
+JDA.metaClass.play={String game->delegate.presence.setGame(Game.of(Game.GameType.DEFAULT,game))}
+JDA.metaClass.listen={String game->delegate.presence.setGame(Game.of(Game.GameType.LISTENING,game))}
+JDA.metaClass.watch={String game->delegate.presence.setGame(Game.of(Game.GameType.WATCHING,game))}
 JDA.metaClass.setName={String name->delegate.selfUser.manager.setName(name)}
 JDA.metaClass.setAvatar={String avatar->delegate.selfUser.manager.setAvatar(Icon.from(new File(avatar)))}
 JDA.metaClass.getChannels={delegate.textChannels+delegate.voiceChannels+delegate.privateChannels}
@@ -98,7 +100,7 @@ Emote.metaClass.getManaged={false}
 
 Guild.metaClass.getChannels={delegate.textChannels+delegate.voiceChannels}
 Guild.metaClass.getIcon={delegate.iconUrl}
-Guild.metaClass.getDefaultChannel={delegate.publicChannel?:delegate.textChannels[0]}
+Guild.metaClass.getDefaultChannel={delegate.channels.find{it.id==delegate.id}?:delegate.textChannels[0]}
 Guild.metaClass.getDefaultRole={delegate.publicRole}
 Guild.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Guild.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}

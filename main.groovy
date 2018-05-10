@@ -35,15 +35,17 @@ builder.buildBlocking()
 
 
 
+
 class Bot{
 	List prefixes=['-','~']
 	List mention=['<@119184325219581952> ','<@!119184325219581952> ']
 	String owner='107894146617868288'
+	String libber='107562988810027008'
 	List commands=[
 		new SayCommand(),new PlayCommand(),new UserinfoCommand(),new ServerinfoCommand(),new ChannelinfoCommand(),
 		new RoleinfoCommand(),new EmoteinfoCommand(),new AvatarCommand(),new InfoCommand(),new HelpCommand(),
 		new JoinCommand(),new GoogleCommand(),new YouTubeCommand(),new ImageCommand(),new NsfwCommand(),
-		new LevelPalaceCommand(),new AnimeCommand(),new WebsiteCommand(),new MiiverseCommand(),
+		new LevelPalaceCommand(),new AnimeCommand(),new WebsiteCommand()/*,new MiiverseCommand()*/,
 		new MarioMakerCommand(),new DefineCommand(),new UrbanCommand(),new TagCommand(),new MiscCommand(),
 		new TextCommand(),new ChatBoxCommand(),new IdentifyCommand(),new IrlCommand(),new AgeCommand(),
 		new AreaCommand(),new AltsCommand(),new MinecraftCommand(),new TimeCommand(),new ChooseCommand(),
@@ -55,7 +57,9 @@ class Bot{
 		new TrackerCommand(),new IsupCommand(),new TopCommand(),new CleanCommand(),new NoteCommand(),
 		new ProfileCommand(),new CustomCommand(),new PwnedCommand(),new MathCommand(),new MapCommand(),
 		new SourceCommand(),new EmojiCommand(),new PingmodCommand()/*,new DogCommand()*/,new CategoryinfoCommand(),
-		new PingCommand(),new KawaiiCommand(),new AltdetectCommand(),new SetServerCommand()
+		new PingCommand(),new KawaiiCommand(),new AltdetectCommand(),new SetServerCommand(),new SlotsCommand(),
+		new ItemsCommand(),new AdventureCommand(),new MoveCommand(),new EatCommand(),new WearCommand(),
+		new WeaponCommand(),new ShopCommand(),new DailyCommand()
 	]
 	String oauth='https://discordapp.com/oauth2/authorize?client_id=170646931641466882&scope=bot&permissions=335932438'
 	String server='https://discord.gg/0vJZEroWHiGWWQc7'
@@ -126,12 +130,13 @@ class GRover extends ListenerAdapter{
 	Map notes=json.load('notes')
 	Map customs=json.load('customs')
 	Map modes=json.load('modes')
+	Map rpg=json.load('rpg')
 	String lastReply
 	boolean tableTimeout
 	long started=System.currentTimeMillis()
 	List messages=[]
-	Closure errorMessage={'**'+["Let's try that again.","Bots aren't your strong point. I can tell.","Watch how an expert does it.","You're doing it wrong.","Nah, it's more like this.","She wants to know if you're really a tech person."/*kiniro mosaic reference*/,"Consider the following:","git: 'gud' is not a git command. See 'git --help'.","What the hell is this?","Looks like your IQ needs a little adjusting."].randomItem()+'**\n'}
-	Closure permissionMessage={'**'+["The desire for something becomes stronger when you can't have it.","You may look, but don't touch."/*pokemon dppt reference*/,"What could go wrong in allowing that for everyone?","Access is denied to that.","I can't exploit your bot, therefore it sucks.","I can't let you do that, Star Fox."/*star fox reference*/,"There are function keys beyond F12. You are not ready for them."/*unown copypasta*/,"You don't have a license to do that."/*looney tunes reference*/,"Are you saying I'm stupid?"/*a bug's life reference*/,"Yeah I'm gonna let you do that."].randomItem()+'**\n'}
+	Closure errorMessage={'**'+["Let's try that again.","Bots aren't your strong point. I can tell.","Watch how an expert does it.","You're doing it wrong.","Nah, it's more like this.","She wants to know if you're really a tech person."/*kiniro mosaic reference*/,"Consider the following:","git: 'gud' is not a git command. See 'git --help'."/*github*/,"What the hell is this?","Looks like your IQ needs a little adjusting."].randomItem()+'**\n'}
+	Closure permissionMessage={'**'+["The desire for something becomes stronger when you can't have it.","You may look, but don't touch."/*pokemon dppt reference*/,"What could go wrong in allowing that for everyone?","Access is denied to that.","I can't exploit your bot, therefore it sucks."/*some people at dbots are stupid*/,"I can't let you do that, Star Fox."/*star fox reference*/,"There are function keys beyond F12. You are not ready for them."/*unown copypasta*/,"You don't have a license to do that."/*looney tunes reference*/,"Are you saying I'm stupid?"/*a bug's life reference*/,"Yeah I'm gonna let you do that."].randomItem()+'**\n'}
 	Closure failMessage={'**'+["JDA, why you no user-friendly?!","I have succeeded in my failure. Proud of me?","What on earth was that?"/*uhh i don't remember*/,"Hey, that was supposed to work. No fair."/*don't remember this either*/,"LOSE LOSE LOSE LOSE LOSE LOSE!"/*jontron reference*/,"I thought I fixed that.","It's java again isn't it?"/*claude reference*/,"Let's motivate it with a controlled shock."/*fnaf 5 reference*/,"ALART."/*reference to some anime*/,"Oops, my system crashed."/*protegent reference*/].randomItem()+'**\n'}
 	
 	
@@ -188,7 +193,11 @@ class GRover extends ListenerAdapter{
 				Thread.sleep(60000)
 			}
 		}
-		if(info.game)e.jda.play(info.game)
+		if(info.game){
+			if(info.act==2)e.jda.listen(info.game)
+			else if(info.act)e.jda.watch(info.game)
+			else e.jda.play(info.game)
+		}
 		e.jda.guilds.findAll{!(it.id in info.servers)}.each{
 			User axew=e.jda.users.find{it.id==bot.owner}
 			try{
@@ -237,9 +246,10 @@ class GRover extends ListenerAdapter{
 									}
 								}
 								if(out){
+									feeds.youtube.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=out[0]
+									out=out.reverse()
 									if(out.size()<15)channel.sendMessage("**New video${(out.size()==1)?'':'s'} from $title**:\n"+out.collect{"https://www.youtube.com$it"}.join('\n')).queue()
 									else println("There were either over 15 new videos from $title, or the latest video was deleted.")
-									feeds.youtube.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=out[0]
 								}
 							}catch(bad){
 								bad.printStackTrace()
@@ -265,12 +275,11 @@ class GRover extends ListenerAdapter{
 								String title=doc.getElementsByTag('title')[0].text().tokenize()[0]
 								while(!done){
 									try{
-										println("Looking for: $feed.last")
 										Element anime=doc.getElementsByTag('item')[past]
 										List data=anime.getElementsByTag('description')[0].text().replace(' episodes','').split(' - ')
+										if(!data[1])data=['Re-watching',data[0]]
 										String name=anime.getElementsByTag('title')[0].text()
 										String id="$name/${data[1].tokenize()[0]}"
-										println("$past: $id")
 										if(id!=feed.last){
 											String link=anime.getElementsByTag('link')[0].text()
 											out+=[[data[0],data[1],name,link]]
@@ -284,16 +293,10 @@ class GRover extends ListenerAdapter{
 									}
 								}
 								if(out){
-									println(out)
-									if(out.size()<15){
-										String asses="**New episode${(out.size()==1)?'':'s'} on $title anime list**:\n"+out.collect{"${it[0]}: Episode ${it[1]} of ${it[2]}.\n<${it[3]}>"}.join('\n')
-										channel.sendMessage(asses).queue()
-										println(asses)
-									}else{
-										println("There were either over 15 new episodes on $title anime list, or the latest episode was deleted.")
-									}
-									println("${out[0][2]}/${out[0][1]}")
 									feeds.animelist.find{(it.link==feed.link)&&(it.channel==channel.id)}.last="${out[0][2]}/${out[0][1].tokenize()[0]}"
+									out=out.reverse()
+									if(out.size()<15)channel.sendMessage("**New episode${(out.size()==1)?'':'s'} on $title anime list**:\n"+out.collect{"${it[0]}: Episode ${it[1]} of ${it[2]}.\n<${it[3]}>"}.join('\n')).queue()
+									else println("There were either over 15 new episodes on $title anime list, or the latest episode was deleted.")
 								}
 							}catch(bad){
 								bad.printStackTrace()
@@ -334,9 +337,10 @@ class GRover extends ListenerAdapter{
 								}
 								out=out.unique()
 								if(out){
+									feeds.twitter.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=out[0]
+									out=out.reverse()
 									if(out.size()<15)channel.sendMessage("**New tweet${(out.size()==1)?'':'s'} from $title**:\n"+out.collect{"https://twitter.com/$user/status/$it"}.join('\n')).queue()
 									else println("There were either over 15 new tweets from $title, or the latest tweet was deleted.")
-									feeds.twitter.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=out[0]
 								}
 							}catch(bad){
 								bad.printStackTrace()
@@ -378,9 +382,10 @@ class GRover extends ListenerAdapter{
 										}
 									}
 									if(out){
+										feeds.levelpalace.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=out[0][1]
+										out=out.reverse()
 										if(out.size()<15)channel.sendMessage("**New level${(out.size()==1)?'':'s'} from $title**:\n"+out.collect{"${it[0]}.\n<https://levelpalace.com/${it[1]}>"}.join('\n')).queue()
 										else println("There were either over 15 new levels from $title, or the latest level was deleted.")
-										feeds.levelpalace.find{(it.link==feed.link)&&(it.channel==channel.id)}.last=out[0][1]
 									}
 								}catch(bad){
 									bad.printStackTrace()
@@ -403,14 +408,14 @@ class GRover extends ListenerAdapter{
 	// Message Create Event
 	void onMessageReceived(MessageReceivedEvent e){
 		if(!(e.author.bot||e.channel.ignored)){
-			def args=e.message.rawContent
+			def args=e.message.contentRaw
 			String prefix=args.startsWithAny(e.guild?(settings.prefix[e.guild.id]?:bot.prefixes)+bot.mention:bot.prefixes)
 			if(prefix!=null){
 				Thread.start{
 					args=args.substring(prefix.size())
 					String alias
 					Command cmd=bot.commands.find{alias=(args.toLowerCase()+' ').startsWithAny(it.aliases*.plus(' '))?.trim()}
-					Map binding=[bot:bot,json:json,web:web,prefix:prefix,alias:alias,args:args,db:db,tags:tags,channels:channels,roles:roles,info:info,colours:colours,misc:misc,conversative:conversative,feeds:feeds,settings:settings,temp:temp,tracker:tracker,notes:notes,customs:customs,modes:modes,lastReply:lastReply,tableTimeout:tableTimeout,started:started,messages:messages,errorMessage:errorMessage,permissionMessage:permissionMessage,failMessage:failMessage]
+					Map binding=[bot:bot,json:json,web:web,prefix:prefix,alias:alias,args:args,db:db,tags:tags,channels:channels,roles:roles,info:info,colours:colours,misc:misc,conversative:conversative,feeds:feeds,settings:settings,temp:temp,tracker:tracker,notes:notes,customs:customs,modes:modes,lastReply:lastReply,tableTimeout:tableTimeout,started:started,messages:messages,errorMessage:errorMessage,permissionMessage:permissionMessage,failMessage:failMessage,rpg:rpg]
 					if(cmd){
 						int status=200
 						if(!cmd.pool[e.author.id]){
@@ -439,12 +444,14 @@ class GRover extends ListenerAdapter{
 							}
 							messages+=e.message
 						}else{
-							long time=-((System.currentTimeMillis()-cmd.limit*100)-cmd.pool[e.author.id])/1000
-							e.sendMessage(["You can do that again in $time seconds.","Je kan gebruik dat in $time seconden.","Voce pode usar isso novamente em segundos $time.","Mozesz z niej skorzystac w ciagu $time sekund."].lang(e)).queue{
+							Thread.start{
+								long time=-((System.currentTimeMillis()-cmd.limit*100)-cmd.pool[e.author.id])/1000
+								if(time<1)time=1
+								Message assew=e.sendMessage(["You can do that again in $time second${time==1?'':'s'}.","Je kan gebruik dat in $time second${time==1?'':'en'}.","Voce pode usar isso novamente em segundo${time==1?'':'s'} $time.","Mozesz z niej skorzystac w ciagu $time sekund."].lang(e)).complete()
 								Thread.sleep(9999)
-								it.delete().queue()
-								status=429
+								assew.delete().queue()
 							}
+							status=429
 						}
 						e.jda.textChannels.find{it.id=='270998683003125760'}.sendMessage("""\u200b
 <:grover:234242699211964417> `Command Log`
@@ -539,8 +546,8 @@ class GRover extends ListenerAdapter{
 					}
 				}
 				// Smilies
-				if(e.message.rawContent.containsAll(['(',')'])){
-					String tag=e.message.rawContent.lastRange('(',')')
+				if(e.message.contentRaw.containsAll(['(',')'])){
+					String tag=e.message.contentRaw.lastRange('(',')')
 					if(tag==~/\w+/){
 						try{
 							File image=new File("images/xat/${tag}_xat.png")
@@ -556,6 +563,8 @@ class GRover extends ListenerAdapter{
 					}
 				}
 			}
+		}else if((e.author.id=='380862285364723713')&&e.message.content.contains('Shut up')){
+			e.sendMessage('no u').queue()
 		}
 /*		String log="${e.message.createTime.format('HH:mm:ss')} "
 		if(e.guild)log+=("[$e.guild.name] [${e.channel.name.capitalize()}] <$e.author.identity>:\n$e.message.content")
@@ -627,14 +636,18 @@ class GRover extends ListenerAdapter{
 	}
 	
 	
-	// Guild Crate Event
+	// Guild Create Event
 	void onGuildJoin(GuildJoinEvent e){
 		if(!(e.guild.id in info.servers)){
 			User axew=e.jda.users.find{it.id==bot.owner}
 			println("I've joined a new server: $e.guild.name")
-			e.guild.defaultChannel.sendMessage("Woof! Hello, humans of $e.guild.name. I'm a bot made by $axew.name#$axew.discriminator.\nUse `-help` for my command list or `-info` to learn more about me.").queue()
-			info.servers+=e.guild.id
-			json.save(info,'properties')
+			try{
+				e.guild.defaultChannel.sendMessage("Woof! Hello, humans of $e.guild.name. I'm a bot made by $axew.name#$axew.discriminator.\nUse `-help` for my command list or `-info` to learn more about me.").queue()
+				info.servers+=e.guild.id
+				json.save(info,'properties')
+			}catch(ex){
+				println("However, I don't have permission to post a message in the default channel, so I'll wait until next startup.")
+			}
 		}
 	}
 }
@@ -658,28 +671,52 @@ Useful for getting someone to insult himself, but why am I telling you that?"""
 
 
 class PlayCommand extends Command{
-	List aliases=['play','setgame']
+	List aliases=['setstatus','play']
 	int limit=60
 	def run(Map d,Event e){
-		String old=d.info.game
-		d.info.game=d.args
-		if(d.args.length()>128){
-			e.sendMessage("A status message that long won't even display, so don't even try it.").queue()
-		}else if(d.args){
-			try{
-				e.jda.play(d.args)
-				e.sendMessage(["I am now playing $d.args. Check my game status!","Ik ben nu spelen $d.args. Kijk naar mij spelen-tekst!","Agora estou jogando $d.args. Verifique o status do meu jogo!","Gram teraz w $d.args. Sprawdz moj stan gry!"].lang(e)).queue()
-			}catch(ex){
-				e.sendMessage(["I am now playing $d.args.","Ik ben nu spelen $d.args.","Agora estou jogando $d.args.","Gram teraz w $d.args."].lang(e)).queue()
+		d.args=d.args.tokenize()
+		if(d.args[0]){
+			if(d.args[0].toLowerCase().replace(' ','').containsAny(['jew','hitler'])){
+				e.sendMessage("I'm not gonna repeat NotSoBot's mistake.").queue()
+			}else if((d.args[0]in['play','game','watch','video','listen','music'])&&d.args[1]){
+				d.args[1]=d.args[1..-1].join(' ')
+				if(d.args[1].length()>127){
+					e.sendMessage("A status message that long won't even display, so don't even try it.").queue()
+					403
+				}else if(d.args[0]in['play','game']){
+					d.info.game=d.args[1]
+					d.info.act=0
+					e.jda.play(d.args[1])
+					e.sendMessage("I am now playing ${d.args[1]}. Check my status!").queue()
+				}else if(d.args[0]in['watch','video']){
+					d.info.game=d.args[1]
+					d.info.act=1
+					e.jda.watch(d.args[1])
+					e.sendMessage("I am now watching ${d.args[1]}. Check my status!").queue()
+				}else if(d.args[0]in['listen','music']){
+					d.info.game=d.args[1]
+					d.info.act=2
+					e.jda.listen(d.args[1])
+					e.sendMessage("I am now listening to ${d.args[1]}. Check my status!").queue()
+				}else{
+					e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}setstatus play/watch/listen [text]`.","Gebruik: `${d.prefix}setstatus play/watch/listen [tekst]`.","Uso: `${d.prefix}setstatus play/watch/listen [texto]`."].lang(e)).queue()
+					400
+				}
+			}else{
+				e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}setstatus play/watch/listen [text]`.","Gebruik: `${d.prefix}setstatus play/watch/listen [tekst]`.","Uso: `${d.prefix}setstatus play/watch/listen [texto]`."].lang(e)).queue()
+				400
 			}
 		}else{
-			e.sendMessage(["I have finished playing $old.","Ik heb gestopt spelen $old.","Eu terminei de jogar $old.","Skonczylem gre w $old."].lang(e)).queue()
+			e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}setstatus play/watch/listen [text]`.","Gebruik: `${d.prefix}setstatus play/watch/listen [tekst]`.","Uso: `${d.prefix}setstatus play/watch/listen [texto]`."].lang(e)).queue()
+			400
 		}
 		d.json.save(d.info,'properties')
 	}
 	String category='General'
-	String help="""`play [text]` will make me change my playing status to the text.
-Don't say 'with fire' please."""
+	String help="""`setstatus play [text]` will make me change my status to playing the thing.
+`setstatus watch [text]` will make me change my status to watching the thing.
+`setstatus listen [text]` will make me change my status to listening to the thing.
+AWW YEAH ABUSABLE FEATURES!"""
 }
 
 
@@ -755,11 +792,12 @@ class ServerinfoCommand extends Command{
 		if(e.guild||d.args){
 			Guild guild=e.guild
 			if(d.args)guild=e.jda.findGuild(d.args)
-			if(d.modes.hidden[guild.id]){
-				e.sendMessage(["I couldn't find a server matching '$d.args.'","Ik kon niet vind een guild vind '$d.args' leuk.","N\u00e3o consegui encontrar um servidor que corresponda '$d.args.'","Nie mog\u0119 znale\u017a\u0107 serwera pasuj\u0105cego do '$d.args.'"].lang(e)).queue()
-			}else if(guild){
-				int timeout=guild.afkTimeout.seconds/60
-				e.sendMessage("""**${guild.name.capitalize()}** owned by $guild.owner.user.identity: ```css
+			if(guild){
+				if(d.modes.hidden[guild.id]){
+					e.sendMessage(["I couldn't find a server matching '$d.args.'","Ik kon niet vind een guild vind '$d.args' leuk.","N\u00e3o consegui encontrar um servidor que corresponda '$d.args.'","Nie mog\u0119 znale\u017a\u0107 serwera pasuj\u0105cego do '$d.args.'"].lang(e)).queue()
+				}else{
+					int timeout=guild.afkTimeout.seconds/60
+					e.sendMessage("""**${guild.name.capitalize()}** owned by $guild.owner.user.identity: ```css
 ID: $guild.id
 Icon: $guild.icon?size=1024
 Region: $guild.region
@@ -771,6 +809,7 @@ Categories: ${if(guild.categories.size()>4){guild.categories[0..4]*.name.join(',
 Channels: ${if(guild.textChannels.size()>1){guild.textChannels[0..1]*.name.join(', ')+'..'}else{guild.textChannels*.name.join(', ')}}${if(guild.voiceChannels){", ${if(guild.voiceChannels.size()>1){guild.voiceChannels[0..1]*.name.join(', ')+'..'}else{guild.voiceChannels*.name.join(', ')}}"}else{''}} (${guild.textChannels.size()}, ${guild.voiceChannels.size()})
 Emotes: ${if(guild.emotes.size()>4){guild.emotes[0..4]*.name.join(', ')+'..'}else{guild.emotes*.name.join(', ')}} (${guild.emotes.size()})
 ${if(guild.users.size()>249){'Large'}else{'Small'}}```""").queue()
+				}
 			}else{
 				e.sendMessage(["I couldn't find a server matching '$d.args.'","Ik kon niet vind een guild vind '$d.args' leuk.","N\u00e3o consegui encontrar um servidor que corresponda '$d.args.'","Nie mog\u0119 znale\u017a\u0107 serwera pasuj\u0105cego do '$d.args.'"].lang(e)).queue()
 				404
@@ -883,7 +922,7 @@ class EmoteinfoCommand extends Command{
 ID: $emote.id
 Uploaded: ${new Date(emote.createTimeMillis+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (${key.abbreviate()})
 Image: $emote.imageUrl
-${if(emote.managed){'Integrated'}else{'Regular'}}```""").queue()
+${if(emote.managed){'Integrated'}else if(emote.animated){'Animated'}else{'Regular'}}```""").queue()
 		}else if(d.args){
 			e.sendMessage(["I couldn't find an emote matching '$d.args.'","Ik kon niet vind een emote vind '$d.args' leuk.","N\u00e3o consegui encontrar um emote que corresponda '$d.args.'","Nie mog\u0119 znale\u017a\u0107 emote pasuj\u0105cego do '$d.args.'"].lang(e)).queue()
 			404
@@ -931,7 +970,7 @@ class AvatarCommand extends Command{
 		}
 	}
 	String category='General'
-	String help="""`avatar [user/server/emote] will make me get the avatar/icon of them.
+	String help="""`avatar [user/server/emote]` will make me get the avatar/icon of them.
 Now tilt your head..."""
 }
 
@@ -940,7 +979,7 @@ class InfoCommand extends Command{
 	List aliases=['info']
 	def run(Map d,Event e){
 		String info=["""**About GRover**:
-Created by ${d.db['107894146617868288'].name}. JDA by ${d.db['107562988810027008'].name}.
+Created by ${d.db[d.bot.owner].name}. JDA by ${d.db[d.bot.libber].name}.
 
 GRover \u2018the DOGBOT Project\u2019 is a bot with an ever-expanding database recording the internet identity of everyone on Discord.
 GRover is based on the xat FEXBot and was designed to remedy the issue of recognising users who change their name.
@@ -951,7 +990,7 @@ Use `${d.prefix}help` to get a list of commands.
 OAuth invite: <$d.bot.oauth>
 Github code: <https://github.com/Axew13/GroovyRover/blob/master/main.groovy>
 Official server: $d.bot.server""","""Over GRover**:
-Maakt bij ${d.db['107894146617868288'].name}. JDA bij ${d.db['107562988810027008'].name}.
+Maakt bij ${d.db[d.bot.owner].name}. JDA bij ${d.db[d.bot.libber].name}.
 
 GRover \u2018the DOGBOT Project\u2019 is een robot met een heel-groten databank opname de internet identiteit van alle gebruikers op Discord.
 GRover is gekopieerd op de xat FEXBot en was dachte tot verwijderen de probleem van wetende gebruikers wie bewerk hun naam.
@@ -962,7 +1001,7 @@ Gebruik `${d.prefix}help` tot krijg een lijst van commando's.
 Nodig uit van OAuth: <$d.bot.oauth>
 Github bewaarplaats: <https://github.com/Axew13/GroovyRover/blob/master/main.groovy>
 Officieel guild: $d.bot.server""","""**Sobre GRover**:
-Criado de ${d.db['107894146617868288'].name}. JDA de ${d.db['107562988810027008'].name}.
+Criado de ${d.db[d.bot.owner].name}. JDA de ${d.db[d.bot.libber].name}.
 
 GRover \u2018the DOGBOT Project\u2019 e um bot com uma base de dados cada vez maior que grava a identidade da internet de todos em Discord.
 O GRover e baseado no xat FEXBot e foi projetado para remediar a questao do reconhecimento de usuarios que mudam seu nome.
@@ -973,7 +1012,7 @@ Usar `${d.prefix}help` para obter uma lista de comandos.
 OAuth convite: <$d.bot.oauth>
 Github codigo: <https://github.com/Axew13/GroovyRover/blob/master/main.groovy>
 Servidor oficial: $d.bot.server""","""**O GRover**:
-Stworzone przez ${d.db['107894146617868288'].name}. JDA przez ${d.db['107562988810027008'].name}.
+Stworzone przez ${d.db[d.bot.owner].name}. JDA przez ${d.db[d.bot.libber].name}.
 
 GRover \u2018the DOGBOT Project\u2019 jest botem z ciagle rozwijajaca sie baza danych rejestrujaca tozsamosc internetowa kazdego z Discord.
 Firma GRover oparta jest na xdes FEXBot i zostala zaprojektowana, aby zaradzic kwestii uznawania uzytkownikow, ktorzy zmieniaja swoje imie.
@@ -1009,7 +1048,7 @@ class HelpCommand extends Command{
 		d.args=d.args.toLowerCase()
 		if(!d.args){
 			String list=''
-			List commands=d.bot.commands.findAll{!it.dev}
+			List commands=d.bot.commands.findAll{!it.dev&&(it.category!='RPG')}
 			commands*.category.unique().each{String cat->
 				list+="**$cat Commands**:\n${commands.findAll{it.category==cat}.collect{"$d.prefix${it.aliases[0]}"}.join(',  ')}\n\n"
 			}
@@ -1207,7 +1246,7 @@ class NsfwCommand extends Command{
 	Map cache=[:]
 	def run(Map d,Event e){
 		if(!e.guild||e.channel.nsfw||e.author.isOwner(e.guild)){
-			if(d.modes.nsfw[e.guild?.id]==false){
+			if(e.guild&&(d.modes.nsfw[e.guild?.id]==false)){
 				e.sendMessage('Pornographic content has been disabled by your jurisdiction.').queue()
 			}else{
 				d.args=d.args.replace(',',' ').trim()
@@ -1256,55 +1295,65 @@ class LevelPalaceCommand extends Command{
 	int limit=70
 	boolean available=true
 	def run(Map d,Event e){
-		if(available){
-			if(d.args){
-				try{
-					e.sendTyping().queue()
-					Map temporaryFix=['pixelfox':8,'mario1luigi9':8,'7supermariobros7':212,'mariomaster7771':212,'brendan':1,'doomslayer522':266,'masterkastyl1nos222':285,'tnttimelord':349,'unown':555,'evol vex':694]
-					Document doc2
-					String link
-					String ass=d.args.toLowerCase()
-					if(temporaryFix[ass]){
-						link="https://www.levelpalace.com/profile.php?user_id=${temporaryFix[ass]}"
-					}else{
-						Document doc1=d.web.get("https://encrypted.google.com/search?q=${URLEncoder.encode("$d.args profile site:levelpalace.com",'UTF-8')}")
-						link=doc1.getElementsByClass('r')[0].getElementsByTag('a')[0].attr('href')
-					}
-					try{
-						if(!link.startsWith('http'))link="http://$link"
-						doc2=d.web.get("$link&client=dogbot")
-						Elements cards=doc2.getElementsByClass('card-content')
-						try{
-							String profileText=doc2.getElementById('main').text().trim()
-							if(profileText.length()>500)profileText=profileText.substring(0,500)+'...'
-							String location=":flag_${cards[0].getElementsByClass('card-title')[5]?.getElementsByTag('img')?.attr('alt')?.toLowerCase()}:"
-							if(location==':flag_:')location='\u2753'
-							e.sendMessage("**${cards[0].getElementsByClass('card-title')[0].text().capitalize()}**  (${cards[0].getElementsByClass('subtitle')[0].text()})\nRank: ${cards[0].getElementsByClass('card-title')[1].text()}  Levels: ${cards[0].getElementsByClass('card-title')[2].text()}  Rates: ${cards[0].getElementsByClass('card-title')[3].text()}  Friends: ${cards[0].getElementsByClass('card-title')[4].text()}  $location\n$profileText\n\n<$link>").queue()
-						}catch(none){
-							e.sendMessage(["No account matching '$d.args' was found.","Geen account vind '$d.args' leuk was vinden."].lang(e)).queue()
-						}
-					}catch(down){
-						e.sendMessage('Looks like Level Palace is unavailable. Press `f` to pay respects.').queue()
-						down.printStackTrace()
-						503
-					}
-				}catch(ex){
-					if(ex.message=='HTTP error fetching URL'){
-						e.sendMessage(['You are being rate limited.','Je bent gebruik beperkt.','Voce esta sendo limitado a taxas.','Zostaniesz szybkosc ograniczona.'].lang(e)).queue()
-						429
-					}else{
-						e.sendMessage(["No account matching '$d.args' was found.","Geen account vind '$d.args' leuk was vinden."].lang(e)).queue()
-						404
-					}
-				}
+		if((d.args=='switch')&&(e.author.id==d.bot.owner)){
+			if(available){
+				available=false
+				e.sendMessage("Gotcha. No longer performing LP-related tasks. Tell me when it's back up.").queue()
 			}else{
-				e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}levelpalace [search term]`.","Gebruik: `${d.prefix}levelpalace [zoekterm]`.","Uso: `${d.prefix}levelpalace [termo pesquisa]`."].lang(e)).queue()
-				400
+				available=true
+				e.sendMessage("Is it back up? That's great, I'm going to rate some levels... If I could use Flash.").queue()
 			}
 		}else{
-			User axew=e.jda.users.find{it.id==d.bot.owner}
-			e.sendMessage("Level Palace is under maintenance right now, check back later.\n(If you believe this is in error, go bug $axew.name#$axew.discriminator.)").queue()
-			503
+			if(available){
+				if(d.args){
+					try{
+						e.sendTyping().queue()
+						Map temporaryFix=['pixelfox':8,'mario1luigi9':8,'7supermariobros7':212,'mariomaster7771':212,'brendan':1,'doomslayer522':266,'masterkastyl1nos222':285,'tnttimelord':349,'unown':555,'evol vex':694]
+						Document doc2
+						String link
+						String ass=d.args.toLowerCase()
+						if(temporaryFix[ass]){
+							link="https://www.levelpalace.com/profile.php?user_id=${temporaryFix[ass]}"
+						}else{
+							Document doc1=d.web.get("https://encrypted.google.com/search?q=${URLEncoder.encode("$d.args profile site:levelpalace.com",'UTF-8')}")
+							link=doc1.getElementsByClass('r')[0].getElementsByTag('a')[0].attr('href')
+						}
+						try{
+							if(!link.startsWith('http'))link="http://$link"
+							doc2=d.web.get("$link&client=dogbot")
+							Elements cards=doc2.getElementsByClass('card-content')
+							try{
+								String profileText=doc2.getElementById('main').text().trim()
+								if(profileText.length()>500)profileText=profileText.substring(0,500)+'...'
+								String location=":flag_${cards[0].getElementsByClass('card-title')[5]?.getElementsByTag('img')?.attr('alt')?.toLowerCase()}:"
+								if(location==':flag_:')location='\u2753'
+								e.sendMessage("**${cards[0].getElementsByClass('card-title')[0].text().capitalize()}**  (${cards[0].getElementsByClass('subtitle')[0].text()})\nRank: ${cards[0].getElementsByClass('card-title')[1].text()}  Levels: ${cards[0].getElementsByClass('card-title')[2].text()}  Rates: ${cards[0].getElementsByClass('card-title')[3].text()}  Friends: ${cards[0].getElementsByClass('card-title')[4].text()}  $location\n$profileText\n\n<$link>").queue()
+							}catch(none){
+								e.sendMessage(["No account matching '$d.args' was found.","Geen account vind '$d.args' leuk was vinden."].lang(e)).queue()
+							}
+						}catch(down){
+							e.sendMessage('Looks like Level Palace is unavailable. Press `f` to pay respects.').queue()
+							down.printStackTrace()
+							503
+						}
+					}catch(ex){
+						if(ex.message=='HTTP error fetching URL'){
+							e.sendMessage(['You are being rate limited.','Je bent gebruik beperkt.','Voce esta sendo limitado a taxas.','Zostaniesz szybkosc ograniczona.'].lang(e)).queue()
+							429
+						}else{
+							e.sendMessage(["No account matching '$d.args' was found.","Geen account vind '$d.args' leuk was vinden."].lang(e)).queue()
+							404
+						}
+					}
+				}else{
+					e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}levelpalace [search term]`.","Gebruik: `${d.prefix}levelpalace [zoekterm]`.","Uso: `${d.prefix}levelpalace [termo pesquisa]`."].lang(e)).queue()
+					400
+				}
+			}else{
+				User axew=e.jda.users.find{it.id==d.bot.owner}
+				e.sendMessage("Level Palace is under maintenance right now, check back later.\n(If you believe this is in error, go bug $axew.name#$axew.discriminator.)").queue()
+				503
+			}
 		}
 	}
 	String category='Online'
@@ -1398,17 +1447,6 @@ class WebsiteCommand extends Command{
 	String category='Online'
 	String help="""`website [domain]` will make me get the website's data on Website Informer.
 You're not going to use this to DDOS, are you?"""
-}
-
-
-class MiiverseCommand extends Command{
-	List aliases=['miiverse','mvs']
-	def run(Map d,Event e){
-		e.sendMessage("Thank you to everyone who used Miiverse! The Miiverse service has ended as of 8th November 2017.\nhttps://i.miiverse.nintendo.net/thank_you.png").queue()
-	}
-	String category='Online'
-	String help="""`miiverse [nnid]` will make me get one of the latest Miiverse posts by the NNID.
-That is if the admins haven't banned them. And if Miiverse isn't dead, which it is."""
 }
 
 
@@ -1562,7 +1600,7 @@ class TagCommand extends Command{
 	def run(Map d,Event e){
 		d.args=d.args.split('( |\n|\r)',3).toList()
 		d.args[0]=d.args[0]?.toLowerCase()
-		if(e.message.attachment)d.args+=e.message.attachment.url
+		if(e.message.attachments)d.args+=e.message.attachments*.url
 		if(d.args[0]=='create'){
 			if(d.args[2]){
 				d.args[1]=d.args[1]?.toLowerCase()
@@ -2231,8 +2269,9 @@ Who could forget the classic command?"""
 
 class IrlCommand extends Command{
 	List aliases=['irl','realname']
+	int limit=25
 	def run(Map d,Event e){
-		if(d.modes.database[e.guild?.id]==false){
+		if(e.guild&&(d.modes.database[e.guild.id]==false)){
 			e.sendMessage('Personal information has been disabled by your jurisdiction.').queue()
 		}else{
 			if(e.message.mentions.size()>1){
@@ -2256,7 +2295,7 @@ class IrlCommand extends Command{
 					try{
 						String irl=d.db[user.id].irl
 						User axew=e.jda.users.find{it.id=='107894146617868288'}
-						e.sendMessage("**${user.identity.capitalize()}**'s real name is ${if(irl!='unknown'){irl}else{'not in my database'}}.${if(user.id==e.author.id){["\n\nIf you would like this information changed, please ask $axew.name#$axew.discriminator.","\n\nAls je wilt deze informatie tot bij veranderd, vraag alstublieft $axew.name#$axew.discriminator.","\n\nSe voc\u00ea gostaria que essa informa\u00e7\u00e3o fosse alterada, pergunte $axew.name#$axew.discriminator.","Je\u015bli chcesz zmieni\u0107 te informacje, zapytaj $axew.name#$axew.discriminator."].lang(e)}else{''}}").queue()
+						e.sendMessage("**${user.identity.capitalize()}**'s real name is ${if(irl!='unknown'){irl}else{'not in my database'}}.${if(user.id==e.author.id){["\n\nIf you would like your information changed, please ask $axew.name#$axew.discriminator.","\n\nAls je wilt deze informatie tot bij veranderd, vraag alstublieft $axew.name#$axew.discriminator.","\n\nSe voc\u00ea gostaria que essa informa\u00e7\u00e3o fosse alterada, pergunte $axew.name#$axew.discriminator.","Je\u015bli chcesz zmieni\u0107 te informacje, zapytaj $axew.name#$axew.discriminator."].lang(e)}else{''}}").queue()
 					}catch(entry){
 						e.sendMessage(["There is no information in my database for $user.name.","Er is geen informatie in mijn databank voor $user.name.","Nao ha informacoes no meu banco de dados para $user.name.","W mojej bazie danych nie ma zadnych informacji o $user.name."].lang(e)).queue()
 						404
@@ -2276,8 +2315,9 @@ We're all friendly here so I don't want to see any stalking."""
 
 class AgeCommand extends Command{
 	List aliases=['age','birthday']
+	int limit=25
 	def run(Map d,Event e){
-		if(d.modes.database[e.guild?.id]==false){
+		if(e.guild&&(d.modes.database[e.guild.id]==false)){
 			e.sendMessage('Personal information has been disabled by your jurisdiction.').queue()
 		}else{
 			if(e.message.mentions.size()>1){
@@ -2301,7 +2341,7 @@ class AgeCommand extends Command{
 					try{
 						String age=d.db[user.id].age
 						User axew=e.jda.users.find{it.id=='107894146617868288'}
-						e.sendMessage("**${user.identity.capitalize()}**'s birthday is ${if(age!='unknown'){age}else{'not in my database'}}.${if(user.id==e.author.id){["\n\nIf you would like this information changed, please ask $axew.name#$axew.discriminator.","\n\nAls je wilt deze informatie tot bij veranderd, vraag alstublieft $axew.name#$axew.discriminator.","\n\nSe voc\u00ea gostaria que essa informa\u00e7\u00e3o fosse alterada, pergunte $axew.name#$axew.discriminator.","Je\u015bli chcesz zmieni\u0107 te informacje, zapytaj $axew.name#$axew.discriminator."].lang(e)}else{''}}").queue()
+						e.sendMessage("**${user.identity.capitalize()}**'s birthday is ${if(age!='unknown'){age}else{'not in my database'}}.${if(user.id==e.author.id){["\n\nIf you would like your information changed, please ask $axew.name#$axew.discriminator.","\n\nAls je wilt deze informatie tot bij veranderd, vraag alstublieft $axew.name#$axew.discriminator.","\n\nSe voc\u00ea gostaria que essa informa\u00e7\u00e3o fosse alterada, pergunte $axew.name#$axew.discriminator.","Je\u015bli chcesz zmieni\u0107 te informacje, zapytaj $axew.name#$axew.discriminator."].lang(e)}else{''}}").queue()
 					}catch(entry){
 						e.sendMessage(["There is no information in my database for $user.name.","Er is geen informatie in mijn databank voor $user.name.","Nao ha informacoes no meu banco de dados para $user.name.","W mojej bazie danych nie ma zadnych informacji o $user.name."].lang(e)).queue()
 						404
@@ -2321,8 +2361,9 @@ What are the chances it'll be today?"""
 
 class AreaCommand extends Command{
 	List aliases=['area','location']
+	int limit=25
 	def run(Map d,Event e){
-		if(d.modes.database[e.guild?.id]==false){
+		if(e.guild&&(d.modes.database[e.guild.id]==false)){
 			e.sendMessage('Personal information has been disabled by your jurisdiction.').queue()
 		}else{
 			if(e.message.mentions.size()>1){
@@ -2346,7 +2387,7 @@ class AreaCommand extends Command{
 					try{
 						String area=d.db[user.id].area
 						User axew=e.jda.users.find{it.id=='107894146617868288'}
-						e.sendMessage("**${user.identity.capitalize()}**'s location is ${if(area=='United States'){'the United States (or unknown)'}else if(area!='unknown'){(area.startsWith('Uni')?'the ':'')+area}else{'not in my database'}}.${if(user.id==e.author.id){["\n\nIf you would like this information changed, please ask $axew.name#$axew.discriminator.","\n\nAls je wilt deze informatie tot bij veranderd, vraag alstublieft $axew.name#$axew.discriminator.","\n\nSe voc\u00ea gostaria que essa informa\u00e7\u00e3o fosse alterada, pergunte $axew.name#$axew.discriminator.","Je\u015bli chcesz zmieni\u0107 te informacje, zapytaj $axew.name#$axew.discriminator."].lang(e)}else{''}}").queue()
+						e.sendMessage("**${user.identity.capitalize()}**'s location is ${if(area=='United States'){'the United States (or unknown)'}else if(area!='unknown'){(area.startsWith('Uni')?'the ':'')+area}else{'not in my database'}}.${if(user.id==e.author.id){["\n\nIf you would like your information changed, please ask $axew.name#$axew.discriminator.","\n\nAls je wilt deze informatie tot bij veranderd, vraag alstublieft $axew.name#$axew.discriminator.","\n\nSe voc\u00ea gostaria que essa informa\u00e7\u00e3o fosse alterada, pergunte $axew.name#$axew.discriminator.","Je\u015bli chcesz zmieni\u0107 te informacje, zapytaj $axew.name#$axew.discriminator."].lang(e)}else{''}}").queue()
 					}catch(entry){
 						e.sendMessage(["There is no information in my database for $user.name.","Er is geen informatie in mijn databank voor $user.name.","Nao ha informacoes no meu banco de dados para $user.name.","W mojej bazie danych nie ma zadnych informacji o $user.name."].lang(e)).queue()
 						404
@@ -2429,7 +2470,7 @@ class MinecraftCommand extends Command{
 				try{
 					String mc=d.db[e.author.id].mc
 					User axew=e.jda.users.find{it.id=='107894146617868288'}
-					e.sendMessage("**${e.author.identity.capitalize()}**${if(mc){"'s Minecraft username is ${mc}.\nhttps://visage.surgeplay.com/full/512/${mc}.png"}else{" does not have a Minecraft account."}}\n\nIf you would like this information changed, please ask $axew.name#$axew.discriminator.").queue()
+					e.sendMessage("**${e.author.identity.capitalize()}**${if(mc){"'s Minecraft username is ${mc}.\nhttps://visage.surgeplay.com/full/512/${mc}.png"}else{" does not have a Minecraft account."}}\n\nIf you would like your information changed, please ask $axew.name#$axew.discriminator.").queue()
 				}catch(entry){
 					e.sendMessage(["There is no information in my database for $user.name.","Er is geen informatie in mijn databank voor $user.name.","Nao ha informacoes no meu banco de dados para $user.name.","W mojej bazie danych nie ma zadnych informacji o $user.name."].lang(e)).queue()
 					404
@@ -2447,7 +2488,7 @@ Beaconville functionality."""
 class TimeCommand extends Command{
 	List aliases=['time']
 	def run(Map d,Event e){
-		if(d.modes.database[e.guild?.id]==false){
+		if(e.guild&&(d.modes.database[e.guild.id]==false)){
 			e.sendMessage('Personal information has been disabled by your jurisdiction.').queue()
 		}else{
 			User ass
@@ -2500,7 +2541,7 @@ I had it before BooBot."""
 class EventsCommand extends Command{
 	List aliases=['events']
 	int limit=45
-	Map specials=['25 December':'Christmas','31 October':'Halloween','1 January':'New Year','26 December':'Boxing Day','14 February':"Valentine's Day",'8 August':'Beaconville Anniversary','1 April':'Unfunny Pranks Day']
+	Map specials=['25 December':'Christmas','31 October':'Halloween','1 January':'New Year','26 December':'Boxing Day','14 February':"Valentine's Day",'8 August':'Beaconville Anniversary','1 April':'Unfunny Pranks Day','13 May':'Discord Anniversary']
 	def run(Map d,Event e){
 		Message message=e.sendMessage('Checking my calendar...').complete()
 		e.sendTyping().queue()
@@ -2736,7 +2777,7 @@ class StatsCommand extends Command{
 		}
 		Runtime runtime=Runtime.runtime
 		String stats="""Connected to `${e.jda.guilds.size()}` servers with `${e.jda.channels.size()}` channels and `${e.jda.users.size()}` users.
-Total `${d.db*.key.size}` database entries, `${d.tags*.key.size}` tags and `${new File('images/xat').listFiles().size()+new File('images/cs').listFiles().size()}` smilies.
+Total `${d.db*.key.size()}` database entries, and `${d.tags*.key.size}` tags and `${new File('images/xat').listFiles().size()+new File('images/cs').listFiles()*.listFiles().flatten().size()}` smilies.
 Online for `${uptime[0]}` hour${if(uptime[0]!=1){'s'}else{''}} and `${uptime[1]}` minute${if(uptime[1]!=1){'s'}else{''}}."""
 		if(d.args.toLowerCase()=='full'){
 			List os=[System.getProperty('os.name'),System.getProperty('os.version'),System.getProperty('os.arch'),System.getProperty('sun.os.patch.level')]
@@ -2808,7 +2849,8 @@ class SetAvatarCommand extends Command{
 	int maximum=13
 	int limit=60
 	def run(Map d,Event e){
-		d.args=d.args.toLowerCase()
+		e.sendMessage("A powerful event prevents you from changing GRover's avatar.").queue()
+/*		d.args=d.args.toLowerCase()
 		if(!d.args||(d.args=='random')||(d.args in(1..maximum)*.toString())){
 			if(!d.args||(d.args=='random'))d.args=(1..maximum).randomItem()
 			else d.args=d.args.toInteger()
@@ -2825,12 +2867,9 @@ class SetAvatarCommand extends Command{
 		}else{
 			e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}setavatar [1..$maximum]/random`.","Gebruik: `${d.prefix}setavatar [1..$maximum]/random`.","Uso: `${d.prefix}setavatar [1..$maximum]/random`."].lang(e)).queue()
 			400
-		}
-/*		APRIL JAPE
-		e.sendMessage("A mysterious hitorigoto prevents you from changing GRover's avatar.").queue()*/
+		}*/
 	}
 	String category='General'
-//	String help="You can't stop the hitorigoto!"
 	String help="""`setavatar [1..9]/random` will make me change my avatar.
 Just 10 to choose from now."""
 }
@@ -2886,7 +2925,7 @@ class EvalCommand extends Command{
 				long startTime2=System.currentTimeMillis()
 				e.sendMessage(eval).queue{
 					long stopTime2=System.currentTimeMillis()
-					it.edit("$it.rawContent\n`${stopTime-startTime}ms`, `${stopTime2-startTime2}ms`").queue()
+					it.edit("$it.contentRaw\n`${stopTime-startTime}ms`, `${stopTime2-startTime2}ms`").queue()
 				}
 			}catch(ex){
 				e.sendMessage("$ex").queue()
@@ -2973,14 +3012,14 @@ class WordCountCommand extends Command{
 	List aliases=['wordcount','words']
 	def run(Map d,Event e){
 		String input=d.args
-		if(e.message.attachment)input+=web.download(e.message.attachment.url,"temp/wordcount.txt")
+		if(e.message.attachment)input+=d.web.download(e.message.attachment.url,"temp/wordcount.txt")
 		if(input){
 			List words=input.replace('\r\n','\r').replace('\n\r','\n').replaceAll(['\r','\n','-','_','\u3000','\u30fc','\uff3f','\u00a1','?','!','\uff1f','\uff01','(',')','+','=',':',';','{','}','[',']','/','<','>','.',',','\u3002','\u3001'],' ').tokenize()
-			List lines=input.replace('\r\n','\r').replace('\n\r','\n').tokenize('\r')*.tokenize('\n').flatten()
+			List lines=input.replace('\r\n','\r').replace('\n\r','\n').tokenize('\r')*.split('\n').flatten()
 			String longestWord=words.join(' ').replaceAll(/\d+/,'').replaceAll(['"','*',"'",'|'],' ').tokenize().sort{it.length()}.last()
 			if(longestWord.length()>500)longestWord=longestWord.substring(0,500)+'...'
 			e.sendMessage("""${words.size()} words
-${lines.size()} lines (${lines.join('\n').replace(' ','').replace('\n\n','\n').replace('\n\n','\n').replace('\n\n','\n').tokenize('\n').size()} without empty)
+${lines.size()} lines (${lines.join('\n').replace('\n \n','\n').size()} without empty)
 ${input.length()} length (${input.replaceAll([' ','-','_','\n','\r'],'').length()} without spaces)
 
 Longest word: "$longestWord"
@@ -3318,7 +3357,7 @@ class FeedCommand extends Command{
 							channel:e.channel.id,
 							link:link,
 							last:id,
-							user:e.private?e.author.id:null
+							user:e.guild?null:e.author.id
 						]
 						e.sendMessage("YouTube channel added to the feed for this channel.").queue()
 					}
@@ -3347,7 +3386,7 @@ class FeedCommand extends Command{
 							channel:e.channel.id,
 							link:link,
 							last:id,
-							user:e.private?e.author.id:null
+							user:e.guild?null:e.author.id
 						]
 						e.sendMessage("Anime list added to the feed for this channel.").queue()
 					}
@@ -3374,7 +3413,7 @@ class FeedCommand extends Command{
 							channel:e.channel.id,
 							link:link,
 							last:stamp,
-							user:e.private?e.author.id:null
+							user:e.guild?null:e.author.id
 						]
 						e.sendMessage("Twitter handle added to the feed for this channel.").queue()
 					}
@@ -3401,7 +3440,7 @@ class FeedCommand extends Command{
 							channel:e.channel.id,
 							link:link,
 							last:id,
-							user:e.private?e.author.id:null
+							user:e.guild?null:e.author.id
 						]
 						e.sendMessage("Level Palace account added to the feed for this channel.").queue()
 					}else{
@@ -4340,6 +4379,11 @@ class TopCommand extends Command{
 				table*.key.reverse()[range].each{
 					top+="`#${num+=1}` **<@$it>** (${table[it].size()} servers)"
 				}
+			}else if(d.args[0].startsWith('rpg')){
+				List list=e.jda.users.findAll{!it.bot}.sort{d.rpg[it.id]?.money?:0}
+				list.reverse()[range].each{
+					top+="`#${num+=1}` **$it.identity** (<:coin:339089342356258826> `${d.rpg[it.id]?.money?:0}`)"
+				}
 			}else{
 				top+=d.errorMessage()+["Usage: `${d.prefix}top names/games/bots [page]`.","Gebruik: `${d.prefix}top names/games/bots [pagina]`.","Uso: `${d.prefix}top names/games/bots [pagina]`."].lang(e)
 				status=400
@@ -4352,9 +4396,10 @@ class TopCommand extends Command{
 		}
 	}
 	String category='General'
-	String help="""`top names [page]` will make me tell you the most common usernames.
-`top games [page]` will make me tell you the most played games right now.
-`top bots [page]` will make me tell you which bots are in the most servers.
+	String help="""`top names [page]` will make me tell you the most common usernames that I can see.
+`top games [page]` will make me tell the games being played most right now (that I can see).
+`top bots [page]` will make me tell you which bots share the most servers with me right now.
+`top rpg [page]` will make me tell you the richest users in my RPG.
 This is only as far as I can see, though. Imagine the global statistic."""
 }
 
@@ -4396,32 +4441,34 @@ class NoteCommand extends Command{
 	def run(Map d,Event e){
 		d.args=d.args.tokenize()
 		d.args[0]=d.args[0]?.toLowerCase()
+		if(e.message.attachments)d.args+=e.message.attachments*.url
 		String id=Long.toString((e.message.createTimeMillis/500)as long,36)
+		List total=d.notes*.value.flatten().findAll{it.user==e.author.id}
 		if(d.args[0]=='list'){
-			List total=d.notes*.value.flatten().findAll{it.user==e.author.id}
 			if(total){
 				e.sendMessage(total.collect{Map note->
-					"`$note.id` \"${note.content.length()>100?note.content.substring(0,100)+'...':note.content}\" ${if(note.time){"(${new Date(note.time).format('H:mm d/M/YYYY')})"}else if(note.mention){"(${e.jda.users.find{it.id==note.mention}?.identity?:note.mention})"}else{''}}"
+					"`$note.id` \"${note.content.length()>80?note.content.substring(0,80)+'...':note.content}\" ${if(note.time){"(${new Date(note.time).format('H:mm d/M/YYYY')})"}else if(note.mention){"(${e.jda.users.find{it.id==note.mention}?.identity?:note.mention})"}else{''}}"
 				}.join('\n')).queue()
 			}else{
 				e.sendMessage(['No notes found, add some!','Geen notes vinden, voegen sommige!'].lang(e)).queue()
 			}
+		}else if(d.args[0]in total*.id){
+			Map note=total.find{it.id==d.args[0]}
+			e.sendMessage("`$note.id`: \"$note.content\" ${if(note.time){"(${new Date(note.time).format('H:mm d/M/YYYY')})"}else if(note.mention){"(${e.jda.users.find{it.id==note.mention}?.identity?:note.mention})"}else{''}}").queue()
 		}else if(d.args[0]in['remove','delete']){
-			List total=d.notes*.value.flatten().findAll{it.user==e.author.id}
 			Map note=total.find{it.id==d.args[1].toLowerCase()}
 			if(!note)note=total.find{it.content.contains(d.args[1])}
 			if(note){
 				d.notes.generic-=note
 				d.notes.timed-=note
 				d.notes.user-=note
-				e.sendMessage(['That note has been removed.','Dat note heb bent verwijderde.'].lang(e)).queue()
+				e.sendMessage(["That note (`$note.id`) has been removed.","Dat note ($note.id) heb bent verwijderde."].lang(e)).queue()
 				d.json.save(d.notes,'notes')
 			}else{
 				e.sendMessage(["I couldn't find a note matching '${d.args[1]}.'","Ik kon niet vind een note vind '${d.args[1]}' leuk."].lang(e)).queue()
 				404
 			}
 		}else if(d.args[0]=='clear'){
-			List total=d.notes*.value.flatten().findAll{it.user==e.author.id}
 			total.each{
 				d.notes.generic-=it
 				d.notes.timed-=it
@@ -4444,13 +4491,16 @@ class NoteCommand extends Command{
 			}
 		}else if(((d.args[0]=~/\d+\w/)||(d.args[0]==~/\d\d\/\d\d\/\d\d\d\d/))&&!e.message.mentions){
 			def time=(d.args[0]==~/\d\d\/\d\d\/\d\d\d\d/)?Date.parse('dd/MM/YYYY',d.args[0]).time:d.args[0].formatTime()
+			String area=d.db[e.author.id]?.area?:'United States'
+			String key=d.misc.time*.key.sort{-it.length()}.find{area.endsWith(it)}
+			int zone=(d.misc.time[key]!=null)?d.misc.time[key]:d.misc.time['United States']
 			d.notes.timed+=[
 				id:id,
 				user:e.author.id,
 				time:time,
 				content:d.args[1]?d.args[1..-1].join(' '):''
 			]
-			e.sendMessage(["A timed note has been created at `$id`. I will DM you at ${new Date(time).format('HH:mm:ss, d MMMM YYYY').formatBirthday()} (UK time).","Een getimede note is angemaakt op `$id`. Ik wil PB je bij ${new Date(time).format('HH:mm:ss, d MMMM YYYY').formatBirthday()} (UK-tijd)."].lang(e)).queue()
+			e.sendMessage(["A timed note has been created at `$id`. I will DM you at ${new Date(time+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (${key.abbreviate()} time).","Een getimede note is angemaakt op `$id`. Ik wil PB je bij ${new Date(time+(zone*3600000)).format('HH:mm:ss, d MMMM yyyy').formatBirthday()} (${key.abbreviate()}-tijd)."].lang(e)).queue()
 			d.json.save(d.notes,'notes')
 		}else if((d.args[0]==~/<@!?\d+>/)&&e.message.mentions||e.guild&&e.guild.findUser(d.args[0])){
 			User user=e.guild?.findUser(d.args[0])?:e.message.mentions[-1]
@@ -4479,7 +4529,7 @@ Please note."""
 
 class ProfileCommand extends Command{
 	List aliases=['profile']
-	int limit=25
+	int limit=60
 	def run(Map d,Event e){
 		User user=e.author
 		if(d.args&&e.guild)user=e.message.mentions?e.message.mentions[-1]:e.guild.findUser(d.args)
@@ -4512,7 +4562,7 @@ class ProfileCommand extends Command{
 				if(d.db[user.id].aka)title+=" (${d.db[user.id].aka})"
 				graphics.drawString(title,3,15)
 				graphics.font=new Font((date=='1 April')?'Comic Sans MS':'Calibri',Font.PLAIN,13)
-				if(d.modes.database[e.guild?.id]==false){
+				if(e.guild&&(d.modes.database[e.guild.id]==false)){
 					graphics.drawString('Hidden',96,34)
 					graphics.drawString('Hidden',96,54)
 				}else{
@@ -4649,8 +4699,8 @@ class CustomCommand extends Command{
 						400
 					}
 				}else if(d.args[0]=='info'){
-					d.args[1]=d.args[1].toLowerCase()
 					if(d.args[1]){
+						d.args[1]=d.args[1].toLowerCase()
 						Map custom=d.customs[e.guild.id].find{it.name==d.args[1]}
 						if(custom){
 							Command cmd=d.bot.commands.find{custom.command in it.aliases}
@@ -4694,6 +4744,7 @@ class PwnedCommand extends Command{
 	def run(Map d,Event e){
 		if(d.args){
 			if(!d.args.contains('@'))d.args+='@gmail.com'
+			d.args=d.args.replaceAll(/\s/,'-')
 			e.sendTyping().queue()
 			try{
 				List hecks=new JsonSlurper().parse(Unirest.get("https://haveibeenpwned.com/api/v2/breachedaccount/$d.args").asString().body.bytes).collect{Map breach->"**$breach.Title** ($breach.Domain): ${breach.DataClasses.join(', ')}${if(breach.IsVerified){' (verified)'}else if(breach.IsFabricated){' (fabricated)'}else{''}}"}
@@ -5138,7 +5189,7 @@ class SetServerCommand extends Command{
 					}
 					d.json.save(d.modes,'modes')
 				}else{
-					e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}setserver nsfw/database/colour/hidden`","Gebruik: `${d.prefix}setserver nsfw/database/colour/hidden`","Uso: `${d.prefix}setserver nsfw/database/colour/hidden`"].lang(e)).queue()
+					e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}setserver nsfw/database/colour/hidden`.","Gebruik: `${d.prefix}setserver nsfw/database/colour/hidden`.","Uso: `${d.prefix}setserver nsfw/database/colour/hidden`."].lang(e)).queue()
 					400
 				}
 			}else{
@@ -5155,4 +5206,1010 @@ class SetServerCommand extends Command{
 `setserver colour` will toggle off custom colours for everyone.
 `setserver hidden` will hide the server on public lists.
 These can only be changed by the server owner... And Axew."""
+}
+
+
+class SlotsCommand extends Command{
+	List aliases=['slots','gamble']
+	int limit=30
+	def run(Map d,Event e){
+		if(!d.rpg[e.author.id])d.rpg[e.author.id]=[money:500,items:[],experience:0,health:100,skills:['thrash'],attack:0,defense:0]
+		d.args=d.args.tokenize()
+		def moneys=(d.args[0]==~/\d+/)?d.args[0].toLong():1
+		List input=((e.guild?e.guild.emotes.toList().findAll{!it.animated}.randomize()*.mention:[])+[':tangerine:',':banana:',':apple:',':pineapple:',':peach:',':tomato:',':lemon:',':eggplant:'])[0..(3..7).random()]
+		if(moneys>d.rpg[e.author.id].money){
+			e.sendMessage("You don't even have that much money, do you? (Answer: No.)").queue()
+		}else{
+			d.rpg[e.author.id].money-=moneys
+			List output=[]
+			9.times{
+				output+=input.random()
+			}
+			boolean match=((output[0]==output[1])&&(output[1]==output[2])||(output[3]==output[4])&&(output[4]==output[5])||(output[6]==output[7])&&(output[7]==output[8])||(output[0]==output[4])&&(output[4]==output[8])||(output[6]==output[4])&&(output[4]==output[2]))
+			String machine="`>` ${output[0..2].join()} `<`\n`>` ${output[3..5].join()} `<`\n`>` ${output[6..8].join()} `<`\n\n"
+			if(match){
+				int out=moneys*[0.5,1.5,2,2.5].random()
+				if(moneys<1){
+					e.sendMessage("$machine**You won!**\nBut you didn't get anything because you didn't put any money in, you cheeky fucker.").queue()
+				}else if([0,0,0,0,0,1].random()){
+					e.sendMessage("$machine**You won!**\nBut you drop the money on the floor, and before you can pick it up, a random dog eats it.").queue()
+				}else{
+					d.rpg[e.author.id].money+=out
+					e.sendMessage("$machine**You won!**\nYou got <:coin:339089342356258826> `$out`. You now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+				}
+			}else{
+				String comment=["Have you still not noticed you're only losing money?","Get out of here, I bet you're too young to gamble and probably too young to use Discord.","Don't worry, your money isn't going to any noble cause.",'Feel like trying again, loser?'].random()
+				if([0,0,0,0,0,0,0,0,1].random())e.sendMessage("$machine**You won!** Only joking, you lost! $comment\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+				else e.sendMessage("$machine**You lost!** $comment\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+			}
+			d.json.save(d.rpg,'rpg')
+		}
+	}
+	String category='RPG'
+	String help="""`slots [amount]` will bet that amount on a (custom) emoji slot machine. You'll get a random return, if any.
+The obligatory feature for any monetary system."""
+}
+
+
+class ItemsCommand extends Command{
+	List aliases=['items','item']
+	def run(Map d,Event e){
+		if(!d.rpg[e.author.id])d.rpg[e.author.id]=[money:500,items:[],experience:0,health:100,skills:['thrash'],attack:0,defense:0]
+		if(d.args){
+			d.args=d.args.toLowerCase().tokenize()
+			def item=d.rpg.items*.key.find{d.args[0].contains(it)}
+			if(item){
+				if(e.message.mentions){
+					item=d.rpg[e.author.id].items.find{d.args[0].contains(it[0])}
+					if(item[0]){
+						d.rpg[e.author.id].items-=[item]
+						if(e.message.mentions[-1].bot){
+							if(item[0]=='bomb'){
+								e.sendMessage("You throw the bomb at the bot, which is stupid because the bot cannot play the game. And the bomb is wasted. :clap::skin-tone-1:").queue()
+							}else{
+								e.sendMessage("As you try to dump the item on a poor robot, it explodes with an 'OOF' sound. It's gone now.").queue()
+							}
+						}else if(e.message.mentions[-1].id==e.author.id){
+							e.sendMessage("Jesus fucking Christ, you're lonely. Let me take it.").queue()
+						}else{
+							if(!d.rpg[e.message.mentions[-1].id])d.rpg[e.message.mentions[-1].id]=[money:500,items:[],experience:0,health:100,skills:['thrash'],attack:0,defense:0]
+							String message="The ${d.rpg.items[item[0]]} has been sent to ${e.message.mentions[-1].identity}."
+							if(item[0]=='bomb'){
+								d.rpg[e.message.mentions[-1].id].health=100
+								int bill=d.rpg[e.message.mentions[-1].id].money/3
+								d.rpg[e.message.mentions[-1].id].money-=bill
+								if(e.message.mentions[-1].id==e.author.id)message+=" Good job killing yourself, dude.\n\nHurrying to the nearest hospital, you pay a <:coin:339089342356258826> `$bill` bill to regain full health."
+								else message+=" Boom!\n\nHurrying to the nearest hospital, they had to pay a <:coin:339089342356258826> `$bill` bill to regain full health."
+							}else{
+								d.rpg[e.message.mentions[-1].id].items+=[item]
+							}
+							e.sendMessage("$message <@${e.message.mentions[-1].id}>").queue()
+						}
+						d.json.save(d.rpg,'rpg')
+					}else{
+						e.sendMessage("Unfortunately you can't just fabricate that out of nowhere.").queue()
+					}
+				}else{
+					String desc="${d.rpg.items[item]}\n"
+					if(item=='cart')desc+="A Nintendo Switch game card containing The Legend of Zelda: Breath of the Wild. Too bad there's nothing you can play it on."
+					else if(item=='pillow')desc+="A human-sized pillow of Satan as an anime girl. A certain user would love to have this."
+					else if(item=='eggplant')desc+="It's just a plant bro."
+					else if(item=='sink')desc+="The kitchen sink. Not a metaphor, but a literal kitchen sink."
+					else if(item=='sword')desc+="Sweet, I can dual wield now."
+					else if(item=='key')desc+="A key that unlocks both treasure chests and doors. How convenient."
+					else if(item=='shit')desc+="An actual piece of fecal matter. Everything else in your backpack is probably covered with it."
+					else if(item=='picture')desc+="It's a cursed image. **Cursed!**"
+					else if(item=='pear')desc+="A better fruit than apples."
+					else if(item=='bomb')desc+="A strange bomb that could blow up any time, but doesn't destroy other items."
+					else if(item=='eyes')desc+="Sometimes, when I am stalking someone, I send these to their phone, and they get real spooked."
+					else if(item=='grover')desc+="This dog robot was once relevant as a staple of a certain community. Now he whores out commands that'll be popular with the kids to stay relevant."
+					else if(item=='bikini')desc+="An essential item of clothing for all fanservice episodes. Prone to falling off spontaneously."
+					else if(item=='cook')desc+="An electric pan cooking an egg. The energy going through it seems to be perpetual, and the egg is never quite done."
+					else if(item=='whale')desc+="Whale whale, what do- oh, Egbert already used this joke?"
+					else if(item=='burger')desc+="A burger. There are zucchinis in it, but they are sliced so thin you cannot see them. Devilish."
+					else if(item=='camera')desc+="It's a digital camera. You have no idea how to use it, but it feels sinister somehow."
+					else desc+="This exists, but there's no data for it. Huh."
+					e.sendMessage(desc).queue()
+				}
+			}else{
+				e.sendMessage('There are no items called that. Did you make a typo?').queue()
+			}
+		}else{
+			List items=(d.rpg[e.author.id].items+([null,null]*30))[0..29].collect{
+				if(it)d.rpg.items[it[0]]
+				else':black_medium_small_square:'
+			}
+			e.sendMessage("""**${e.author.identity.capitalize()}'s Inventory and Statistics**:
+<:e:433672473985417226> `${d.rpg[e.author.id].experience}` | <:c:339089342356258826> `${d.rpg[e.author.id].money}` | :broken_heart: `${d.rpg[e.author.id].health}`
+Weapon: ${d.rpg[e.author.id].weapon?d.rpg.items[d.rpg[e.author.id].weapon]:'Your tiny fist'} | Armour: ${d.rpg[e.author.id].armour?d.rpg.items[d.rpg[e.author.id].armour]:'Your regular clothes'}
+
+${items[0..14].join('')}
+${items[15..29].join('')}""").queue()
+		}
+	}
+	String category='RPG'
+	String help="""`items` will make me tell you your RPG items, money and other details.
+`items [item]` will make me tell you about an item, even if you don't have it.
+`items [item] [@mention]` will make me give someone else an item.
+Backpack, backpack. Backpack, backpack."""
+}
+
+
+class AdventureCommand extends Command{
+	List aliases=['adventure','explore','run']
+	int limit=30
+	def run(Map d,Event e){
+		if(!d.rpg[e.author.id])d.rpg[e.author.id]=[money:500,items:[],experience:0,health:100,skills:['thrash'],attack:0,defense:0]
+		if(d.args.toLowerCase()=='key'){
+			if('key'in d.rpg[e.author.id].items*.getAt(0)){
+				if(d.rpg[e.author.id].next==1){
+					d.rpg[e.author.id].items-=d.rpg[e.author.id].items.find{it[0]=='key'}
+					if((d.rpg[e.author.id].items.size()>29)||[0,0,0,0,1].random()){
+						e.sendMessage("As you're about to open the chest, it grows wings and begins to lift off the ground. You try to catch it, but it bites you, with the same mouth that then says 'Your PokeGEAR is full. Please delete some phone numbers.' before hitting 88 miles per hour and zooming off to another timeline.").queue()
+					}else{
+						int random=(0..2).random()
+						if(random==1){
+							d.rpg[e.author.id].items+=[['camera',(0..Short.MAX_VALUE).random()]]
+							e.sendMessage("Wow! A digital ${d.rpg.items['camera']}! Maybe you could `${d.prefix}wear` it around your neck for the time being, as either a fashion statement or a practicality.").queue()
+						}else if(random==2){
+							d.rpg[e.author.id].items+=[['shit',(0..Short.MAX_VALUE).random()]]
+							e.sendMessage("Lol you got a piece of fucking ${d.rpg.items['shit']} bahahaha.").queue()
+						}else if(random){
+							d.rpg[e.author.id].items+=[['cart',(0..Short.MAX_VALUE).random()]]
+							e.sendMessage("Oh shit a ${d.rpg.items['cart']}! This is just like something out of my Zeldas!").queue()
+						}else{
+							e.sendMessage("The chest is empty.").queue()
+						}
+					}
+				}else if(d.rpg[e.author.id].next==2){
+					d.rpg[e.author.id].items+=[['key',(0..Short.MAX_VALUE).random()]]
+					e.sendMessage('PLACEHOLDER FOR BOSS (YOUR KEY WILL BE RETURNED)').queue()
+					// open boss door
+				}else{
+					e.sendMessage("There's literally nothing to use a key on.").queue()
+				}
+			}else{
+				e.sendMessage("You don't even have a key you stupid bitch.").queue()
+			}
+		}else{
+			if(d.rpg.battles.find{e.author.id in it.users}){
+				if(d.rpg[e.author.id].next==3){
+					Map battle=d.rpg.battles.find{e.author.id in it.users}
+					int money=(1..9).random()*battle.enemies.size()
+					d.rpg[e.author.id].money-=money
+					if(d.rpg[e.author.id].money<1)d.rpg[e.author.id].money=0
+					d.rpg[e.author.id].next=0
+					if(battle.users.size()>1){
+						e.sendMessage('PLACEHOLDER FOR RUNNING FROM A GROUP BATTLE').queue()
+						// delet yourself
+					}else{
+						d.rpg.battles-=battle
+						String message=["Got away safely.","You managed to escape this time.","Run away, you pussy."].random()
+						e.sendMessage("$message You lost <:coin:339089342356258826> `${money}`.\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+					}
+				}else{
+					d.rpg[e.author.id].next=3
+					e.sendMessage(":runner::skin-tone-1: Do you want to run from the battle?\nType `${d.prefix}adventure` again to confirm. (You'll lose money.)").queue()
+				}
+			}else{
+				int random=[0,0,0,0,0,0,0,0,1,1,1,1,1,2,2,3,4,4,4,4,4,5,5].random()
+				d.rpg[e.author.id].next=0
+				if(random==1){
+					Map another=d.rpg.battles.find{it.users.each{String ass->e.jda.guilds*.members.flatten().find{it.user.id==ass}.status=='online'}}
+					if([0,1].random()&&another){
+						e.sendMessage('PLACEHOLDER FOR JOINING SOMEONE ELSES BATTLE').queue()
+						// join battle
+					}else{
+						Map battle=[users:[e.author.id],enemies:[d.rpg.enemies.random().clone()],turns:0,channels:[[e.channel.id,(0..Short.MAX_VALUE).random()]]]
+						battle.enemies[0].skills=battle.enemies[0].skills.clone()
+						battle.enemies[0].discrim=(0..Short.MAX_VALUE).random()
+						d.rpg.battles+=battle
+						String analogy=['appeared magically','says hi','jumped out of the tall grass','materialized in front of you','has beef with you'].random()
+						e.sendMessage("Enemy ${battle.enemies[0].emoji} $analogy!\n\nUse `${d.prefix}move` to see a list of skills and `${d.prefix}move [skill]` to use one.").queue()
+					}
+				}else if(random==2){
+					Map battle=[users:[e.author.id],enemies:[],who:0,turns:0,channels:[[e.channel.id,(0..Short.MAX_VALUE).random()]]]
+					int number=[3,3,3,3,3,4,4,4,4,4,4,5,5,5,5,10].random()
+					number.times{
+						Map ass=d.rpg.enemies.random().clone()
+						ass.skills=ass.skills.clone()
+						ass.discrim=(0..Short.MAX_VALUE).random()
+						ass.attack-=number
+						ass.defense-=number
+						battle.enemies+=ass
+					}
+					d.rpg.battles+=battle
+					String expletive=['Wowzer!','Wholy shit!','What the fuck?','Wew lad.','Oh heck.'].random()
+					String analogy=['came to fuck you up','appeared out of fucking nowhere','want you dead. All of them'].random()
+					e.sendMessage("$expletive Enemies ${battle.enemies*.emoji.join(', ').replaceLast(', ',' and ')} $analogy!\n\nUse `${d.prefix}move` to see a list of skills and `${d.prefix}move [skill]` to use one on a random target.").queue()
+					// horde battle
+				}else if(random==3){
+					if(d.rpg[e.author.id].health>90){
+						String message=['You accidentally walk off a cliff and... You survive the fall.',"You step on a mine and it explodes, but you survive and now you're a war veteran.","You walk off the flat Earth and end up falling into hell, but even Satan can't stand you so he sends you back."].random()
+						d.rpg[e.author.id].health-=90
+					}else{
+						String message=['You accidentally walk off a cliff and die.','You step on a mine and it explodes, killing you.','You walk off the flat Earth and end up falling into hell. That means death.'].random()
+						List item=[]
+						if(d.rpg[e.author.id].items){
+							item=d.rpg[e.author.id].items.random()
+							d.rpg[e.author.id].items-=[item]
+						}
+						d.rpg[e.author.id].health=100
+						int bill=d.rpg[e.author.id].money/3
+						d.rpg[e.author.id].money-=bill
+						if(item)message+="\n\nHurrying to the nearest hospital, you dropped ${d.rpg.items[item[0]]} and had to pay a <:coin:339089342356258826> `$bill` bill to regain full health."
+						else message+="\n\nYou hurry to the nearest hospital, paying a <:coin:339089342356258826> `$bill` bill to regain full health."
+						e.sendMessage(message).queue()
+					}
+				}else if(random==4){
+					random=(0..85).random()
+					List item=[null,(0..Short.MAX_VALUE).random()]
+					if(random in(0..7)){
+						item[0]='cart'
+						if([0,1].random())e.sendMessage("Lucky! There was a ${d.rpg.items['cart']} lying on the ground. Wonder if it still works.").queue()
+						else e.sendMessage("Walking around the local GAME store, you find a ${d.rpg.items['cart']} on the floor. You pocket it and escape.").queue()
+					}else if(random in 8..14){
+						item[0]='pillow'
+						if([0,1].random())e.sendMessage("You come across a huge ${d.rpg.items['pillow']} that'd be impossible to miss.").queue()
+						else e.sendMessage("You find a bed. It has a ${d.rpg.items['pillow']} on it, which you take for comfort.").queue()
+					}else if(random in 15..28){
+						item[0]='eggplant'
+						if([0,1].random())e.sendMessage("You find a ${d.rpg.items['eggplant']} in a chicken's nest.").queue()
+						else e.sendMessage("You pluck ${d.rpg.items['eggplant']} off a tree branch.").queue()
+					}else if(random in 29..32){
+						item[0]='sink'
+						if([0,1].random())e.sendMessage("While out walking, a ${d.rpg.items['sink']} almost falls on your head. It's unharmed, so you put it in your backpack.").queue()
+						else e.sendMessage("You break into someone's kitchen and steal their ${d.rpg.items['sink']}.").queue()
+					}else if(random in 33..36){
+						item[0]='sword'
+						if([0,1].random())e.sendMessage("You find a ${d.rpg.items['sword']} on the ground along with a corpse. Someone must've died here.").queue()
+						else e.sendMessage("A nice traveller gives you their old ${d.rpg.items['sword']}. You say thank you.").queue()
+					}else if(random in 37..41){
+						item[0]='key'
+						if([0,1].random())e.sendMessage("You find someone's ${d.rpg.items['key']} in the grass.").queue()
+						else e.sendMessage("You steal a passerby's ${d.rpg.items['key']} out of their pocket.").queue()
+					}else if(random in 42..49){
+						item[0]='shit'
+						if([0,1].random())e.sendMessage("Ew, you stepped in some ${d.rpg.items['shit']}. You pick it up.").queue()
+						else e.sendMessage("You pass by a dung beetle rolling a ball of ${d.rpg.items['shit']}. You steal it from him just for satisfaction.").queue()
+					}else if(random in 50..53){
+						item[0]='picture'
+						if([0,1].random())e.sendMessage("While passing by the local haunted house, you find ${d.rpg.items['picture']}.").queue()
+						else e.sendMessage("Huh? This ${d.rpg.items['picture']} wasn't in my bag before.").queue()
+					}else if(random in 54..65){
+						item[0]='pear'
+						if([0,1].random())e.sendMessage("In a sudden bout of hunger, you pick a ${d.rpg.items['pear']} off a tree and forget to eat it.").queue()
+						else e.sendMessage("While out walking, a ${d.rpg.items['pear']} falls on your head. You take it.").queue()
+					}else if(random in 66..69){
+						item[0]='bomb'
+						if([0,1].random())e.sendMessage("Browsing what looks like a battlefield, you find a ${d.rpg.items['bomb']}").queue()
+						else e.sendMessage("Huh?! Why am I carrying ${d.rpg.items['bomb']}?!").queue()
+					}else if(random in 70..74){
+						item[0]='eyes'
+						if([0,1].random())e.sendMessage("You found some ${d.rpg.items['eyes']}, and they aren't your own.").queue()
+						else e.sendMessage("Someone attacks you, but you poke their ${d.rpg.items['eyes']} out and put them in your bag.").queue()
+					}else if(random in 75){
+						if(d.rpg[e.author.id].virginity){
+							e.sendMessage("You go to the same place where you found the ${d.rpg.items['grover']} before, but there's nothing there.").queue()
+						}else{
+							e.sendMessage("You find a rusted piece of scrap metal while walking the plains of nothingness. Upon further inspection, it looks like an old military tool.\nYou pick ${d.rpg.items['grover']} up and put it in your bag.\nDid I just hear barking?").queue()
+						}
+					}else if(random in 75..77){
+						item[0]='bikini'
+						if([0,1].random())e.sendMessage("You go to the beach and steal a woman's ${d.rpg.items['bikini']} while they are still wearing it.").queue()
+						else e.sendMessage("You walk into the clothes store and find a ${d.rpg.items['bikini']} in the changing room. You take it.").queue()
+					}else if(random in 78..79){
+						item[0]='cook'
+						if([0,1].random())e.sendMessage("You're just playing Mario Odyssey, when suddenly a Pan Bro throws a pan out of the screen! You pocket it and put the Switch into your pocket.").queue()
+						e.sendMessage("You walk into Gordon Ramsay's kitchen and steal one of the frying pans. Someone's gonna get a verbal beating.").queue()
+					}else if(random==80){
+						item[0]='whale'
+						e.sendMessage("While swimming from one country to another, you find a whale. You pocket it.").queue()
+					}else if(random in 81..83){
+						item[0]='burger'
+						if([0,1].random())e.sendMessage("After searching the world for ingredients, you've finally made it: The ${d.rpg.items['burger']}.").queue()
+						else e.sendMessage("You take a short break on the bottom of the ocean and grab a Krabby Patty (${d.rpg.items['burger']}).").queue()
+					}else if(random in 84..85){
+						item[0]='camera'
+						if([0,1].random())e.sendMessage("You find a ${d.rpg.items['camera']} on the ground. Free technology!").queue()
+						else e.sendMessage("In a computer shop, you find a ${d.rpg.items['burger']} for really fuckin' cheap. So cheap, they give it to you for free.").queue()
+					}
+					if(item[0]){
+						if(d.rpg[e.author.id].items.size()>29){
+							e.sendMessage("Hey wait a second, your items are full. The ${item[0]} disappears into a black hole.").queue()
+						}else{
+							d.rpg[e.author.id].items+=[item]
+						}
+					}
+				}else if(random==5){
+					if([0,1].random()){
+						d.rpg[e.author.id].next=1
+						String message='You find a chest. '
+						if(d.rpg[e.author.id].items.find{it[0]=='key'})message+="Will you appraise it with `${d.prefix}adventure key`?"
+						else message+="But it's locked and you need a key."
+						e.sendMessage(message).queue()
+					}else{
+						d.rpg[e.author.id].next=2
+						String message='A big red door with a keyhole you could almost fit through looms in front of you... '
+						if(d.rpg[e.author.id].items.find{it[0]=='key'})message+="Will you use `${d.prefix}adventure key` to open it?"
+						else message+="Too bad you don't have anything to open it with."
+						e.sendMessage(message).queue()
+					}
+				}else{
+					random=(0..6).random()
+					if(random in 0..5){
+						String area=['wade through some tall grass','walk across a big field','treck a desert','tour through a cheese land','swim in a pond','navigate a forest','sidle on the edge of a cliff','go shopping in the city','visit a nudist beach','fly in the sky by flapping your arms','investigate a ghost house'].random()
+						String sense=['see','hear','smell','touch','taste','sense','imagine'].random()
+						String thing=['some flying fish','some strange mushrooms','Egbert','a couple of llamas','a nuclear explosion','your mom','a wild Ikue Ootani voiced creature',"a useful item, but it's too far away to get",'the beautiful sunrise','Jesus','a disembodied head','a spooky ghost, better call the ghost busters'].random()
+						e.sendMessage("You $area and $sense $thing.").queue()
+					}else if(random==6){
+						String thing=['a homeless person','a charity shop','a street performer'].random()
+						String and=['in the middle of nowhere','while in town','with a dog'].random()
+						int money=(1..50).random()
+						if(d.rpg[e.author.id].money<money){
+							e.sendMessage("You pass by $thing $and, but don't have the money to spare.").queue()
+						}else{
+							d.rpg[e.author.id].money-=money
+							e.sendMessage("Passing by $thing $and, you end up giving them <:coin:339089342356258826> `$money`.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}
+					}
+				}
+			}
+		}
+		d.json.save(d.rpg,'rpg')
+	}
+	String category='RPG'
+	String help="""`adventure` will go on an adventure, or run from a battle (but you'll lose money).
+`adventure key` will unlock a door or a chest.
+To adventure!"""
+}
+
+
+class MoveCommand extends Command{
+	List aliases=['move','skill']
+	int limit=30
+	def run(Map d,Event e){
+		if(!d.rpg[e.author.id])d.rpg[e.author.id]=[money:500,items:[],experience:0,health:100,skills:['thrash'],attack:0,defense:0]
+		d.args=d.args.toLowerCase()
+		if(d.args){
+			Map battle=d.rpg.battles.find{e.author.id in it.users}
+			if(d.rpg[e.author.id].next==4){
+				e.sendMessage('PLACEHOLDER FOR USING ATTACKS OUTSIDE OF BATTLES').queue()
+				// similar to cut/strength in pokemon games
+			}else if(battle){
+				if(battle.users[battle.who]==e.author.id){
+					if(d.args in d.rpg[e.author.id].skills){
+						// make it wait for the other player if there is one
+						String message="**${e.author.identity.capitalize()}** used ${d.args.capitalize()}."
+						Map enemy=battle.enemies.random()
+						int power=d.rpg[e.author.id].attack-enemy.defense
+						if(d.args=='thrash'){
+							power+=20
+						}
+						// do more attacks!!!
+						if(power)message+=" The attack did $power damage."
+						if(power>0)enemy.health-=power
+						if(enemy.health<1){
+							int exp=d.rpg.enemies.find{it.emoji==enemy.emoji}.health/2
+							d.rpg[e.author.id].experience
+							int money=(enemy.attack-enemy.defense)*5
+							if(money<2)money=2
+							battle.enemies-=enemy
+							if(!battle.enemies)d.rpg.battles-=battle
+							message+="\n\n$enemy.emoji pretended to die.\n\nYou got <:exp:433672473985417226> `$exp` and <:coin:339089342356258826> `$money`. You now have <:exp:433672473985417226> `${d.rpg[e.author.id].experience}` and <:coin:339089342356258826> `${d.rpg[e.author.id].money}`."
+							// do learning
+						}
+						if(battle?.enemies){
+							battle?.enemies.each{Map wing->
+								String ass=wing.skills.random()
+								User you=e.jda.users.find{it.id==battle.users.random()}
+								message+="\n\n$wing.emoji used ${ass.capitalize()} on **$you.identity**."
+								power=wing.attack-d.rpg[you.id].defense
+								if(ass=='thrash'){
+									power+=20
+								}else if(ass=='salmonella'){
+									power=0
+									int turns=(3..5).random()
+									d.rpg[you.id].poison=turns
+									message+=" **${you.identity.capitalize()}** is now poisoned ($turns turns)."
+								}
+								// do more attacks!!! the squeakquel
+								if(power)message+=" The attack did $power damage."
+								if(power>0)d.rpg[you.id].health-=power
+								if(d.rpg[you.id].health<1){
+									List item=[]
+									if(d.rpg[you.id].items){
+										item=d.rpg[you.id].items.random()
+										d.rpg[you.id].items-=[item]
+									}
+									d.rpg[you.id].health=100
+									int bill=d.rpg[you.id].money/3
+									d.rpg[you.id].money-=bill
+									if(item)message+="\n\nHurrying to the nearest hospital, $you.identity dropped ${d.rpg.items[item[0]]} and had to pay a <:coin:339089342356258826> `$bill` bill to regain full health."
+									else message+="\n\n${you.identity.capitalize()} hurries to the nearest hospital, paying a <:coin:339089342356258826> `$bill` bill to regain full health."
+									battle.channels-=d.rpg.channels[d.rpg.users.indexOf(you.id)]
+									battle.users-=you.id
+								}
+							}
+						}
+						battle.users.findAll{d.rpg[it].poison}.each{String sonicthehedgehogcdmusicthathasbeenextendedtoplayforatleast155minutes->
+							Map bepis=d.rpg[sonicthehedgehogcdmusicthathasbeenextendedtoplayforatleast155minutes]
+							message+="\n\n**${bepis.identity.capitalize()}** took 10 damage from the poison."
+							bepis.health-=10
+							if(bepis.health<1){
+								List item=[]
+								if(d.rpg[you.id].items){
+									item=d.rpg[you.id].items.random()
+									d.rpg[you.id].items-=[item]
+								}
+								d.rpg[you.id].health=100
+								int bill=d.rpg[you.id].money/3
+								d.rpg[you.id].money-=bill
+								if(item)message+="\n\nHurrying to the nearest hospital, $you.identity dropped ${d.rpg.items[item[0]]} and had to pay a <:coin:339089342356258826> `$bill` bill to regain full health."
+								else message+="\n\n${you.identity.capitalize()} hurries to the nearest hospital, paying a <:coin:339089342356258826> `$bill` bill to regain full health."
+								battle.channels-=d.rpg.channels[d.rpg.users.indexOf(you.id)]
+								battle.users-=you.id
+							}
+						}
+						if(!battle.users)d.rpg.battles-=battle
+						battle.channels.each{List anus->
+							e.jda.textChannels.find{it.id==anus[0]}.sendMessage("\u200b$message").queue()
+							Thread.sleep(500)
+						}
+					}else{
+						e.sendMessage("You don't even have a skill like that (yet), you bloody wanker.").queue()
+					}
+				}else{
+					e.sendMessage("It's not even your turn you bumbling moron.").queue()
+				}
+			}else{
+				e.sendMessage("Your mum's words echoed:\n\"Just because you can do it doesn't mean you should. Now get out, you're like 25.\"").queue()
+			}
+		}else{
+			Map descs=[
+				'thrash':'Flap about like a fucking retard. Does basic damage.',
+				'salmonella':"Offer the enemy some meat but it's not cooked so he takes damage for the next few turns.",
+				'explode':"Explode. You die immediately so it's conventionally useless.",
+				'stupidity':'Show your true intelligence. It causes the enemy to lose a skill.',
+				'diamond':'Your diamond-tipped nose breaks all shields.',
+				'flirt':'Lowers their defense a bit.'
+			]
+			String ass=d.rpg[e.author.id].skills.collect{String skill->
+				"$skill | ${descs[skill]}"
+			}.join('\n')
+			e.sendMessage("**${e.author.identity.capitalize()}'s Skills**:\nAttack: `${d.rpg[e.author.id].attack}` | Defense: `${d.rpg[e.author.id].defense}`\n\n$ass\n\nUse `${d.prefix}move [skill]` to use one.").queue()
+		}
+	}
+	String category='RPG'
+	String help="""`move` will make me list your skills.
+`move [skill]` will use it on the enemy or obstacle.
+This game apparently revolves around pica."""
+}
+
+
+class EatCommand extends Command{
+	List aliases=['eat','ingest']
+	def run(Map d,Event e){
+		if(d.args){
+			d.args=d.args.toLowerCase()
+			if(!d.rpg[e.author.id])d.rpg[e.author.id]=[money:500,items:[],experience:0,health:100,skills:['thrash'],attack:0,defense:0]
+			List item=d.rpg[e.author.id].items.find{d.args.contains(it[0])}
+			if(!item){
+				e.sendMessage("Sorry bro, you can't eat what's not there.").queue()
+			}else if(item[0]=='cart'){
+				d.rpg[e.author.id].items-=[item]
+				List item2=[]
+				if(d.rpg[e.author.id].items){
+					item2=d.rpg[e.author.id].items.random()
+					d.rpg[e.author.id].items-=[item]
+				}
+				d.rpg[e.author.id].health=100
+				int bill=d.rpg[e.author.id].money/3
+				d.rpg[e.author.id].money-=bill
+				String message="You eat the ${d.rpg.items[item[0]]}.\nYour taste buds are assaulted with the most bitter and disgusting taste imaginable.\nIt sticks around on your tongue for the next few days, and you refuse to eat under the religious belief that you are wasting the taste of good food taste by overlaying it with the unique flavour of the Nintendo Switch cartridge when it hits your tongue.\nAfter about a week, you die of starvation.\n\n"
+				if(item2)message+="Hurrying to the nearest hospital, you dropped ${d.rpg.items[item2[0]]} and had to pay a <:coin:339089342356258826> `$bill` bill to regain full health."
+				else message+="You hurry to the nearest hospital, paying a <:coin:339089342356258826> `$bill` bill to regain full health."
+				e.sendMessage(message).queue()
+			}else if(item[0]=='pillow'){
+				d.rpg[e.author.id].items-=[item]
+				e.sendMessage("You eat the entire ${d.rpg.items[item[0]]} over a few days. Nothing particularly bad happens, but you find it has no nutritional value.").queue()
+			}else if(item[0]=='eggplant'){
+				d.rpg[e.author.id].items-=[item]
+				String message="You swallow the ${d.rpg.items[item[0]]} whole. "
+				if(d.rpg[e.author.id].health==100){
+					message+='It had no effect, because your health was full, you idiot.'
+				}else{
+					d.rpg[e.author.id].health+=30
+					if(d.rpg[e.author.id].health>100)d.rpg[e.author.id].health=100
+					message+="You regained :broken_heart: `30`!"
+				}
+				e.sendMessage(message).queue()
+			}else if(item[0]=='sink'){
+				e.sendMessage("You have no idea where to start with this, or if your teeth could ${d.rpg.items[item[0]]} into any part of it at all.").queue()
+			}else if(item[0]in['sword','bomb','burger']){
+				d.rpg[e.author.id].items-=[item]
+				String message=''
+				if(item[0]=='sword')message='You swallow the blade.'
+				else if(item[0]=='bomb')message="Why the fuck did you eat a ${d.rpg.items['bomb']}?"
+				else if(item[0]=='burger')message="You eat a ${d.rpg.items['burger']}, but it was actually a McDonalds burger in disguise, so you die."
+				List item2=[]
+				if(d.rpg[e.author.id].items){
+					item2=d.rpg[e.author.id].items.random()
+					d.rpg[e.author.id].items-=[item]
+				}
+				d.rpg[e.author.id].health=100
+				int bill=d.rpg[e.author.id].money/3
+				d.rpg[e.author.id].money-=bill
+				if(item2)e.sendMessage("$message\n\nHurrying to the nearest hospital, you dropped ${d.rpg.items[item2[0]]} and had to pay a <:coin:339089342356258826> `$bill` bill to regain full health.").queue()
+				else e.sendMessage("$message\n\nYou hurry to the nearest hospital, paying a <:coin:339089342356258826> `$bill` bill to regain full health.").queue()
+			}else if(item[0]=='key'){
+				d.rpg[e.author.id].items-=[item]
+				e.sendMessage("You swallow the ${d.rpg.items[item[0]]}. Now no-one can ever unlock the door! Hahaha!").queue()
+			}else if(item[0]=='shit'){
+				d.rpg[e.author.id].items-=[item]
+				String message="Congratulations, you actually ate ${d.rpg.items[item[0]]}. "
+				if(d.rpg[e.author.id].health==100){
+					message+='Now you feel ill.'
+				}else{
+					d.rpg[e.author.id].health+=5
+					if(d.rpg[e.author.id].health>100)d.rpg[e.author.id].health=100
+					message+="You regained :broken_heart: `5`!"
+				}
+				e.sendMessage(message).queue()
+			}else if(item[0]=='picture'){
+				d.rpg[e.author.id].items-=[item]
+				e.sendMessage("You eat the ${d.rpg.items[item[0]]}. Your health is now :broken_heart: `1`.").queue()
+			}else if(item[0]=='pear'){
+				d.rpg[e.author.id].items-=[item]
+				String message="You eat the ${d.rpg.items[item[0]]}. "
+				if(d.rpg[e.author.id].health==100){
+					message+='It tasted way better than any apple, but that was all that happened, because your health was already full.'
+				}else{
+					d.rpg[e.author.id].health+=70
+					if(d.rpg[e.author.id].health>100)d.rpg[e.author.id].health=100
+					message+="You regained :broken_heart: `30`!"
+				}
+				e.sendMessage(message).queue()
+			}else if(item[0]=='eyes'){
+				d.rpg[e.author.id].items-=[item]
+				d.rpg[e.author.id].experience+=80
+				e.sendMessage("You eat the ${d.rpg.items[item[0]]}... You feel strangely smarter.").queue()
+			}else if(item[0]=='grover'){
+				d.rpg[e.author.id].items-=[item]
+				d.rpg[e.author.id].experience+=100
+				d.rpg[e.author.id].health=100
+				e.sendMessage("You eat ${d.rpg.items[item[0]]} like the Chinese. You gain `100` experience and full health. There's an item you can never get again.").queue()
+			}else if(item[0]=='bikini'){
+				d.rpg[e.author.id].items-=[item]
+				String message="You eat the pants of the ${d.rpg.items[item[0]]}. What kind of pervert are you? "
+				if(d.rpg[e.author.id].health==100){
+					message+="Anyway, there were no consequences, just don't try it in real life."
+				}else{
+					d.rpg[e.author.id].health+=10
+					if(d.rpg[e.author.id].health>100)d.rpg[e.author.id].health=100
+					message+="You regained :broken_heart: `10`!"
+				}
+				e.sendMessage(message).queue()
+			}else if(item[0]=='cook'){
+				d.rpg[e.author.id].items-=[item]
+				String message="You eat the egg that's been cooking in the pan every since you have it. You also eat the pan. "
+				if(d.rpg[e.author.id].health==100){
+					message+='Nothing happened because your health was full. Waste of a good egg.'
+				}else{
+					d.rpg[e.author.id].health+=80
+					if(d.rpg[e.author.id].health>100)d.rpg[e.author.id].health=100
+					message+="You regained :broken_heart: `80`!"
+				}
+				e.sendMessage(message).queue()
+			}else if(item[0]=='whale'){
+				d.rpg[e.author.id].items-=[item]
+				String message='You eat the whale. '
+				if(d.rpg[e.author.id].health==100){
+					message+='But your health was full, so it was transported to another universe.'
+				}else{
+					d.rpg[e.author.id].health+=98
+					if(d.rpg[e.author.id].health>100)d.rpg[e.author.id].health=100
+					message+="You regained :broken_heart: `98`!"
+				}
+				e.sendMessage(message).queue()
+			}else if(item[0]=='camera'){
+				d.rpg[e.author.id].items=[['camera',(0..Short.MAX_VALUE).random()]]
+				29.times{
+					d.rpg[e.author.id].items+=[['picture',(0..Short.MAX_VALUE).random()]]
+				}
+				String message="As you're about to eat the camera, it suddenly flashes. You wonder why"
+				if(d.rpg[e.author.id].items.findAll{it[0]!='picture'}.size()>3)message+=', but your bag now feels a lot lighter for some reason.'
+				else message+='.'
+				e.sendMessage(message).queue()
+			}
+			d.json.save(d.rpg,'rpg')
+		}else{
+			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}eat [item]`.").queue()
+		}
+	}
+	String category='RPG'
+	String help="""`eat [item]` will make you eat an item, whether it's good for you or not.
+This game apparently revolves around pica."""
+}
+
+
+class WearCommand extends Command{
+	List aliases=['wear','armor']
+	int limit=150
+	def run(Map d,Event e){
+		if(d.args){
+			d.args=d.args.toLowerCase()
+			if(!d.rpg[e.author.id])d.rpg[e.author.id]=[money:500,items:[],experience:0,health:100,skills:['thrash'],attack:0,defense:0]
+			List item=d.rpg[e.author.id].items.find{d.args.contains(it[0])}
+			if(item){
+				d.rpg[e.author.id].items-=[item]
+				if(d.rpg[e.author.id].armour)d.rpg[e.author.id].items+=[[d.rpg[e.author.id].armour,(0..Short.MAX_VALUE).random()]]
+				d.rpg[e.author.id].armour=item[0]
+				if(item[0]=='cart'){
+					d.rpg[e.author.id].defense=1
+					e.sendMessage("You cover yourself with the ${d.rpg.items[item[0]]}, however, the most it can cover is your bepis, because it's so small (as in your bepis).\n\nYour defense is now `1`.").queue()
+				}else if(item[0]=='pillow'){
+					d.rpg[e.author.id].defense=10
+					e.sendMessage("You unzip the ${d.rpg.items[item[0]]}, take out the fluff and pull it over your head. Perfect defense _and_ disguise!\n\nYour defense is now `10`.").queue()
+				}else if(item[0]=='eggplant'){
+					d.rpg[e.author.id].defense=-2
+					e.sendMessage("You balance the ${d.rpg.items[item[0]]} atop your head, and think about how this is supposed to help at all.\n\nYour defense is now `-2`.").queue()
+				}else if(item[0]=='sink'){
+					d.rpg[e.author.id].defense=15
+					e.sendMessage("With some DIY, you make it possible to stand in the ${d.rpg.items[item[0]]} and have your legs come out of the bottom. Now you're sink man!\n\nYour defense is now `15`.").queue()
+				}else if(item[0]=='sword'){
+					d.rpg[e.author.id].defense=0
+					e.sendMessage("You wear the ${d.rpg.items[item[0]]} on your back. Now you look awesome.\n\n(Your defense is `0`, though.)").queue()
+				}else if(item[0]=='key'){
+					d.rpg[e.author.id].defense=0
+					e.sendMessage("You grab the ${d.rpg.items[item[0]]} by the actual key-part and use the handle as a shield. It does nothing.").queue()
+				}else if(item[0]=='shit'){
+					d.rpg[e.author.id].defense=3
+					e.sendMessage("You cover yourself with... What the fuck? I didn't know you were into that, but you do you.\n\nYour defense is now `3`.").queue()
+				}else if(item[0]=='picture'){
+					d.rpg[e.author.id].defense=4
+					e.sendMessage("You hold out the ${d.rpg.items[item[0]]} in front of you, hoping it'll scare off anything that comes.\n\nYour defense is now `4`.")
+				}else if(item[0]=='pear'){
+					d.rpg[e.author.id].defense=-1
+					e.sendMessage("You balance the ${d.rpg.items[item[0]]} atop your head, and think about how this is supposed to help at all.\n\nYour defense is now `-1`.").queue()
+				}else if(item[0]=='bomb'){
+					d.rpg[e.author.id].defense=0
+					d.rpg[e.author.id].armour=null
+					d.rpg[e.author.id].health=100
+					int bill=d.rpg[e.author.id].money/3
+					d.rpg[e.author.id].money-=bill
+					e.sendMessage("Now that's just sil-\n\nYou hurry to the nearest hospital, paying a <:coin:339089342356258826> `$bill` bill to regain full health.").queue()
+				}else if(item[0]=='eyes'){
+					d.rpg[e.author.id].defense=0
+					e.sendMessage("You put the ${d.rpg.items[item[0]]} over your actual eyes like glasses. You think you might be able to see a bit better.")
+				}else if(item[0]=='grover'){
+					d.rpg[e.author.id].defense=20
+					e.sendMessage("You fuse with ${d.rpg.items[item[0]]} and become a mech. This change is reversible.\n\nYour defense is now `20`.").queue()
+				}else if(item[0]=='bikini'){
+					d.rpg[e.author.id].defense=3
+					e.sendMessage("You wear the bikini over the top of your existing clothes.\n\nYour defense is now `3`.").queue()
+				}else if(item[0]=='cook'){
+					d.rpg[e.author.id].defense=7
+					e.sendMessage("You put the pan on top of your head upside-down, and the egg magically stays inside.\n\nYour defense is now `7`.").queue()
+				}else if(item[0]=='whale'){
+					d.rpg[e.author.id].defense=23
+					e.sendMessage("You go inside the whale's mouth and take control of its brain like the parasite you are.\n\nYour defense is now `23`.").queue()
+				}else if(item[0]=='burger'){
+					d.rpg[e.author.id].defense=0
+					e.sendMessage("You wear the burger on your head as a cute little hat.\n\nYour defense is now `999`. Just kidding, it's `0`.").queue()
+				}else if(item[0]=='camera'){
+					d.rpg[e.author.id].armour=null
+					d.rpg[e.author.id].defense=0
+					d.rpg[e.author.id].items=[['camera',(0..Short.MAX_VALUE).random()]]
+					29.times{
+						d.rpg[e.author.id].items+=[['picture',(0..Short.MAX_VALUE).random()]]
+					}
+					String message="As you string the camera around your neck, it suddenly flashes. You wonder why"
+					if(d.rpg[e.author.id].items.findAll{it[0]!='picture'}.size()>3)message+=', but your bag now feels a lot lighter for some reason.'
+					else message+='.'
+					e.sendMessage(message).queue()
+				}
+				d.json.save(d.rpg,'rpg')
+			}else if(!item){
+				if(d.rpg[e.author.id].armour){
+					e.sendMessage("You don't have any armour like that, buddy.").queue()
+				}else{
+					e.sendMessage("You're already wearing nothing.").queue()
+				}
+			}
+		}else{
+			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}wear [item]`.").queue()
+		}
+	}
+	String category='RPG'
+	String help="""`wear [item]` will make you wear an item as armour or clothes.
+Show some modesty."""
+}
+
+
+class WeaponCommand extends Command{
+	List aliases=['weapon','wield']
+	int limit=150
+	def run(Map d,Event e){
+		if(d.args){
+			d.args=d.args.toLowerCase()
+			if(!d.rpg[e.author.id])d.rpg[e.author.id]=[money:500,items:[],experience:0,health:100,skills:['thrash'],attack:0,defense:0]
+			List item=d.rpg[e.author.id].items.find{d.args.contains(it[0])}
+			if(item){
+				d.rpg[e.author.id].items-=[item]
+				if(d.rpg[e.author.id].weapon)d.rpg[e.author.id].items+=[[d.rpg[e.author.id].weapon,(0..Short.MAX_VALUE).random()]]
+				d.rpg[e.author.id].weapon=item[0]
+				if(item[0]=='cart'){
+					d.rpg[e.author.id].attack=1
+					e.sendMessage("You hold the ${d.rpg.items[item[0]]} in one hand, with the sharpest corner pointing forward.\n\nYour attack is now `1`.").queue()
+				}else if(item[0]=='pillow'){
+					d.rpg[e.author.id].attack=-4
+					e.sendMessage("You hold the ${d.rpg.items[item[0]]} in front of you, preparing to bash it against anything that comes... If you can see it.\n\nYour attack is now `-4`.").queue()
+				}else if(item[0]=='eggplant'){
+					d.rpg[e.author.id].attack=1
+					e.sendMessage("You hold the ${d.rpg.items[item[0]]} in one hand, pointing the stalk forward.\n\nYour attack is now `1`.").queue()
+				}else if(item[0]=='sink'){
+					d.rpg[e.author.id].attack=16
+					e.sendMessage("You hold the enormous application in two hands. It's quite heavy, actually.\n\nYour attack is now `16`.").queue()
+				}else if(item[0]=='sword'){
+					d.rpg[e.author.id].attack=15
+					e.sendMessage("Okay, you can't actually dual wield, so you hold two ${d.rpg.items[item[0]]} in one hand.\n\nYour attack is now `15`.").queue()
+				}else if(item[0]=='key'){
+					d.rpg[e.author.id].attack=1
+					e.sendMessage("You hold the ${d.rpg.items[item[0]]} like a dagger, ready to stab.\n\nYour attack is now `1`.").queue()
+				}else if(item[0]=='shit'){
+					d.rpg[e.author.id].attack=4
+					e.sendMessage("Finally, a ranged weapon!\n\nYour attack is now `4`.").queue()
+				}else if(item[0]=='picture'){
+					d.rpg[e.author.id].attack=2
+					e.sendMessage("You hold the ${d.rpg.items[item[0]]} in one hand, with one corner pointing forward.\n\nYour attack is now `2`.").queue()
+				}else if(item[0]=='pear'){
+					d.rpg[e.author.id].attack=2
+					e.sendMessage("You hold the ${d.rpg.items[item[0]]} in the hand you wouldn't normally handle apples with, pointing the stalk forward.\n\nYour attack is now `2`.").queue()
+				}else if(item[0]=='bomb'){
+					d.rpg[e.author.id].attack=0
+					d.rpg[e.author.id].weapon=null
+					d.rpg[e.author.id].health=100
+					int bill=d.rpg[e.author.id].money/3
+					d.rpg[e.author.id].money-=bill
+					e.sendMessage("You prepare to thro-\n\nYou hurry to the nearest hospital, paying a <:coin:339089342356258826> `$bill` bill to regain full health.").queue()
+				}else if(item[0]=='eyes'){
+					d.rpg[e.author.id].attack=2
+					e.sendMessage("Theoretically, you should only be able to throw two of these, but I can't be bothered to code.\n\nYour attack is now `2`.").queue()
+				}else if(item[0]=='grover'){
+					d.rpg[e.author.id].attack=20
+					e.sendMessage("You tell ${d.rpg.items[item[0]]} to bite any baddies that come along.\n\nYour attack is now `20`.").queue()
+				}else if(item[0]=='bikini'){
+					d.rpg[e.author.id].attack=3
+					e.sendMessage("You hold the bra in one hand and the pants in the other, and you aren't afraid to slap enemies with the strap if they approach you.\n\nYour attack is now `3`.").queue()
+				}else if(item[0]=='cook'){
+					d.rpg[e.author.id].attack=9
+					e.sendMessage("You weaponize the pan.\n\nYour attack is now `9`.").queue()
+				}else if(item[0]=='whale'){
+					d.rpg[e.author.id].attack=2
+					e.sendMessage("You grab the whale by its tail (lol rhyme xd). Turns out its bite isn't very powerful at all.\n\nYour attack is now `2`.")
+				}else if(item[0]=='burger'){
+					d.rpg[e.author.id].attack=-1
+					e.sendMessage("You dismantle the burger into individual pieces of bread and hold one in each hand, hoping to complete a bread-lectrical circuit by grabbing your foes with them. Of course, it actually just makes things worse.\n\nYour attack is now `-1`.")
+				}else if(item[0]=='camera'){
+					d.rpg[e.author.id].attack=0
+					d.rpg[e.author.id].items=[['camera',(0..Short.MAX_VALUE).random()]]
+					29.times{
+						d.rpg[e.author.id].items+=[['picture',(0..Short.MAX_VALUE).random()]]
+					}
+					String message="As swing the camera around by its string, it suddenly flashes. You wonder why"
+					if(d.rpg[e.author.id].items.findAll{it[0]!='picture'}.size()>3)message+=', but your bag now feels a lot lighter for some reason.'
+					else message+='.'
+					e.sendMessage(message).queue()
+				}
+				d.json.save(d.rpg,'rpg')
+			}else if(!item){
+				if(d.rpg[e.author.id].weapon){
+					e.sendMessage("You don't have any weapons like that, buddy.").queue()
+				}else{
+					e.sendMessage("Can't get any barer than bare fists.").queue()
+				}
+			}
+		}else{
+			e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}weapon [item]`.").queue()
+		}
+	}
+	String category='RPG'
+	String help="""`weapon [item]` will equip an item in your inventory as a weapon.
+Ha! Ya!"""
+}
+
+
+class ShopCommand extends Command{
+	List aliases=['shop']
+	def run(Map d,Event e){
+		if(!d.rpg[e.author.id])d.rpg[e.author.id]=[money:500,items:[],experience:0,health:100,skills:['thrash'],attack:0,defense:0]
+		d.args=d.args.toLowerCase().tokenize()
+		if(d.args){
+			if(d.args[0]=='buy'){
+				if(d.rpg[e.author.id].items.size()>29){
+					e.sendMessage("You aren't fit to buy shit. Good thing we don't sell shit. But seriously, inventory full.").queue()
+				}else if(d.args[1]){
+					if(d.args[1]=='pear'){
+						if(d.rpg[e.author.id].money>115){
+							d.rpg[e.author.id].money-=115
+							d.rpg[e.author.id].items+=[['pear',(0..Short.MAX_VALUE).random()]]
+							e.sendMessage("Here's your ${d.rpg.items['pear']}. It's not in a pair though.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else{
+							e.sendMessage("Whatever money you were gonna use to buy this seems to have disap**pear**ed.").queue()
+						}
+					}else if(d.args[1]=='eggplant'){
+						if(d.rpg[e.author.id].money>60){
+							d.rpg[e.author.id].money-=60
+							d.rpg[e.author.id].items+=[['eggplant',(0..Short.MAX_VALUE).random()]]
+							e.sendMessage("Here's your ${d.rpg.items['eggplant']}. Doesn't grow eggs unfortunately.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else{
+							e.sendMessage("I grew this eggplant. Why don't you grow a money plant? 'Cause you're short on it.").queue()
+						}
+					}else if(d.args[1]=='sword'){
+						if(d.rpg[e.author.id].money>240){
+							d.rpg[e.author.id].money-=240
+							d.rpg[e.author.id].items+=[['sword',(0..Short.MAX_VALUE).random()]]
+							e.sendMessage("Here's your ${d.rpg.items['sword']}. I hope you're over 3 years old.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else{
+							e.sendMessage("You **sword** you had more money? Guess you **sword** wrong.").queue()
+						}
+					}else if(d.args[1]=='bomb'){
+						if(d.rpg[e.author.id].money>300){
+							d.rpg[e.author.id].money-=300
+							d.rpg[e.author.id].items+=[['bomb',(0..Short.MAX_VALUE).random()]]
+							e.sendMessage("Lamp oil? Rope? ${d.rpg.items['bomb']}? It's yours my friend.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else{
+							e.sendMessage("Did your wallet get bombed? Cause there's not enough in it to buy this.").queue()
+						}
+					}else if(d.args[1]=='burger'){
+						if(d.rpg[e.author.id].money>25){
+							d.rpg[e.author.id].money-=25
+							d.rpg[e.author.id].items+=[['burger',(0..Short.MAX_VALUE).random()]]
+							e.sendMessage("Order 6669001337? Here you go (${d.rpg.items['burger']}).\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else{
+							e.sendMessage("Jesus Christ you're poor. Just go back to living out on the streets.").queue()
+						}
+					}else{
+						e.sendMessage("I'm not even selling that, WTF?").queue()
+					}
+					d.json.save(d.rpg,'rpg')
+				}else{
+					e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}shop buy/sell [item]`.").queue()
+				}
+			}else if(d.args[0]=='sell'){
+				if(d.args[1]){
+					List item=d.rpg[e.author.id].items.find{d.args[1].contains(it[0])}
+					if(item){
+						d.rpg[e.author.id].items-=[item]
+						if(item[0]=='bikini'){
+							d.rpg[e.author.id].money+=20
+							e.sendMessage("Where'd you find this, kid? Anyway, we'll take it for <:coin:339089342356258826> `20` for uhh... Resale purposes.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else if(item[0]=='bomb'){
+							int money=(5..50).random()
+							d.rpg[e.author.id].money+=money
+							e.sendMessage("The shopkeeper explodes and drops <:coin:339089342356258826> `$money`.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else if(item[0]in['burger','cook']){
+							d.rpg[e.author.id].items+=[[item]]
+							e.sendMessage("Sorry bud, I can't take food like this.").queue()
+						}else if(item[0]=='cart'){
+							d.rpg[e.author.id].money+=60
+							e.sendMessage("Are you the Nintendo employee we needed stock from? We'll take this for <:coin:339089342356258826> `60`.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else if(item[0]=='eggplant'){
+							d.rpg[e.author.id].money+=15
+							e.sendMessage("Is this a lewd metaphor? Anyway, I'll buy it for <:coin:339089342356258826> `15`.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else if(item[0]=='eyes'){
+							d.rpg[e.author.id].money+=45
+							e.sendMessage("A donation for research? I don't have much money on me personally, but will you accept <:coin:339089342356258826> `45`? (You can't say no.)\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else if(item[0]=='grover'){
+							d.rpg[e.author.id].money+=500
+							e.sendMessage("What? You're selling ${d.rpg.items[item[0]]}? That's a time paradox! A black hole opened up and <:coin:339089342356258826> `500` came out. It took ${d.rpg.items[item[0]]} with it.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else if(item[0]=='key'){
+							d.rpg[e.author.id].money+=5
+							e.sendMessage("This ${d.rpg.items[item[0]]} isn't much use to me, so I'll just pay <:coin:339089342356258826> `5`.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else if(item[0]=='pear'){
+							e.sendMessage("Fresh fruit? Don't mind if I do... Nom nom!\n\nWait, were you selling that? Oops...").queue()
+						}else if(item[0]in['pillow','picture','shit']){
+							d.rpg[e.author.id].items+=[item]
+							e.sendMessage("I'd rather not.").queue()
+						}else if(item[0]=='sink'){
+							d.rpg[e.author.id].money+=100
+							e.sendMessage("Sweet, iron! I'll pay <:coin:339089342356258826> `100`.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else if(item[0]=='sword'){
+							d.rpg[e.author.id].money+=60
+							e.sendMessage("I can pay you <:coin:339089342356258826> `60` for that.\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else if(item[0]=='whale'){
+							d.rpg[e.author.id].money+=150
+							e.sendMessage("How'd you even get this in the store? Have <:coin:339089342356258826> `150`!\n\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`.").queue()
+						}else if(item[0]=='camera'){
+							d.rpg[e.author.id].items+=[item]
+							d.rpg[e.author.id].items=[['camera',(0..Short.MAX_VALUE).random()]]
+							29.times{
+								d.rpg[e.author.id].items+=[['picture',(0..Short.MAX_VALUE).random()]]
+							}
+							String message="As you give the camera to the nice man, it flashes. You wonder why"
+							if(d.rpg[e.author.id].items.findAll{it[0]!='picture'}.size()>3)message+=', but your bag now feels a lot lighter for some reason.'
+							else message+='.'
+							e.sendMessage(message).queue()
+						}
+						d.json.save(d.rpg,'rpg')
+					}else{
+						String message="You dare try to scam me?! I'll scam your face! :boom:"
+						item=[]
+						if(d.rpg[e.author.id].items){
+							item=d.rpg[e.author.id].items.random()
+							d.rpg[e.author.id].items-=[item]
+						}
+						d.rpg[e.author.id].health=100
+						int bill=d.rpg[e.author.id].money/3
+						d.rpg[e.author.id].money-=bill
+						if(item)message+="\n\nHurrying to the nearest hospital, you dropped ${d.rpg.items[item[0]]} and had to pay a <:coin:339089342356258826> `$bill` bill to regain full health."
+						else message+="\n\nYou hurry to the nearest hospital, paying a <:coin:339089342356258826> `$bill` bill to regain full health."
+						e.sendMessage(message).queue()
+					}
+				}else{
+					e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}shop buy/sell [item]`.").queue()
+				}
+			}else{
+				e.sendMessage(d.errorMessage()+"Usage: `${d.prefix}shop buy/sell [item]`.").queue()
+			}
+		}else{
+			e.sendMessage("""Here's what I'm selling. `${d.prefix}shop buy`, `${d.prefix}shop sell`.
+
+${d.rpg.items['pear']} | <:coin:339089342356258826> `115`
+${d.rpg.items['eggplant']} | <:coin:339089342356258826> `60`
+${d.rpg.items['sword']} | <:coin:339089342356258826> `240`
+${d.rpg.items['bomb']} | <:coin:339089342356258826> `300`
+${d.rpg.items['burger']} | <:coin:339089342356258826> `25`""").queue()
+		}
+	}
+	String category='RPG'
+	String help="""`shop` will make me list what's for sale at the RPG shop.
+`shop buy [item]` will buy the item from the shop if you have the money.
+`shop sell [item]` will sell the item to the shop if they'll accept it.
+Finally, a command women can enjoy."""
+}
+
+
+class DailyCommand extends Command{
+	List aliases=['daily','dailies']
+	def run(Map d,Event e){
+		if(!d.rpg[e.author.id])d.rpg[e.author.id]=[money:500,items:[],experience:0,health:100,skills:['thrash'],attack:0,defense:0]
+		String date=new Date().format('d/M/YYYY')
+		if(d.rpg[e.author.id].daily!=date){
+			if([0,0,0,0,0,0,0,1].random()){
+				e.sendMessage("Oh, you wanted dailies? Too bad, you aren't getting them. :slight_smile:").queue()
+			}else{
+				String message=['Oh, your dailies? Here you go.',"Here's your allowance as promised.",'Thanks for playing my game!'].random()
+				int money=[100,200,300].random()
+				d.rpg[e.author.id].money+=money
+				String item=['shit','eggplant','pear','key','cook'].random()
+				if(d.rpg[e.author.id].items.size()>29){
+					message+="\nYou got <:coin:339089342356258826> `$money` and dropped the ${d.rpg.items[item]} you also recieved on the floor.\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`."
+				}else{
+					d.rpg[e.author.id].items+=[[item,(0..Short.MAX_VALUE).random()]]
+					message+="\nYou got ${d.rpg.items[item]} and <:coin:339089342356258826> `$money`.\nYou now have <:coin:339089342356258826> `${d.rpg[e.author.id].money}`."
+				}
+				e.sendMessage(message).queue()
+			}
+			d.rpg[e.author.id].daily=date
+		}else{
+			String message=":zap: MORE?! YOU DARE ASK FOR MORE?! You must die! :zap:"
+			List item=[]
+			if(d.rpg[e.author.id].items){
+				item=d.rpg[e.author.id].items.random()
+				d.rpg[e.author.id].items-=[item]
+			}
+			d.rpg[e.author.id].health=100
+			int bill=d.rpg[e.author.id].money/3
+			d.rpg[e.author.id].money-=bill
+			if(item)message+="\n\nHurrying to the nearest hospital, you dropped ${d.rpg.items[item[0]]} and had to pay a <:coin:339089342356258826> `$bill` bill to regain full health."
+			else message+="\n\nYou hurry to the nearest hospital, paying a <:coin:339089342356258826> `$bill` bill to regain full health."
+			e.sendMessage(message).queue()
+		}
+		d.json.save(d.rpg,'rpg')
+	}
+	String category='RPG'
+	String help="""`daily` will make me give you money and a random item - once every UK day.
+Better make that Septapus reminder."""
 }
