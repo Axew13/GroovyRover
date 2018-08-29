@@ -9,14 +9,8 @@ import net.dv8tion.jda.core.events.message.react.*
 import net.dv8tion.jda.core.events.guild.member.*
 import java.time.OffsetDateTime
 
-String id='155684861770858496'
-String owner='107894146617868288'
-
-
-Random random=new Random()
-ArrayList.metaClass.randomItem={delegate[random.nextInt(delegate.size())]}
-Range.metaClass.randomItem={delegate.toList().randomItem()}
-String.metaClass.randomItem={delegate.toList().randomItem()}
+final String id='155684861770858496'
+final String owner='107894146617868288'
 
 
 JDA.metaClass.play={String game->delegate.presence.setGame(Game.of(Game.GameType.DEFAULT,game))}
@@ -28,8 +22,8 @@ JDA.metaClass.getChannels={delegate.textChannels+delegate.voiceChannels+delegate
 
 Event.metaClass.getJda={delegate.JDA}
 
-MessageReceivedEvent.metaClass.sendMessage={String content->delegate.channel.sendMessage("\u200b${content?.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}")}
-MessageReceivedEvent.metaClass.sendTyping={delegate.channel.sendTyping()}
+MessageReceivedEvent.metaClass.sendMessage={ String content -> delegate.channel.sendMessage("\u200b${ content?.replaceEach(['@everyone', '@here'], ['@\u0435veryone', '@h\u0435re']) }") }
+MessageReceivedEvent.metaClass.sendTyping={ delegate.channel.sendTyping() }
 MessageReceivedEvent.metaClass.sendFile={String file->delegate.channel.sendFile(new File(file),null)}
 MessageReceivedEvent.metaClass.sendFile={File file->delegate.channel.sendFile(file,null)}
 
@@ -42,9 +36,7 @@ Message.metaClass.getGuild={delegate.channel?.guild}
 Message.metaClass.getMentions={delegate.mentionedUsers}
 Message.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Message.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
-Message.metaClass.isTts={delegate.TTS}
 
-Message.Attachment.metaClass.getName={delegate.fileName}
 Message.Attachment.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Message.Attachment.metaClass.getCreateTime={new Date(delegate.createTimeMillis)}
 
@@ -91,12 +83,10 @@ Role.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400
 Role.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
 Role.metaClass.getMention={delegate.asMention}
 Role.metaClass.isColour={(delegate.name==~/#?[A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9][A-Fa-f0-9]/)&&!delegate.name.toLowerCase().containsAny('g'..'z')}
-Role.metaClass.isConfig={delegate.name in['Bot Commander','Assist Owner','Trainer','Literally Hitler','spoo.py colorful','Spectra','spoo.py admin','spoo.py mod','Nadeko','Baka','regall commander','Ender','KOSMOS','Discoid Admin','Watchr Commander','Discone Admin','Living Meme','Bot Pony Commander','Beemo Music','Mop Staff','MrMellow Creator','TCommander','Dragon Tamer']}
 
 Emote.metaClass.getCreateTimeMillis={(Long.parseLong(delegate.id)>>22)+1420070400000}
 Emote.metaClass.getCreateTime={new Date((Long.parseLong(delegate.id)>>22)+1420070400000)}
 Emote.metaClass.getMention={delegate.asMention}
-Emote.metaClass.getManaged={false}
 
 Guild.metaClass.getChannels={delegate.textChannels+delegate.voiceChannels}
 Guild.metaClass.getIcon={delegate.iconUrl}
@@ -108,8 +98,23 @@ Guild.metaClass.getUsers={delegate.members*.user}
 
 
 JDA.metaClass.findGuild={String args->delegate.guilds.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
-JDA.metaClass.findUser={String args->delegate.users.toList().sort{it.name.length()}.find{[it.name.toLowerCase(),it.identity.toLowerCase(),it.identity.abbreviate().toLowerCase()].findAll{it}.any{it.contains(args.toLowerCase())}}}
-Guild.metaClass.findUser={String args->delegate.users.toList().sort{it.name.length()}.find{[it.name.toLowerCase(),delegate.members.find{def fuckjava->fuckjava.user.id==it.id}.nickname?.toLowerCase(),it.identity.toLowerCase(),it.identity.abbreviate().toLowerCase()].findAll{it}.any{it.contains(args.toLowerCase())}}}
+JDA.metaClass.findUser = { String args ->
+	User user = delegate.users.toList().sort{it.name.length()}.find{
+		String ass = it.identity
+		[ass.abbreviate().toLowerCase(), it.name.toLowerCase(), ass.toLowerCase()].any{it?.contains(args.toLowerCase())}
+	}
+	if (!user) user = delegate.users.find{it.id == args}
+	user
+}
+Guild.metaClass.findUser = { String args ->
+	User user = delegate.users.toList().sort{it.name.length()}.find{
+		String ass = it.identity
+		String member = delegate.members.find{ def fuckjava -> fuckjava.user.id == it.id}.nickname?.toLowerCase()
+		[ass.abbreviate().toLowerCase(), it.name.toLowerCase(), member, ass.toLowerCase()].any{it?.contains(args.toLowerCase())}
+	}
+	if (!user) user = delegate.users.find{it.id == args}
+	user
+}
 JDA.metaClass.findChannel={String args->delegate.channels.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 Guild.metaClass.findChannel={String args->delegate.channels.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
 JDA.metaClass.findTextChannel={String args->delegate.textChannels.toList().sort{it.name.length()}.find{[it.name.toLowerCase()].any{it.contains(args.toLowerCase())}}}
@@ -157,7 +162,7 @@ String.metaClass.formatTime={
 Closure addVariables={String group,String data,String args,Event e->
 	Object returned
 	if(group.startsWith('random;')){
-		returned=group.substring(7).tokenize(';').randomItem()
+		returned=group.substring(7).tokenize(';').random()
 	}else if(group.startsWith('args;')){
 		returned=group.substring(5).tokenize(';')
 		try{
@@ -171,7 +176,7 @@ Closure addVariables={String group,String data,String args,Event e->
 		}catch(ex){
 			returned=group.substring(6).tokenize(';')
 		}
-		returned=(returned[0]..returned[-1]).toList().randomItem()
+		returned=(returned[0]..returned[-1]).toList().random()
 	}else if(group.startsWith('replace;')){
 		List ass=group.substring(8).tokenize(';')
 		returned=ass[0]
@@ -186,23 +191,43 @@ Closure addVariables={String group,String data,String args,Event e->
 		}catch(ex){
 			returned=new Date().format('HH:mm:ss, dd MMMM YYYY')
 		}
-	}else if(group.startsWith('nameof;')){
-		User ass=e.jda.users.find{it.id==group.substring(7).replaceAll(/\D+/,'')}
-		if(!ass)ass=e.jda.users.find{it.identity.toLowerCase()==group.substring(7).toLowerCase()}
-		returned=ass?ass.name:'???'
+	} else if (group.startsWith('nameof;')) {
+/*		List bepis = e.jda.users.groupBy{it.id}.values()*.first()
+		User ass = bepis.find{it.id == group.substring(7).replaceAll(/\D+/, '')}
+		if (!ass) ass = bepis.find{it.identity.toLowerCase() == group.substring(7).toLowerCase()}
+		returned = ass ? ass.name : '???'*/
+		final substr = group.substring(7)
+		try {
+			final id2 = Long.parseLong(substr)
+			for (u in e.jda.users) if (it.idLong == id2) { returned = it.name; break }
+		} catch (NumberFormatException ignored) {
+			final id2 = substr.toLowerCase()
+			for (u in e.jda.users) if (it.rawIdentity.toLowerCase() == id2) { returned = it.id; break }
+		}
+		returned = returned ?: '???'
 	}else if(group.startsWith('idof;')){
-		User ass=e.jda.users.find{it.identity.toLowerCase()==group.substring(5).toLowerCase()}
-		if(!ass)ass=e.jda.users.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
-		returned=ass?ass.id:'???'
+/*		List bepis=e.jda.users.groupBy{it.id}.values()*.first()
+		User ass=bepis.find{it.identity.toLowerCase()==group.substring(5).toLowerCase()}
+		if(!ass)ass=bepis.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
+		returned=ass?ass.id:'???'*/
+		final substr = group.substring(7)
+		final id2 = substr.toLowerCase()
+		for (u in e.jda.users) if ((it.rawIdentity.toLowerCase() == id2) || (it.name.toLowerCase() == id2)) { returned = it.id; break }
+		returned = returned ?: '???'
 	}else if(group.startsWith('dbof;')){
-		User ass=e.jda.users.find{it.id==group.substring(5).replaceAll(/\D+/,'')}
-		if(!ass)ass=e.jda.users.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
-		returned=ass?ass.identity:'???'
-	}else if(group.startsWith('avatarof;')){
-		User ass=e.jda.users.find{it.id==group.substring(9).replaceAll(/\D+/,'')}
-		if(!ass)ass=e.jda.users.find{it.name.toLowerCase()==group.substring(9).toLowerCase()}
-		if(!ass)ass=e.guild.users.find{it.identity.toLowerCase()==group.substring(9).toLowerCase()}
-		returned=ass?ass.avatar:'???'
+/*		List bepis=e.jda.users.groupBy{it.id}.values()*.first()
+		User ass=bepis.find{it.id==group.substring(5).replaceAll(/\D+/,'')}
+		if(!ass)ass=bepis.find{it.name.toLowerCase()==group.substring(5).toLowerCase()}
+		returned=ass?ass.identity:'???'*/
+		final substr = group.substring(7)
+		try {
+			final id2 = Long.parseLong(substr)
+			for (u in e.jda.users) if (it.idLong == id2) { returned = it.name; break }
+		} catch (NumberFormatException ignored) {
+			final id2 = substr.toLowerCase()
+			for (u in e.jda.users) if (it.name.toLowerCase() == id2) { returned = it.id; break }
+		}
+		returned = returned ?: '???'
 	}
 	if(returned)data=data.replace("{$group}",returned.toString())
 	data
@@ -212,12 +237,12 @@ String.metaClass.addVariables={MessageReceivedEvent e,String args->
 	if(data.containsAll(['{','}'])){
 		User user
 		if(e.guild){
-			user=e.guild.users.toList().randomItem()
-			Channel channel=e.guild.channels.toList().randomItem()
+			user=e.guild.users.toList().random()
+			Channel channel=e.guild.channels.toList().random()
 			data=data.replaceAll(['{channel}','{channelname}'],e.channel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon?:e.guild.name.tokenize()*.capitalize().join(' ')).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
 		}else{
-			user=[e.author,e.jda.selfUser].randomItem()
-			PrivateChannel channel=e.jda.privateChannels.toList().randomItem()
+			user=[e.author,e.jda.selfUser].random()
+			PrivateChannel channel=e.jda.privateChannels.toList().random()
 			data=data.replaceAll(['{channel}','{channelname}'],e.channel.user.name).replaceAll(['{server}','{servername}'],"Direct Messages").replace('{serverid}',id).replace('{servericon}',e.jda.selfUser.avatar).replaceAll(['{serverchannel}','{serverchannelname}'],channel.user.name).replace('{serverchannelid}',channel.user.id)
 		}
 		data=data.replace('{id}',e.message.id).replaceAll(['{author}','{authordb}'],e.author.identity).replace('{authorname}',e.author.name).replace('{authorid}',e.author.id).replace('{authoravatar}',e.author.avatar?:e.author.defaultAvatar).replace('{channelid}',e.channel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
@@ -233,8 +258,8 @@ String.metaClass.addVariables={MessageReceivedEvent e,String args->
 String.metaClass.addVariables={GenericGuildMemberEvent e,String args->
 	String data=delegate.replace('{args}',args).replaceAll(/\/\*.+\*\//,'')
 	if(data.containsAll(['{','}'])){
-		User user=e.guild.users.toList().randomItem()
-		Channel channel=e.guild.channels.toList().randomItem()
+		User user=e.guild.users.toList().random()
+		Channel channel=e.guild.channels.toList().random()
 		data=data.replaceAll(['{channel}','{channelname}'],e.guild.defaultChannel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon?:e.guild.name.tokenize()*.capitalize().join(' ')).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
 		data=data.replace('{id}',((System.currentTimeMillis()-1420070400000)<<22).toString()).replaceAll(['{author}','{authordb}'],e.member.user.identity).replace('{authorname}',e.member.user.name).replace('{authorid}',e.member.user.id).replace('{authoravatar}',e.member.user.avatar?:e.member.user.defaultAvatar).replace('{channelid}',e.guild.defaultChannel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
 		if(data.containsAll(['{','}'])){
@@ -249,8 +274,8 @@ String.metaClass.addVariables={GenericGuildMemberEvent e,String args->
 String.metaClass.addVariables={GenericGuildEvent e,String args->
 	String data=delegate.replace('{args}',args).replaceAll(/\/\*.+\*\//,'')
 	if(data.containsAll(['{','}'])){
-		User user=e.guild.users.toList().randomItem()
-		Channel channel=e.guild.channels.toList().randomItem()
+		User user=e.guild.users.toList().random()
+		Channel channel=e.guild.channels.toList().random()
 		data=data.replaceAll(['{channel}','{channelname}'],e.guild.defaultChannel.name).replaceAll(['{server}','{servername}'],e.guild.name).replace('{serverid}',e.guild.id).replace('{servericon}',e.guild.icon?:e.guild.name.tokenize()*.capitalize().join(' ')).replaceAll(['{serverchannel}','{serverchannelname}'],channel.name).replace('{serverchannelid}',channel.id)
 		data=data.replace('{id}',((System.currentTimeMillis()-1420070400000)<<22).toString()).replaceAll(['{author}','{authordb}'],e.user.identity).replace('{authorname}',e.user.name).replace('{authorid}',e.user.id).replace('{authoravatar}',e.user.avatar?:e.user.defaultAvatar).replace('{channelid}',e.guild.defaultChannel.id).replaceAll(['{serveruser}','{serveruserdb}'],user.identity).replace('{serverusername}',user.name).replace('{serveruserid}',user.id).replace('{serveruseravatar}',user.avatar?:user.defaultAvatar).replace('{date}',new Date().format('HH:mm:ss, dd MMMM YYYY'))
 		if(data.containsAll(['{','}'])){
@@ -265,30 +290,3 @@ String.metaClass.addVariables={GenericGuildEvent e,String args->
 
 
 String.metaClass.strip={delegate.replaceEach(['@everyone','@here'],['@\u0435veryone','@h\u0435re'])}
-String.metaClass.addImports={"""import net.dv8tion.jda.core.*
-import net.dv8tion.jda.core.hooks.ListenerAdapter
-import net.dv8tion.jda.core.entities.*
-import net.dv8tion.jda.core.entities.impl.*
-import net.dv8tion.jda.core.managers.*
-import net.dv8tion.jda.core.events.*
-import net.dv8tion.jda.core.events.message.*
-import net.dv8tion.jda.core.events.message.react.*
-import net.dv8tion.jda.core.events.guild.*
-import net.dv8tion.jda.core.events.guild.member.*
-import net.dv8tion.jda.core.events.user.*
-import net.dv8tion.jda.core.audio.*
-import net.dv8tion.jda.player.*
-import net.dv8tion.jda.player.source.*
-import java.awt.*
-import java.awt.List as AWTList
-import java.util.List
-import java.awt.image.BufferedImage
-import javax.imageio.ImageIO
-import com.mashape.unirest.http.Unirest
-@Grab(group='org.jsoup',module='jsoup',version='1.8.3')
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import org.jsoup.select.Elements
-import org.jsoup.Jsoup
-import groovy.json.*
-$delegate"""}
