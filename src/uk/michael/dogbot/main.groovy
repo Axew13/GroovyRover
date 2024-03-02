@@ -47,8 +47,8 @@ class Bot {
 	List commands = [
 		new SayCommand(), new PlayCommand(), new UserinfoCommand(), new ServerinfoCommand(), new ChannelinfoCommand(),
 		new RoleinfoCommand(), new EmoteinfoCommand(), new AvatarCommand(), new InfoCommand(), new HelpCommand(),
-		new JoinCommand(), new GoogleCommand(), new YouTubeCommand(), new ImageCommand(), new NsfwCommand(),
-		new LevelPalaceCommand(), new AnimeCommand(), new WebsiteCommand(), new MarioMakerCommand(), new DefineCommand(),
+		new JoinCommand(), new GoogleCommand(), new YouTubeCommand(), new ImageCommand(),
+		new AnimeCommand(), new WebsiteCommand(), new MarioMakerCommand(), new DefineCommand(),
 		new UrbanCommand(), new TagCommand(), new MiscCommand(), new TextCommand(), new ChatBoxCommand(),
 		new IdentifyCommand(), new IrlCommand(), new AgeCommand(), new AreaCommand(), new AltsCommand(),
 		new MinecraftCommand(), new TimeCommand(), new ChooseCommand(), new EventsCommand(), new ColourCommand(),
@@ -1309,116 +1309,6 @@ Some people are just visual learners."""
 }
 
 
-class NsfwCommand extends Command {
-	List aliases = ['nsfw','gelbooru']
-	int limit = 20
-	Map cache=[:]
-	def run(Map d, Event e) {
-		if(!e.guild||e.channel.nsfw||e.author.isOwner(e.guild)){
-			if(d.args.containsAny(['loli','shota'])){
-				e.sendMessage("(1boy brown_hair blue_eyes real hansen_chris suit necktie to_catch_a_predator simple_background white_background)\nhttps://timenewsfeed.files.wordpress.com/2011/06/hansen_063011.jpg").queue()
-			}else if(e.guild&&(d.modes.nsfw[e.guild?.id]==false)){
-				e.sendMessage('Pornographic content has been disabled by your jurisdiction.').queue()
-			}else{
-				d.args=d.args.replace(',',' ').trim()
-				Document doc
-				String tags=URLEncoder.encode(d.args,'UTF-8')
-				try{
-					if(cache[d.args]==null){
-						doc=Jsoup.parse(Unirest.get("https://gelbooru.com/index.php?page=dapi&s=post&q=index&tags=$tags&limit=0").asString().body)
-						cache[d.args]=doc.getElementsByTag('posts')[0].attr('count').toInteger()
-						if(cache[d.args]>10000)cache[d.args]=10000
-					}
-					if(!cache[d.args]){
-						e.sendMessage(["Sorry, no results.\nRemember Gelbooru is for hentai, so keywords should use underlines and surnames come first.\nhttps://gelbooru.com/index.php?page=post&s=list&tags=$tags","Sorry, geen resultaten.\nOnthoud dat Gelboooru is voor hentai, zo trefwoorden behage gebruiken onderstrepingen en achternamen kom eerste.\nhttps://gelbooru.com/index.php?page=post&s=list&tags=$tags"].lang(e)).queue()
-						404
-					}else{
-						int page=(1..cache[d.args]).random()-1
-						doc=Jsoup.parse(Unirest.get("https://gelbooru.com/index.php?page=dapi&s=post&q=index&tags=$tags&limit=1&pid=$page").asString().body)
-						Element post=doc.getElementsByTag('post')[0]
-						e.sendMessage("(${post.attr('tags').trim()})\n${post.attr('file_url')}").queue()
-					}
-				}catch(ex){
-					e.sendMessage('Looks like Gelbooru API is unavailable. Press `f` to pay respects.').queue()
-					ex.printStackTrace()
-					503
-				}
-			}
-		}else{
-			TextChannel nsfwChannel=e.guild.textChannels.find{it.nsfw}
-			e.sendMessage(d.permissionMessage()+"Requires any: `Bot Commander' role`, `ADMINISTRATOR permission`${if(nsfwChannel){", `Use in #$nsfwChannel.name`"}else{''}}.\nStaff can set NSFW channels with `${d.prefix}setchannel nsfw`.").queue()
-			403
-		}
-	}
-	String category = 'Online'
-	String help = """`nsfw` will make me send a random Gelbooru image. This could be anything.
-`nsfw [keywords]` will make me search Gelbooru for images that match the keywords.
-L-lewd."""
-}
-
-
-class LevelPalaceCommand extends Command {
-	List aliases = ['levelpalace','lp']
-	int limit = 70
-	boolean available=true
-	def run(Map d, Event e) {
-		if(available){
-			if(d.args){
-				try{
-					e.sendTyping().queue()
-					Map temporaryFix=['pixelfox':8,'mario1luigi9':8,'7supermariobros7':212,'mariomaster7771':212,'brendan':1,'doomslayer522':266,'masterkastyl1nos222':285,'tnttimelord':349,'unown':555,'evol vex':694]
-					Document doc2
-					String link
-					String ass=d.args.toLowerCase()
-					if(temporaryFix[ass]){
-						link="https://www.levelpalace.com/profile.php?user_id=${temporaryFix[ass]}"
-					}else{
-						Document doc1=d.web.get("https://encrypted.google.com/search?q=${URLEncoder.encode("$d.args profile site:levelpalace.com",'UTF-8')}")
-						link=doc1.getElementsByClass('r')[0].getElementsByTag('a')[0].attr('href')
-					}
-					try{
-						if(!link.startsWith('http'))link="http://$link"
-						doc2=d.web.get("$link&client=dogbot")
-						Elements cards=doc2.getElementsByClass('card-content')
-						try{
-							String profileText=doc2.getElementById('main').text().trim()
-							if(profileText.length()>500)profileText=profileText.substring(0,500)+'...'
-							String location=":flag_${cards[0].getElementsByClass('card-title')[5]?.getElementsByTag('img')?.attr('alt')?.toLowerCase()}:"
-							if(location==':flag_:')location='\u2753'
-							e.sendMessage("**${cards[0].getElementsByClass('card-title')[0].text().capitalize()}**  (${cards[0].getElementsByClass('subtitle')[0].text()})\nRank: ${cards[0].getElementsByClass('card-title')[1].text()}  Levels: ${cards[0].getElementsByClass('card-title')[2].text()}  Rates: ${cards[0].getElementsByClass('card-title')[3].text()}  Friends: ${cards[0].getElementsByClass('card-title')[4].text()}  $location\n$profileText\n\n<$link>").queue()
-						}catch(none){
-							e.sendMessage(["No account matching '$d.args' was found.","Geen account vind '$d.args' leuk was vinden."].lang(e)).queue()
-						}
-					}catch(down){
-						e.sendMessage('Looks like Level Palace is unavailable. Press `f` to pay respects.').queue()
-						down.printStackTrace()
-						503
-					}
-				}catch(ex){
-					if(ex.message=='HTTP error fetching URL'){
-						e.sendMessage(['You are being rate limited.','Je bent gebruik beperkt.','Voce esta sendo limitado a taxas.','Zostaniesz szybkosc ograniczona.'].lang(e)).queue()
-						429
-					}else{
-						e.sendMessage(["No account matching '$d.args' was found.","Geen account vind '$d.args' leuk was vinden."].lang(e)).queue()
-						404
-					}
-				}
-			}else{
-				e.sendMessage(d.errorMessage()+["Usage: `${d.prefix}levelpalace [search term]`.","Gebruik: `${d.prefix}levelpalace [zoekterm]`.","Uso: `${d.prefix}levelpalace [termo pesquisa]`."].lang(e)).queue()
-				400
-			}
-		}else{
-			final User axew = e.jda.users.find{it.id == d.bot.owner}
-			e.sendMessage("Level Palace is under maintenance right now, check back later.\n(If you believe this is in error, go bug $axew.name#$axew.discriminator.)").queue()
-			503
-		}
-	}
-	String category = 'Online'
-	String help = """`levelpalace [search term]` will make me search Level Palace's members.
-GRover may or may not be affiliated with this website."""
-}
-
-
 class AnimeCommand extends Command {
 	List aliases = ['anime']
 	int limit = 70
@@ -2167,7 +2057,7 @@ class TextCommand extends Command {
 				if(manipulatives.containsAny(['compress','trim']))output=output.replaceAll([' ','\u3000'],'')
 				if(manipulatives.containsAny(['bubble','circle']))output=output.replaceEach(('A'..'Z')+('a'..'z')+('1'..'9'),['\u24b6','\u24b7','\u24b8','\u24b9','\u24ba','\u24bb','\u24bc','\u24bd','\u24be','\u24bf','\u24c0','\u24c1','\u24c2','\u24c3','\u24c4','\u24c5','\u24c6','\u24c7','\u24c8','\u24c9','\u24ca','\u24cb','\u24cc','\u24cd','\u24ce','\u24cf','\u24d0','\u24d1','\u24d2','\u24d3','\u24d4','\u24d5','\u24d6','\u24d7','\u24d8','\u24d9','\u24da','\u24db','\u24dc','\u24dd','\u24de','\u24df','\u24e0','\u24e1','\u24e2','\u24e3','\u24e4','\u24e5','\u24e6','\u24e7','\u24e8','\u24e9','\u2780','\u2781','\u2782','\u2783','\u2784','\u2785','\u2786','\u2787','\u2788'])
 				if(manipulatives.containsAny(['small','mini']))output=output.replaceEach('a'..'z',['\u1d00','\u0299','\u1d04','\u1d05','\u1d07','\u0493','\u0262','\u029c','\u026a','\u1d0a','\u1d0b','\u029f','\u1d0d','\u0274','\u1d0f','\u1d18','\u01eb','\u0280','s','\u1d1b','\u1d1c','\u1d20','\u1d21','x','\u028f','\u1d22'])
-				if(manipulatives.containsAny(['full','fw']))output=output.replaceEach(('A'..'Z')+('a'..'z')+('1'..'9')+['0','!','"','$','%','^','&','*','(',')','-','_','+','=','[','{',']','}',';',':','A?AÅí','@','#','|',',','<','.','>','?','~',' '],['\uff21','\uff22','\uff23','\uff24','\uff25','\uff26','\uff27','\uff28','\uff29','\uff2a','\uff2b','\uff2c','\uff2d','\uff2e','\uff2f','\uff30','\uff31','\uff32','\uff33','\uff34','\uff35','\uff36','\uff37','\uff38','\uff39','\uff3a','\uff41','\uff42','\uff43','\uff44','\uff45','\uff46','\uff47','\uff48','\uff49','\uff4a','\uff4b','\uff4c','\uff4d','\uff4e','\uff4f','\uff50','\uff51','\uff52','\uff53','\uff54','\uff55','\uff56','\uff57','\uff58','\uff59','\uff5a','\uff11','\uff12','\uff13','\uff14','\uff15','\uff16','\uff17','\uff18','\uff19','\uff10','\uff01','\u201d','\uff04','\uff05','\uff3e','\uff06','\uff0a','\uff08','\uff09','\uff0d','\uff3f','\uff0b','\uff1d','\u300c','\uff5b','\u300d','\uff5d','\uff1b','\uff1a','\uffe5','\uff20','\uff03','\uff5c','\uff0c','\uff1c','\uff0e','\uff1e','\uff1f','\uff5e','\u3000'])
+				if(manipulatives.containsAny(['full','fw']))output=output.replaceEach(('A'..'Z')+('a'..'z')+('1'..'9')+['0','!','"','$','%','^','&','*','(',')','-','_','+','=','[','{',']','}',';',':','A?AÔøΩÔøΩ','@','#','|',',','<','.','>','?','~',' '],['\uff21','\uff22','\uff23','\uff24','\uff25','\uff26','\uff27','\uff28','\uff29','\uff2a','\uff2b','\uff2c','\uff2d','\uff2e','\uff2f','\uff30','\uff31','\uff32','\uff33','\uff34','\uff35','\uff36','\uff37','\uff38','\uff39','\uff3a','\uff41','\uff42','\uff43','\uff44','\uff45','\uff46','\uff47','\uff48','\uff49','\uff4a','\uff4b','\uff4c','\uff4d','\uff4e','\uff4f','\uff50','\uff51','\uff52','\uff53','\uff54','\uff55','\uff56','\uff57','\uff58','\uff59','\uff5a','\uff11','\uff12','\uff13','\uff14','\uff15','\uff16','\uff17','\uff18','\uff19','\uff10','\uff01','\u201d','\uff04','\uff05','\uff3e','\uff06','\uff0a','\uff08','\uff09','\uff0d','\uff3f','\uff0b','\uff1d','\u300c','\uff5b','\u300d','\uff5d','\uff1b','\uff1a','\uffe5','\uff20','\uff03','\uff5c','\uff0c','\uff1c','\uff0e','\uff1e','\uff1f','\uff5e','\u3000'])
 				if(manipulatives.containsAny(['strike','line']))output=output.replace('','\u0336')
 				if(manipulatives.containsAny(['random','shuffle']))output=output.randomize()
 				if(manipulatives.containsAny(['emoji','regional']))output=output.replaceEach(('A'..'Z'),('a'..'z')).replaceEach(('a'..'z')+('0'..'9')+['!','?','+','-','\u00d7','\u00f7','\$','\u221a','\u263c','*','>','<','^','.','\u2588','\u25cf','\u25cb','#','\u2605','\u2020','~'],['\ud83c\udde6\u200b','\ud83c\udde7\u200b','\ud83c\udde8\u200b','\ud83c\udde9\u200b','\ud83c\uddea\u200b','\ud83c\uddeb\u200b','\ud83c\uddec\u200b','\ud83c\udded\u200b','\ud83c\uddee\u200b','\ud83c\uddef\u200b','\ud83c\uddf0\u200b','\ud83c\uddf1\u200b','\ud83c\uddf2\u200b','\ud83c\uddf3\u200b','\ud83c\uddf4\u200b','\ud83c\uddf5\u200b','\ud83c\uddf6\u200b','\ud83c\uddf7\u200b','\ud83c\uddf8\u200b','\ud83c\uddf9\u200b','\ud83c\uddfa\u200b','\ud83c\uddfb\u200b','\ud83c\uddfc\u200b','\ud83c\uddfd\u200b','\ud83c\uddfe\u200b','\ud83c\uddff\u200b','0\u20e3\u200b','1\u20e3\u200b','2\u20e3\u200b','3\u20e3\u200b','4\u20e3\u200b','5\u20e3\u200b','6\u20e3\u200b','7\u20e3\u200b','8\u20e3\u200b','9\u20e3\u200b','\u2757\u200b','\u2753\u200b','\u2795\u200b','\u2796\u200b','\u2716\u200b','\u2797\u200b','\ud83d\udcb2\u200b','\u2714\u200b','\ud83d\udd06\u200b','*\u20e3\u200b','\u25b6\u200b','\u25c0\u200b','\ud83d\udd3c\u200b','\u25aa\u200b','\u23f9\u200b','\u26ab\u200b','\u23fa\u200b','#\u20e3','\u2b50','\u271d','\u3030'])
@@ -3177,7 +3067,7 @@ class SetPrefixCommand extends Command {
 	}
 	String category = 'Moderation'
 	String help = """`setprefix [prefixes]` will make me set my prefix. Separate with spaces.
-Finally, my bot can respond to !"Åí\$%^&*()_+help."""
+Finally, my bot can respond to !"ÔøΩÔøΩ\$%^&*()_+help."""
 }
 
 
@@ -3412,7 +3302,7 @@ class FeedCommand extends Command {
 						d.feeds.youtube-=feeds.find{(it.link==link)&&(it.channel==e.channel.id)}
 						e.sendMessage("YouTube channel removed from the feed for this channel.").queue()
 					}else if(feeds.size()>=15){
-						e.sendMessage("YouTube chan- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just Åí1000000!").queue()
+						e.sendMessage("YouTube chan- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just ÔøΩÔøΩ1000000!").queue()
 					}else{
 						e.sendTyping().queue()
 						Document doc=d.web.get(link)
@@ -3438,7 +3328,7 @@ class FeedCommand extends Command {
 						d.feeds.animelist-=feeds.find{(it.link==link)&&(it.channel==e.channel.id)}
 						e.sendMessage("Anime list removed from the feed for this channel.").queue()
 					}else if(feeds.size()>=15){
-						e.sendMessage("Anime lis- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just Åí1000000!").queue()
+						e.sendMessage("Anime lis- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just ÔøΩÔøΩ1000000!").queue()
 					}else if(d.bot.commands.find{'anime'in it.aliases}.available){
 						e.sendTyping().queue()
 						Document doc=d.web.get(link)
@@ -3471,7 +3361,7 @@ class FeedCommand extends Command {
 						d.feeds.twitter-=feeds.find{(it.link==link)&&(it.channel==e.channel.id)}
 						e.sendMessage("Twitter handle removed from the feed for this channel.").queue()
 					}else if(feeds.size()>=15){
-						e.sendMessage("Twitter hand- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just Åí1000000!").queue()
+						e.sendMessage("Twitter hand- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just ÔøΩÔøΩ1000000!").queue()
 					}else{
 						e.sendTyping().queue()
 						Document doc=d.web.get(link)
@@ -3499,7 +3389,7 @@ class FeedCommand extends Command {
 						d.feeds.levelpalace-=feeds.find{(it.link==link)&&(it.channel==e.channel.id)}
 						e.sendMessage("Level Palace account removed from the feed for this channel.").queue()
 					}else if(feeds.size()>=15){
-						e.sendMessage("Level Palace acc- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just Åí1000000!").queue()
+						e.sendMessage("Level Palace acc- oh, looks like you've hit the feed limit for this channel. Please consider removing a feed, or go premium for just ÔøΩÔøΩ1000000!").queue()
 					}else if(d.bot.commands.find{'levelpalace'in it.aliases}.available){
 						e.sendTyping().queue()
 						Document doc=d.web.get(link)
